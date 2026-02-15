@@ -1,0 +1,224 @@
+package controller
+
+import (
+	"strconv"
+	"strings"
+
+	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/service"
+	rbacSvc "forestwhisperGo/magic/service/rbac"
+
+	"github.com/gin-gonic/gin"
+)
+
+func GetContents(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	status := c.Query("status")
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	result := service.GetContentsList(page, limit, status, 0)
+	middleware.JSONSuccess(c, "获取成功喵", result)
+}
+
+func CreateContent(c *gin.Context) {
+	var req struct {
+		Title    string `json:"title"`
+		Text     string `json:"text"`
+		Slug     string `json:"slug"`
+		Type     string `json:"type"`
+		Status   string `json:"status"`
+		Password string `json:"password"`
+		Template string `json:"template"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		middleware.JSONError(c, "请求数据不能为空喵", nil)
+		return
+	}
+
+	if strings.TrimSpace(req.Title) == "" {
+		middleware.JSONError(c, "文章标题不能为空喵", nil)
+		return
+	}
+	if strings.TrimSpace(req.Text) == "" {
+		middleware.JSONError(c, "文章内容不能为空喵", nil)
+		return
+	}
+	if len(req.Title) > 150 {
+		middleware.JSONError(c, "标题长度不能超过150个字符喵", nil)
+		return
+	}
+
+	user := middleware.GetCurrentUser(c)
+	if user == nil {
+		middleware.JSONError(c, "未登录或登录已过期喵", nil)
+		return
+	}
+
+	contentType := req.Type
+	if contentType == "" {
+		contentType = "post"
+	}
+	status := req.Status
+	if status == "" {
+		status = "draft"
+	}
+
+	content := service.CreateContent(
+		strings.TrimSpace(req.Title),
+		req.Text,
+		user.Uid,
+		req.Slug,
+		contentType,
+		status,
+		req.Password,
+		req.Template,
+	)
+
+	service.CreateUserinfo(user.Uid, "createContent", "创建了文章: "+req.Title+"喵")
+
+	middleware.JSONSuccess(c, "文章创建成功喵", map[string]interface{}{
+		"cid":     content.Cid,
+		"title":   content.Title,
+		"slug":    content.Slug,
+		"created": content.Created,
+	})
+}
+
+func GetContent(c *gin.Context) {
+	cid, err := strconv.Atoi(c.Param("cid"))
+	if err != nil {
+		middleware.JSONError(c, "文章ID无效喵", nil)
+		return
+	}
+
+	content := service.GetContentByCid(cid)
+	if content == nil {
+		middleware.JSONError(c, "文章不存在喵", nil)
+		return
+	}
+
+	middleware.JSONSuccess(c, "获取成功喵", map[string]interface{}{
+		"cid":       content.Cid,
+		"title":     content.Title,
+		"slug":      content.Slug,
+		"text":      content.Text,
+		"created":   content.Created,
+		"modified":  content.Modified,
+		"type":      content.Type,
+		"status":    content.Status,
+		"author_id": content.AuthorID,
+	})
+}
+
+func UpdateContent(c *gin.Context) {
+	cid, err := strconv.Atoi(c.Param("cid"))
+	if err != nil {
+		middleware.JSONError(c, "文章ID无效喵", nil)
+		return
+	}
+
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		middleware.JSONError(c, "请求数据不能为空喵", nil)
+		return
+	}
+
+	content := service.GetContentByCid(cid)
+	if content == nil {
+		middleware.JSONError(c, "文章不存在喵", nil)
+		return
+	}
+
+	user := middleware.GetCurrentUser(c)
+	if user == nil {
+		middleware.JSONError(c, "未登录或登录已过期喵", nil)
+		return
+	}
+
+	isAdmin := rbacSvc.HasRole(user, "admin")
+	if user.Uid != content.AuthorID && !isAdmin {
+		middleware.JSONError(c, "无权修改此文章喵", nil)
+		return
+	}
+
+	if title, ok := req["title"].(string); ok {
+		if strings.TrimSpace(title) == "" {
+			middleware.JSONError(c, "文章标题不能为空喵", nil)
+			return
+		}
+		if len(title) > 150 {
+			middleware.JSONError(c, "标题长度不能超过150个字符喵", nil)
+			return
+		}
+	}
+
+	updated := service.UpdateContent(cid, req)
+	if updated == nil {
+		middleware.JSONSystemError(c, "文章更新失败喵", nil)
+		return
+	}
+
+	service.CreateUserinfo(user.Uid, "updateContent", "更新了文章: "+updated.Title+"喵")
+
+	middleware.JSONSuccess(c, "文章更新成功喵", map[string]interface{}{
+		"cid":      updated.Cid,
+		"title":    updated.Title,
+		"modified": updated.Modified,
+	})
+}
+
+func DeleteContent(c *gin.Context) {
+	cid, err := strconv.Atoi(c.Param("cid"))
+	if err != nil {
+		middleware.JSONError(c, "文章ID无效喵", nil)
+		return
+	}
+
+	content := service.GetContentByCid(cid)
+	if content == nil {
+		middleware.JSONError(c, "文章不存在喵", nil)
+		return
+	}
+
+	user := middleware.GetCurrentUser(c)
+	if user == nil {
+		middleware.JSONError(c, "未登录或登录已过期喵", nil)
+		return
+	}
+
+	isAdmin := rbacSvc.HasRole(user, "admin")
+	if user.Uid != content.AuthorID && !isAdmin {
+		middleware.JSONError(c, "无权删除此文章喵", nil)
+		return
+	}
+
+	success := service.DeleteContent(cid)
+	if !success {
+		middleware.JSONError(c, "文章删除失败喵", nil)
+		return
+	}
+
+	service.CreateUserinfo(user.Uid, "deleteContent", "删除了文章: "+strconv.Itoa(cid)+"喵")
+	middleware.JSONSuccess(c, "文章删除成功喵", nil)
+}
+
+func GetMyContents(c *gin.Context) {
+	user := middleware.GetCurrentUser(c)
+	if user == nil {
+		middleware.JSONError(c, "未登录或登录已过期喵", nil)
+		return
+	}
+
+	contents := service.GetContentsByAuthor(user.Uid)
+	middleware.JSONSuccess(c, "获取成功喵", contents)
+}

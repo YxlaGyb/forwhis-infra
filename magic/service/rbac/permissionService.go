@@ -10,84 +10,84 @@ import (
 
 func GetOrCreateRole(roleName, description string) *rbac.Role {
 	var role rbac.Role
-	if err := db.DB.Where("name = ?", roleName).First(&role).Error; err != nil {
+	if err := db.GetDB().Where("name = ?", roleName).First(&role).Error; err != nil {
 		now := int(time.Now().Unix())
 		role = rbac.Role{Name: roleName, Description: description, CreatedAt: now, UpdatedAt: now}
-		db.DB.Create(&role)
+		db.GetDB().Create(&role)
 	}
 	return &role
 }
 
 func GetOrCreatePermission(name, description, category string) *rbac.Permission {
 	var perm rbac.Permission
-	if err := db.DB.Where("name = ?", name).First(&perm).Error; err != nil {
+	if err := db.GetDB().Where("name = ?", name).First(&perm).Error; err != nil {
 		perm = rbac.Permission{Name: name, Description: description, Category: category, CreatedAt: int(time.Now().Unix())}
-		db.DB.Create(&perm)
+		db.GetDB().Create(&perm)
 	}
 	return &perm
 }
 
 func AssignRoleToUser(userId int, roleName string, grantedBy int) bool {
 	var user models.User
-	if db.DB.First(&user, userId).Error != nil {
+	if db.GetDB().First(&user, userId).Error != nil {
 		return false
 	}
 	var role rbac.Role
-	if db.DB.Where("name = ?", roleName).First(&role).Error != nil {
+	if db.GetDB().Where("name = ?", roleName).First(&role).Error != nil {
 		return false
 	}
 	var existing rbac.UserRole
-	if db.DB.Where("user_id = ? AND role_id = ?", userId, role.Id).First(&existing).Error == nil {
+	if db.GetDB().Where("user_id = ? AND role_id = ?", userId, role.Id).First(&existing).Error == nil {
 		return true
 	}
 	userRole := rbac.UserRole{UserId: userId, RoleId: role.Id, GrantedAt: int(time.Now().Unix()), GrantedBy: grantedBy}
-	db.DB.Create(&userRole)
+	db.GetDB().Create(&userRole)
 	return true
 }
 
 func RemoveRoleFromUser(userId int, roleName string) bool {
 	var role rbac.Role
-	if db.DB.Where("name = ?", roleName).First(&role).Error != nil {
+	if db.GetDB().Where("name = ?", roleName).First(&role).Error != nil {
 		return false
 	}
-	db.DB.Where("user_id = ? AND role_id = ?", userId, role.Id).Delete(&rbac.UserRole{})
+	db.GetDB().Where("user_id = ? AND role_id = ?", userId, role.Id).Delete(&rbac.UserRole{})
 	return true
 }
 
 func GrantPermissionToRole(roleName, permissionName string) bool {
 	var role rbac.Role
-	if db.DB.Where("name = ?", roleName).First(&role).Error != nil {
+	if db.GetDB().Where("name = ?", roleName).First(&role).Error != nil {
 		return false
 	}
 	var perm rbac.Permission
-	if db.DB.Where("name = ?", permissionName).First(&perm).Error != nil {
+	if db.GetDB().Where("name = ?", permissionName).First(&perm).Error != nil {
 		return false
 	}
 	var existing rbac.RolePermission
-	if db.DB.Where("role_id = ? AND permission_id = ?", role.Id, perm.Id).First(&existing).Error == nil {
+	if db.GetDB().Where("role_id = ? AND permission_id = ?", role.Id, perm.Id).First(&existing).Error == nil {
 		return true
 	}
 	rp := rbac.RolePermission{RoleId: role.Id, PermissionId: perm.Id}
-	db.DB.Create(&rp)
+	db.GetDB().Create(&rp)
 	return true
 }
 
 func RevokePermissionFromRole(roleName, permissionName string) bool {
 	var role rbac.Role
-	if db.DB.Where("name = ?", roleName).First(&role).Error != nil {
+	if db.GetDB().Where("name = ?", roleName).First(&role).Error != nil {
 		return false
 	}
 	var perm rbac.Permission
-	if db.DB.Where("name = ?", permissionName).First(&perm).Error != nil {
+	if db.GetDB().Where("name = ?", permissionName).First(&perm).Error != nil {
 		return false
 	}
-	db.DB.Where("role_id = ? AND permission_id = ?", role.Id, perm.Id).Delete(&rbac.RolePermission{})
+	db.GetDB().Where("role_id = ? AND permission_id = ?", role.Id, perm.Id).Delete(&rbac.RolePermission{})
 	return true
 }
 
 func CheckUserPermission(userId int, permissionName string) bool {
 	var user models.User
-	if db.DB.First(&user, userId).Error != nil {
+	if db.GetDB().First(&user, userId).Error != nil {
 		return false
 	}
 	return HasPermission(&user, permissionName)

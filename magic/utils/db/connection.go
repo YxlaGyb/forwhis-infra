@@ -11,7 +11,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
+var (
+	DB   *gorm.DB
+	once sync.Once
+)
 
 var (
 	cfg     map[string]map[string]interface{}
@@ -49,7 +52,7 @@ func getInt(section, key string) int {
 	return 0
 }
 
-func InitDB() {
+func initDB() {
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
 		getStr("db", "PGSQLHOST"),
@@ -61,12 +64,21 @@ func InitDB() {
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("数据库连接失败: %v", err)
+		log.Printf("数据库连接失败: %v", err)
+		DB = nil
+		return
 	}
 	log.Println("数据库连接成功")
 }
 
+func GetDB() *gorm.DB {
+	once.Do(initDB)
+	return DB
+}
+
 func CloseDB() {
-	sqlDB, _ := DB.DB()
-	sqlDB.Close()
+	if DB != nil {
+		sqlDB, _ := DB.DB()
+		sqlDB.Close()
+	}
 }

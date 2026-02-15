@@ -8,7 +8,7 @@ import (
 )
 
 func GetCommentsList(cid int, status string, authorID, page, limit int) map[string]interface{} {
-	query := db.DB.Model(&models.Comment{})
+	query := db.GetDB().Model(&models.Comment{})
 	if cid > 0 {
 		query = query.Where("cid = ?", cid)
 	}
@@ -32,7 +32,7 @@ func GetCommentsList(cid int, status string, authorID, page, limit int) map[stri
 
 func GetCommentByCoid(coid int) *models.Comment {
 	var comment models.Comment
-	if db.DB.First(&comment, coid).Error != nil {
+	if db.GetDB().First(&comment, coid).Error != nil {
 		return nil
 	}
 	return &comment
@@ -44,7 +44,7 @@ func CreateComment(cid int, text string, authorID int, author, mail, url, commen
 		Mail: mail, Url: url, Type: commentType, Parent: parent,
 		Created: int(time.Now().Unix()), Status: models.CommentStatusPending,
 	}
-	db.DB.Create(&comment)
+	db.GetDB().Create(&comment)
 	return &comment
 }
 
@@ -59,7 +59,7 @@ func UpdateComment(coid int, data map[string]interface{}) *models.Comment {
 			updates[k] = v
 		}
 	}
-	db.DB.Model(comment).Updates(updates)
+	db.GetDB().Model(comment).Updates(updates)
 	return comment
 }
 
@@ -72,12 +72,12 @@ func DeleteComment(coid int) bool {
 	if comment == nil {
 		return false
 	}
-	db.DB.Delete(comment)
+	db.GetDB().Delete(comment)
 	return true
 }
 
 func GetCommentsByContent(cid int, status string) []map[string]interface{} {
-	query := db.DB.Where("cid = ?", cid)
+	query := db.GetDB().Where("cid = ?", cid)
 	if status != "" {
 		query = query.Where("status = ?", status)
 	} else {

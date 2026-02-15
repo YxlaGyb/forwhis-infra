@@ -9,7 +9,7 @@ import (
 )
 
 func GetMetasList(metaType string) []map[string]interface{} {
-	query := db.DB.Model(&models.Meta{})
+	query := db.GetDB().Model(&models.Meta{})
 	if metaType != "" {
 		query = query.Where("type = ?", metaType)
 	}
@@ -24,7 +24,7 @@ func GetMetasList(metaType string) []map[string]interface{} {
 
 func GetMetaByMid(mid int) *models.Meta {
 	var meta models.Meta
-	if db.DB.First(&meta, mid).Error != nil {
+	if db.GetDB().First(&meta, mid).Error != nil {
 		return nil
 	}
 	return &meta
@@ -32,7 +32,7 @@ func GetMetaByMid(mid int) *models.Meta {
 
 func GetMetaBySlug(slug, metaType string) *models.Meta {
 	var meta models.Meta
-	if db.DB.Where("slug = ? AND type = ?", slug, metaType).First(&meta).Error != nil {
+	if db.GetDB().Where("slug = ? AND type = ?", slug, metaType).First(&meta).Error != nil {
 		return nil
 	}
 	return &meta
@@ -49,7 +49,7 @@ func CreateMeta(name, metaType, slug, description string, parent int) *models.Me
 		Name: name, Slug: slug, Type: metaType,
 		Description: description, Parent: parent, Count: 0, Order: 0,
 	}
-	db.DB.Create(&meta)
+	db.GetDB().Create(&meta)
 	return &meta
 }
 
@@ -64,7 +64,7 @@ func UpdateMeta(mid int, data map[string]interface{}) *models.Meta {
 			updates[k] = v
 		}
 	}
-	db.DB.Model(meta).Updates(updates)
+	db.GetDB().Model(meta).Updates(updates)
 	return meta
 }
 
@@ -73,7 +73,7 @@ func DeleteMeta(mid int) bool {
 	if meta == nil {
 		return false
 	}
-	db.DB.Delete(meta)
+	db.GetDB().Delete(meta)
 	return true
 }
 
@@ -84,7 +84,7 @@ func IncrementMetaCount(mid, delta int) {
 		if newCount < 0 {
 			newCount = 0
 		}
-		db.DB.Model(meta).Update("count", newCount)
+		db.GetDB().Model(meta).Update("count", newCount)
 	}
 }
 

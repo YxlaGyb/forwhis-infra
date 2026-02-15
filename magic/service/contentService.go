@@ -9,7 +9,7 @@ import (
 )
 
 func GetContentsList(page, limit int, status string, authorID int) map[string]interface{} {
-	query := db.DB.Model(&models.Content{})
+	query := db.GetDB().Model(&models.Content{})
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -30,7 +30,7 @@ func GetContentsList(page, limit int, status string, authorID int) map[string]in
 
 func GetContentByCid(cid int) *models.Content {
 	var content models.Content
-	if db.DB.First(&content, cid).Error != nil {
+	if db.GetDB().First(&content, cid).Error != nil {
 		return nil
 	}
 	return &content
@@ -38,7 +38,7 @@ func GetContentByCid(cid int) *models.Content {
 
 func GetContentBySlug(slug string) *models.Content {
 	var content models.Content
-	if db.DB.Where("slug = ?", slug).First(&content).Error != nil {
+	if db.GetDB().Where("slug = ?", slug).First(&content).Error != nil {
 		return nil
 	}
 	return &content
@@ -57,7 +57,7 @@ func CreateContent(title, text string, authorID int, slug, contentType, status, 
 		Type: contentType, Status: status, Password: password, Template: template,
 		Created: now, Modified: now,
 	}
-	db.DB.Create(&content)
+	db.GetDB().Create(&content)
 	return &content
 }
 
@@ -73,7 +73,7 @@ func UpdateContent(cid int, data map[string]interface{}) *models.Content {
 		}
 	}
 	updates["modified"] = int(time.Now().Unix())
-	db.DB.Model(content).Updates(updates)
+	db.GetDB().Model(content).Updates(updates)
 	return content
 }
 
@@ -82,13 +82,13 @@ func DeleteContent(cid int) bool {
 	if content == nil {
 		return false
 	}
-	db.DB.Delete(content)
+	db.GetDB().Delete(content)
 	return true
 }
 
 func GetContentsByAuthor(authorID int) []map[string]interface{} {
 	var contents []models.Content
-	db.DB.Where("author_id = ?", authorID).Find(&contents)
+	db.GetDB().Where("author_id = ?", authorID).Find(&contents)
 	items := []map[string]interface{}{}
 	for _, c := range contents {
 		items = append(items, contentToDict(&c))

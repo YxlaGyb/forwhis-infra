@@ -9,7 +9,7 @@ import (
 
 func IsSuperadmin(user *models.User) bool {
 	var roles []rbac.UserRole
-	db.DB.Where("user_id = ?", user.Uid).Preload("Role").Find(&roles)
+	db.GetDB().Where("user_id = ?", user.Uid).Preload("Role").Find(&roles)
 	for _, ur := range roles {
 		if ur.Role.Name == constants.RoleSuperadmin {
 			return true
@@ -20,7 +20,7 @@ func IsSuperadmin(user *models.User) bool {
 
 func HasRole(user *models.User, roleName string) bool {
 	var roles []rbac.UserRole
-	db.DB.Where("user_id = ?", user.Uid).Preload("Role").Find(&roles)
+	db.GetDB().Where("user_id = ?", user.Uid).Preload("Role").Find(&roles)
 	for _, ur := range roles {
 		if ur.Role.Name == roleName {
 			return true
@@ -49,13 +49,13 @@ func CanPerformAction(user *models.User, resource, action string) bool {
 func GetUserPermissions(userId int) []string {
 	var perms []string
 	var userRoles []rbac.UserRole
-	db.DB.Where("user_id = ?", userId).Find(&userRoles)
+	db.GetDB().Where("user_id = ?", userId).Find(&userRoles)
 	for _, ur := range userRoles {
 		var rolePerms []rbac.RolePermission
-		db.DB.Where("role_id = ?", ur.RoleId).Find(&rolePerms)
+		db.GetDB().Where("role_id = ?", ur.RoleId).Find(&rolePerms)
 		for _, rp := range rolePerms {
 			var perm rbac.Permission
-			db.DB.First(&perm, rp.PermissionId)
+			db.GetDB().First(&perm, rp.PermissionId)
 			perms = append(perms, perm.Name)
 		}
 	}
