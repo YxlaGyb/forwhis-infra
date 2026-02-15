@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"os"
 	"sync"
 
 	"github.com/pelletier/go-toml/v2"
-	"os"
 )
 
 var (
@@ -13,7 +13,7 @@ var (
 	configOnce sync.Once
 )
 
-func loadConfig() {
+func LoadConfig() {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		config = make(map[string]map[string]interface{})
@@ -22,8 +22,13 @@ func loadConfig() {
 	toml.Unmarshal(data, &config)
 }
 
+func ReloadConfig() {
+	configOnce = sync.Once{}
+	LoadConfig()
+}
+
 func GetConfig(section, key string) interface{} {
-	configOnce.Do(loadConfig)
+	configOnce.Do(LoadConfig)
 	if s, ok := config[section]; ok {
 		return s[key]
 	}
@@ -54,7 +59,7 @@ func GetInt(section, key string) int {
 }
 
 func SetConfig(section, key string, value interface{}) error {
-	configOnce.Do(loadConfig)
+	LoadConfig()
 	if config[section] == nil {
 		config[section] = make(map[string]interface{})
 	}
@@ -64,4 +69,15 @@ func SetConfig(section, key string, value interface{}) error {
 		return err
 	}
 	return os.WriteFile(configPath, data, 0644)
+}
+
+func IsInstalled() bool {
+	LoadConfig()
+	installed, _ := config["server"]["install"].(bool)
+	return installed
+}
+
+func ConfigExists() bool {
+	_, err := os.Stat(configPath)
+	return err == nil
 }

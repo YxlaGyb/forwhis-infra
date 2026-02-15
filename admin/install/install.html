@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安装向导 - lmoadll_bl</title>
+    <style>
+        :root {
+            --primary: #6750A4;
+            --on-primary: #FFFFFF;
+            --primary-container: #EADDFF;
+            --on-primary-container: #21005D;
+            --surface: #FEF7FF;
+            --surface-variant: #E7E0EC;
+            --on-surface: #1D1B20;
+            --outline: #79747E;
+            --error: #B3261E;
+            --radius-box: 24px;
+            --radius-btn: 100px;
+            --transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--surface);
+            color: var(--on-surface);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .install-container {
+            background: #FFFFFF;
+            border-radius: var(--radius-box);
+            box-shadow: 0 4px 8px -2px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 520px;
+            overflow: hidden;
+            position: relative;
+            transition: height 0.3s ease;
+        }
+
+        .install-header {
+            background: var(--surface);
+            color: var(--on-surface);
+            padding: 32px 24px 10px;
+            text-align: center;
+        }
+
+        .install-header h1 {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .install-header p {
+            font-size: 14px;
+            color: var(--outline);
+        }
+
+        .welcome-screen {
+            padding: 0 32px 32px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .info-card {
+            background: var(--surface);
+            border: 1px solid var(--surface-variant);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+
+        .info-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .info-list {
+            list-style: none;
+        }
+
+        .info-list li {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: var(--on-surface);
+        }
+
+        .info-list li:last-child { margin-bottom: 0; }
+
+        .info-list li::before {
+            content: "";
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .disclaimer {
+            font-size: 12px;
+            color: var(--outline);
+            line-height: 1.5;
+            text-align: center;
+            margin-bottom: 24px;
+            background: rgba(0,0,0,0.02);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .wizard-ui {
+            display: none;
+        }
+
+        .install-progress {
+            display: flex;
+            padding: 10px 24px 20px;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .install-progress::after {
+            content: '';
+            position: absolute;
+            top: 26px;
+            left: 50px;
+            right: 50px;
+            height: 1px;
+            background: var(--surface-variant);
+            z-index: 0;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+            z-index: 1;
+            width: 60px;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #FFF;
+            border: 2px solid var(--outline);
+            color: var(--outline);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .step-number.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--on-primary);
+            transform: scale(1.1);
+        }
+
+        .step-number.completed {
+            background: var(--primary-container);
+            border-color: var(--primary-container);
+            color: var(--on-primary-container);
+        }
+
+        .step-text {
+            font-size: 12px;
+            color: var(--outline);
+            font-weight: 500;
+        }
+        .step-text.active { color: var(--primary); font-weight: 600; }
+
+        .install-body { padding: 0 32px 32px; }
+
+        .form-group { margin-bottom: 20px; }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--primary);
+            margin-bottom: 6px;
+            font-weight: 500;
+            margin-left: 4px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--outline);
+            border-radius: 12px;
+            font-size: 15px;
+            background: #FFF;
+            transition: var(--transition);
+            outline: none;
+            color: var(--on-surface);
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            border-width: 2px;
+            padding: 13px 15px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .btn {
+            height: 48px;
+            border: none;
+            border-radius: var(--radius-btn);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: "";
+            position: absolute;
+            background: rgba(255,255,255,0.1);
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .btn:active::after { opacity: 1; }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--on-primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        .btn-primary:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--primary);
+            border: 1px solid var(--outline);
+        }
+        .btn-secondary:hover { background-color: rgba(103, 80, 164, 0.04); }
+
+        .error-message {
+            background: #F9DEDC;
+            color: #410E0B;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: none;
+            text-align: center;
+        }
+
+        .step { display: none; animation: slideIn 0.3s cubic-bezier(0.2, 0, 0, 1); }
+        .step.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loading-spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 480px) {
+            body { padding: 0; background: #fff; align-items: flex-start; }
+            .install-container { border-radius: 0; box-shadow: none; min-height: 100vh; max-width: 100%; }
+            .install-header { padding-top: 48px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="install-container">
+        <div class="install-header">
+            <h1>lmoadll</h1>
+            <p>安装向导</p>
+        </div>
+
+        <div class="welcome-screen" id="welcome-screen">
+            <div class="info-card">
+                <span class="info-title">欢迎使用 lmoadll。在开始之前，您需要了解以下项目：</span>
+                <ul class="info-list">
+                    <li>数据库名称</li>
+                    <li>数据库用户名</li>
+                    <li>数据库密码</li>
+                    <li>数据库主机地址</li>
+                </ul>
+            </div>
+
+            <p class="disclaimer">
+                本程序为开源框架，任何人如果进行二次修改于本开源框架无关。
+            </p>
+
+            <button class="btn btn-primary" style="width: 100%" onclick="enterWizard()">
+                我已了解，开始安装
+            </button>
+        </div>
+
+        <div class="wizard-ui" id="wizard-ui">
+            <div class="install-progress">
+                <div class="progress-step">
+                    <div class="step-number active" id="step1-num">1</div>
+                    <span class="step-text active" id="step1-text">数据库</span>
+                </div>
+                <div class="progress-step">
+                    <div class="step-number" id="step2-num">2</div>
+                    <span class="step-text" id="step2-text">站点</span>
+                </div>
+                <div class="progress-step">
+                    <div class="step-number" id="step3-num">3</div>
+                    <span class="step-text" id="step3-text">管理员</span>
+                </div>
+            </div>
+
+            <div class="install-body">
+                <div class="error-message" id="error-message"></div>
+
+                <div class="step active" id="step1">
+                    <div class="form-group">
+                        <label>数据库地址</label>
+                        <input type="text" id="pg-host" placeholder="例如: 127.0.0.1" value="127.0.0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>端口</label>
+                        <input type="number" id="pg-port" value="5432">
+                    </div>
+                    <div class="form-group">
+                        <label>用户名</label>
+                        <input type="text" id="pg-user" placeholder="postgres">
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" id="pg-password" placeholder="••••••••">
+                    </div>
+                    <div class="form-group">
+                        <label>数据库名称</label>
+                        <input type="text" id="pg-database" placeholder="lmoadll_bl">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="step1-next-btn" onclick="handleStep1Next()">下一步</button>
+                    </div>
+                </div>
+
+                <div class="step" id="step2">
+                    <div class="form-group">
+                        <label>站点名称</label>
+                        <input type="text" id="site-name" placeholder="我的网站">
+                    </div>
+                    <div class="form-group">
+                        <label>站点 URL</label>
+                        <input type="url" id="site-url" placeholder="https://">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="nextStep(2)">下一步</button>
+                        <button class="btn btn-secondary" onclick="prevStep(2)">返回上一步</button>
+                    </div>
+                </div>
+
+                <div class="step" id="step3">
+                    <div class="form-group">
+                        <label>管理员用户名</label>
+                        <input type="text" id="admin-username" placeholder="请输入用户名">
+                    </div>
+                    <div class="form-group">
+                        <label>管理员邮箱</label>
+                        <input type="email" id="admin-email" placeholder="name@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>管理员密码</label>
+                        <input type="password" id="admin-password" placeholder="至少8位字符">
+                    </div>
+                    <div class="form-group">
+                        <label>确认密码</label>
+                        <input type="password" id="admin-password-confirm" placeholder="请再次输入密码">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="startInstall()">开始安装</button>
+                        <button class="btn btn-secondary" onclick="prevStep(3)">返回上一步</button>
+                    </div>
+                </div>
+
+                <div class="step" id="step-success">
+                    <div style="text-align: center; padding: 40px 0;">
+                        <div style="width: 72px; height: 72px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 32px;">✓</div>
+                        <h2 style="margin-bottom: 12px; color: var(--on-surface);">安装成功！</h2>
+                        <p style="color: var(--outline); margin-bottom: 32px;">系统已配置完成，随时可以开始使用。</p>
+                        <button class="btn btn-primary" style="width: 100%">安装完成!</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let installData = {
+            dbType: 'postgresql',
+            dbConfig: {},
+            siteName: '',
+            siteUrl: '',
+            adminUsername: '',
+            adminEmail: '',
+            adminPassword: ''
+        };
+
+        function enterWizard() {
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const wizardUi = document.getElementById('wizard-ui');
+
+            welcomeScreen.style.display = 'none';
+            wizardUi.style.display = 'block';
+
+            document.getElementById('step1').classList.add('active');
+        }
+
+        function updateProgress(step) {
+            for (let i = 1; i <= 3; i++) {
+                const num = document.getElementById(`step${i}-num`);
+                const text = document.getElementById(`step${i}-text`);
+                if (!num) continue;
+
+                num.classList.remove('active', 'completed');
+                text.classList.remove('active');
+
+                if (i < step) {
+                    num.classList.add('completed');
+                    num.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                } else if (i === step) {
+                    num.classList.add('active');
+                    text.classList.add('active');
+                    num.textContent = i;
+                } else {
+                    num.textContent = i;
+                }
+            }
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            const targetId = step === 4 ? 'step-success' : `step${step}`;
+            document.getElementById(targetId).classList.add('active');
+            updateProgress(step);
+            if(window.innerWidth < 480) {
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            }
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            setTimeout(() => { errorEl.style.display = 'none'; }, 5000);
+        }
+
+        async function handleStep1Next() {
+            if (await testDatabaseConnection()) nextStep(1);
+        }
+
+        function nextStep(step) {
+            if (step === 1 && !validateStep1()) return;
+            if (step === 2 && !validateStep2()) return;
+            currentStep++;
+            showStep(currentStep);
+        }
+
+        function prevStep(step) {
+            currentStep--;
+            showStep(currentStep);
+        }
+
+        function validateStep1() {
+            const host = document.getElementById('pg-host').value.trim();
+            const port = document.getElementById('pg-port').value.trim();
+            const user = document.getElementById('pg-user').value.trim();
+            const database = document.getElementById('pg-database').value.trim();
+
+            if (!host || !port || !user || !database) {
+                showError('请填写完整的数据库信息');
+                return false;
+            }
+
+            installData.dbConfig = {
+                dbHost: host,
+                dbPort: parseInt(port),
+                dbUser: user,
+                dbPassword: document.getElementById('pg-password').value,
+                dbName: database
+            };
+            return true;
+        }
+
+        async function testDatabaseConnection() {
+            if (!validateStep1()) return false;
+
+            const btn = document.getElementById('step1-next-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner"></div>连接中...';
+
+            try {
+                const response = await fetch('/api/install/test-db-connection', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({dbType: 'postgresql', dbConfig: installData.dbConfig})
+                });
+
+                const data = await response.json();
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+
+                if (data.code === 200) {
+                    return true;
+                } else {
+                    showError('数据库连接失败: ' + data.msg);
+                    return false;
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                showError('连接失败: ' + err.message);
+                return false;
+            }
+        }
+
+        function validateStep2() {
+            const siteName = document.getElementById('site-name').value.trim();
+            const siteUrl = document.getElementById('site-url').value.trim();
+
+            if (!siteName || !siteUrl) {
+                showError('请填写完整的站点信息');
+                return false;
+            }
+
+            installData.siteName = siteName;
+            installData.siteUrl = siteUrl;
+            return true;
+        }
+
+        function validateStep3() {
+            const username = document.getElementById('admin-username').value.trim();
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value;
+            const passwordConfirm = document.getElementById('admin-password-confirm').value;
+
+            if (!username || !email || !password || !passwordConfirm) {
+                showError('请填写完整的管理员信息');
+                return false;
+            }
+
+            if (password.length < 8) {
+                showError('密码长度不能少于8个字符');
+                return false;
+            }
+
+            if (password !== passwordConfirm) {
+                showError('两次输入的密码不一致');
+                return false;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showError('请输入有效的邮箱地址');
+                return false;
+            }
+
+            installData.adminUsername = username;
+            installData.adminEmail = email;
+            installData.adminPassword = password;
+            return true;
+        }
+
+        async function startInstall() {
+            if (!validateStep3()) return;
+
+            const btn = document.querySelector('#step3 .btn-primary');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner"></div>安装中...';
+
+            try {
+                const response = await fetch('/api/install/install', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        siteName: installData.siteName,
+                        siteUrl: installData.siteUrl,
+                        adminUsername: installData.adminUsername,
+                        adminEmail: installData.adminEmail,
+                        adminPassword: installData.adminPassword,
+                        dbType: installData.dbType,
+                        dbConfig: installData.dbConfig
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.code === 200) {
+                    currentStep = 4;
+                    showStep(4);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    showError(data.msg || '安装失败，请重试');
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                showError('安装失败: ' + err.message);
+            }
+        }
+    </script>
+</body>
+</html>

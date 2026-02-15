@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	DB   *gorm.DB
-	once sync.Once
+	DB    *gorm.DB
+	mu    sync.RWMutex
+	tried bool
 )
 
 var (
@@ -22,10 +23,6 @@ var (
 )
 
 func getStr(section, key string) string {
-	cfgOnce.Do(func() {
-		data, _ := os.ReadFile("config.toml")
-		toml.Unmarshal(data, &cfg)
-	})
 	if s, ok := cfg[section]; ok {
 		if v, ok := s[key].(string); ok {
 			return v
@@ -35,10 +32,6 @@ func getStr(section, key string) string {
 }
 
 func getInt(section, key string) int {
-	cfgOnce.Do(func() {
-		data, _ := os.ReadFile("config.toml")
-		toml.Unmarshal(data, &cfg)
-	})
 	if s, ok := cfg[section]; ok {
 		switch n := s[key].(type) {
 		case int:
@@ -52,6 +45,14 @@ func getInt(section, key string) int {
 	return 0
 }
 
+func loadConfig() {
+	data, err := os.ReadFile("config.toml")
+	if err != nil {
+		return
+	}
+	toml.Unmarshal(data, &cfg)
+}
+
 func initDB() {
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
@@ -62,23 +63,66 @@ func initDB() {
 		getInt("db", "PGSQLPORT"),
 	)
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Printf("数据库连接失败: %v", err)
-		DB = nil
 		return
 	}
+	sqlDB, _ := conn.DB()
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(20)
 	log.Println("数据库连接成功")
+	mu.Lock()
+	DB = conn
+	mu.Unlock()
+}
+
+func pingAndReconnect() bool {
+	if DB == nil {
+		return false
+	}
+	sqlDB, err := DB.DB()
+	if err != nil {
+		initDB()
+		return DB != nil
+	}
+	if err := sqlDB.Ping(); err != nil {
+		log.Printf("数据库连接失效，尝试重连: %v", err)
+		initDB()
+		return DB != nil
+	}
+	return true
 }
 
 func GetDB() *gorm.DB {
-	once.Do(initDB)
+	cfgOnce.Do(loadConfig)
+
+	if DB != nil && !pingAndReconnect() {
+		return nil
+	}
+
+	mu.RLock()
+	if DB != nil {
+		mu.RUnlock()
+		return DB
+	}
+	mu.RUnlock()
+
+	if !tried {
+		tried = true
+		initDB()
+	}
+	mu.RLock()
+	defer mu.RUnlock()
 	return DB
 }
 
 func CloseDB() {
+	mu.Lock()
+	defer mu.Unlock()
 	if DB != nil {
 		sqlDB, _ := DB.DB()
 		sqlDB.Close()
+		DB = nil
 	}
 }

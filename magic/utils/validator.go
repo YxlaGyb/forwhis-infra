@@ -27,3 +27,10 @@ func IsValidPassword(password string) bool {
 	}
 	return hasLetter
 }
+
+func IsValidName(name string) bool {
+	if len(name) < 2 || len(name) > 50 {
+		return false
+	}
+	return true
+}
