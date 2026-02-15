@@ -1,9 +1,11 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/routes"
+	_ "forestwhisperGo/magic/routes/modules"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {

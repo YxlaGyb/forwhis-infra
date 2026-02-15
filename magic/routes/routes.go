@@ -2,7 +2,6 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"forestwhisperGo/magic/routes/modules"
 )
 
 var routeRegistry = make([]func(*gin.Engine), 0)
