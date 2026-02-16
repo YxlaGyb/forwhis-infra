@@ -39,11 +39,11 @@ func CreateComment(c *gin.Context) {
 		Type   string `json:"type"`
 		Parent int    `json:"parent"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
 	}
-
 	if req.Cid == 0 {
 		middleware.JSONError(c, "文章ID不能为空喵", nil)
 		return

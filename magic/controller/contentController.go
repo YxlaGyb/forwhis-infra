@@ -40,11 +40,11 @@ func CreateContent(c *gin.Context) {
 		Password string `json:"password"`
 		Template string `json:"template"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
 	}
-
 	if strings.TrimSpace(req.Title) == "" {
 		middleware.JSONError(c, "文章标题不能为空喵", nil)
 		return
@@ -63,7 +63,6 @@ func CreateContent(c *gin.Context) {
 		middleware.JSONError(c, "未登录或登录已过期喵", nil)
 		return
 	}
-
 	contentType := req.Type
 	if contentType == "" {
 		contentType = "post"
@@ -85,7 +84,6 @@ func CreateContent(c *gin.Context) {
 	)
 
 	service.CreateUserinfo(user.Uid, "createContent", "创建了文章: "+req.Title+"喵")
-
 	middleware.JSONSuccess(c, "文章创建成功喵", map[string]interface{}{
 		"cid":     content.Cid,
 		"title":   content.Title,
@@ -169,7 +167,6 @@ func UpdateContent(c *gin.Context) {
 	}
 
 	service.CreateUserinfo(user.Uid, "updateContent", "更新了文章: "+updated.Title+"喵")
-
 	middleware.JSONSuccess(c, "文章更新成功喵", map[string]interface{}{
 		"cid":      updated.Cid,
 		"title":    updated.Title,

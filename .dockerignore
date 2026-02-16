@@ -1,0 +1,11 @@
+config.toml
+*.env
+.git
+.gitignore
+README.md
+docker-compose.yaml
+Dockerfile
+.dockerignore
+*.md
+.idea
+.vscode

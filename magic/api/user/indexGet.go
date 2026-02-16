@@ -1,4 +1,4 @@
-package api
+package user
 
 import (
 	"net/http"
@@ -29,5 +29,5 @@ func GetCurrentUserInfo(c *gin.Context) {
 	for k, v := range profile {
 		data[k] = v
 	}
-	c.JSON(http.StatusOK, middleware.Success("获取成功", data))
+	c.JSON(http.StatusOK, middleware.Success("ok", data))
 }

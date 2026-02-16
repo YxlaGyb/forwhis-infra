@@ -18,8 +18,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// --- 配置常量 (私有化内部细节) ---
-
 const (
 	jwtIss        = "lmoadll"
 	jwtAud        = "lmoadll"
@@ -31,7 +29,6 @@ const (
 	retryMax      = 3
 	retryWait     = 100 * time.Millisecond
 )
-
 const (
 	keyHashKey       = "jwt:keys"
 	keyMetaHashKey   = "jwt:keys:meta"
@@ -52,14 +49,11 @@ var (
 	ErrRedisUnavailable = errors.New("redis service unavailable")
 )
 
-// --- 数据结构 ---
-
 type Key struct {
 	ID        string
 	Secret    []byte
 	CreatedAt time.Time
 }
-
 type JWTManager struct {
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -70,16 +64,12 @@ type JWTManager struct {
 	activeID string
 	expired  time.Time
 }
-
-// CustomClaims 嵌入标准 Claims 以获得更好的类型支持
 type CustomClaims struct {
 	JID   string `json:"jid"`
 	UID   int    `json:"uid"`
 	Email string `json:"email"`
 	jwt.RegisteredClaims
 }
-
-// --- 单例初始化 ---
 
 var (
 	manager *JWTManager
@@ -113,7 +103,7 @@ func ensureInit() {
 	}
 }
 
-// --- 核心逻辑：Key 轮转与同步 ---
+// --- Key 轮转与同步 ---
 
 func (m *JWTManager) rotateLoop() {
 	defer m.wg.Done()

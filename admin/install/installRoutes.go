@@ -5,7 +5,6 @@ import (
 )
 
 func SetupInstallRoutes(r *gin.Engine) {
-	r.GET("/", InstallIndex)
 	r.GET("/install", InstallPage)
 
 	installApi := r.Group("/api/install")

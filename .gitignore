@@ -2,3 +2,6 @@
 doc/
 
 config.toml
+*.tar
+*.zip
+*.7z

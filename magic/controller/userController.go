@@ -2,14 +2,11 @@ package controller
 
 import (
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
-	"time"
 
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/models"
-	"forestwhisperGo/magic/models/rbac"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 	"forestwhisperGo/magic/utils"
@@ -20,18 +17,33 @@ import (
 
 const codeExpirationTime = 300
 
+func verifyCode(email, code string) (bool, string) {
+	codeKey := db.FormatKey("verify:code", email)
+	storedHash, err := db.Get(codeKey)
+
+	if err != nil || storedHash == "" {
+		return false, "验证码不存在或已过期喵喵"
+	}
+	if !utils.VerifyPassword(storedHash, code) {
+		return false, "验证码错误喵喵"
+	}
+	db.Del(codeKey)
+	return true, ""
+}
+
 func Login(c *gin.Context) {
 	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email  string `json:"email"`
+		Passwd string `json:"passwd"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
 	}
 
 	clientIP := c.ClientIP()
-	if !utils.IsValidEmail(req.Email) || !utils.IsValidPassword(req.Password) {
+	if !utils.IsValidEmail(req.Email) || !utils.IsValidPassword(req.Passwd) {
 		middleware.JSONError(c, "邮箱或密码格式不正确喵", nil)
 		return
 	}
@@ -43,7 +55,7 @@ func Login(c *gin.Context) {
 	}
 	db.SetEX(cdKey, "1", 60)
 
-	result, errCode := service.LoginUser(req.Email, req.Password, clientIP)
+	result, errCode := service.LoginUser(req.Email, req.Passwd, clientIP)
 	if errCode != 0 {
 		db.Del(cdKey)
 		middleware.JSONError(c, "邮箱或密码错误喵", nil)
@@ -61,17 +73,16 @@ func Register(c *gin.Context) {
 	var req struct {
 		Email    string `json:"email"`
 		Username string `json:"username"`
-		Password string `json:"password"`
+		Passwd   string `json:"passwd"`
 		Code     string `json:"code"`
-		CodeSalt string `json:"codeSalt"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
 	}
-
-	if !utils.IsValidEmail(req.Email) || len(req.Username) < 2 || len(req.Username) > 50 || len(req.Password) < 8 {
-		middleware.JSONError(c, "用户名或密码格式不正确喵", nil)
+	if !utils.IsValidEmail(req.Email) || len(req.Username) < 2 || len(req.Username) > 50 || len(req.Passwd) < 8 {
+		middleware.JSONError(c, "邮箱、用户名或密码格式不正确喵", nil)
 		return
 	}
 	if len(req.Code) != 6 {
@@ -83,18 +94,26 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	valid, errMsg := verifyCode(req.Email, req.Code, req.CodeSalt)
+	valid, errMsg := verifyCode(req.Email, req.Code)
 	if !valid {
 		middleware.JSONError(c, errMsg, nil)
 		return
 	}
 
-	passwordHash := utils.HashPassword(req.Password)
 	clientIP := c.ClientIP()
+	_, err := service.CreateUser(
+		req.Username,
+		req.Email,
+		utils.HashPassword(req.Passwd),
+		clientIP, "user",
+		true)
 
-	service.CreateUser(req.Username, req.Email, passwordHash, clientIP, "user", true)
+	if err != nil {
+		middleware.JSONSystemError(c, "注册失败喵喵", nil)
+		return
+	}
 
-	result, errCode := service.LoginUser(req.Email, req.Password, clientIP)
+	result, errCode := service.LoginUser(req.Email, req.Passwd, clientIP)
 	if errCode != 0 {
 		middleware.JSONError(c, "注册后登录失败喵", nil)
 		return
@@ -109,11 +128,11 @@ func SendEmailCodeRegister(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
 	}
-
 	if !utils.IsValidEmail(req.Email) {
 		middleware.JSONError(c, "邮箱格式错误喵", nil)
 		return
@@ -123,9 +142,8 @@ func SendEmailCodeRegister(c *gin.Context) {
 		return
 	}
 
-	code := generateCode(6)
-	codeSalt := utils.HashPassword(code)
-
+	code := utils.SecureRandomString(6)
+	hashedCode := utils.HashPassword(code)
 	htmlContent := fmt.Sprintf(`
 		<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
 			<h2 style="color: #333;">✨ 注册验证码待查收</h2>
@@ -142,10 +160,8 @@ func SendEmailCodeRegister(c *gin.Context) {
 	}
 
 	codeKey := db.FormatKey("verify:code", req.Email)
-	codeData := fmt.Sprintf("%s:%s", code, codeSalt)
-	db.SetEX(codeKey, codeData, codeExpirationTime)
-
-	middleware.JSONSuccess(c, "验证码已发送喵", gin.H{"codeSalt": codeSalt})
+	db.SetEX(codeKey, hashedCode, codeExpirationTime)
+	middleware.JSONSuccess(c, "验证码已发送喵", gin.H{"codeSalt": hashedCode})
 }
 
 func GetUserByUsername(c *gin.Context) {
@@ -157,40 +173,19 @@ func GetUserByUsername(c *gin.Context) {
 		return
 	}
 
-	var users []map[string]interface{}
-	if exactly == "1" {
-		user := service.GetUserByEmail(name)
-		if user != nil {
-			users = []map[string]interface{}{{
-				"uid":   user.Uid,
-				"name":  user.Name,
-				"email": user.Mail,
-			}}
-		}
-	} else {
-		var userList []models.User
-		db.GetDB().Where("name LIKE ?", "%"+name+"%").Find(&userList)
-		for _, u := range userList {
-			users = append(users, map[string]interface{}{
-				"uid":   u.Uid,
-				"name":  u.Name,
-				"email": u.Mail,
-			})
-		}
-	}
-
-	middleware.JSONSuccess(c, "获取成功喵", users)
+	users := service.GetUsersByUsername(name, exactly)
+	middleware.JSONSuccess(c, "ok", users)
 }
 
 func DeleteUserByUid(c *gin.Context) {
 	var req struct {
 		Uid int `json:"uid"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
 	}
-
 	if req.Uid == 0 {
 		middleware.JSONError(c, "用户ID不能为空喵", nil)
 		return
@@ -206,17 +201,14 @@ func DeleteUserByUid(c *gin.Context) {
 		return
 	}
 
-	var targetUser models.User
-	var targetRoles []rbac.UserRole
-	db.GetDB().Where("user_id = ?", req.Uid).Preload("Role").Find(&targetRoles)
-	db.GetDB().First(&targetUser, req.Uid)
-	if targetUser.Uid == 0 {
+	userWithRoles, ok := service.GetUserWithRoles(req.Uid)
+	if !ok {
 		middleware.JSONError(c, "用户不存在喵喵", nil)
 		return
 	}
 
 	isCurrentSuperadmin := rbacSvc.IsSuperadmin(currentUser)
-	isTargetSuperadmin := rbacSvc.IsSuperadmin(&targetUser)
+	isTargetSuperadmin := rbacSvc.IsSuperadmin(userWithRoles.User)
 	if isTargetSuperadmin && !isCurrentSuperadmin {
 		middleware.JSONError(c, "无权删除超级管理员喵", nil)
 		return
@@ -236,11 +228,11 @@ func ChangePassword(c *gin.Context) {
 		OldPassword string `json:"oldPassword"`
 		NewPassword string `json:"newPassword"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
 	}
-
 	if req.OldPassword == "" || req.NewPassword == "" {
 		middleware.JSONError(c, "旧密码和新密码不能为空喵", nil)
 		return
@@ -306,35 +298,4 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	middleware.JSONSuccess(c, "资料已提交审核或更新喵", nil)
-}
-
-func generateCode(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	rand.Seed(time.Now().UnixNano())
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
-	}
-	return string(b)
-}
-
-func verifyCode(email, code, codeSalt string) (bool, string) {
-	codeKey := db.FormatKey("verify:code", email)
-	storedData, err := db.Get(codeKey)
-	if err != nil || storedData == "" {
-		return false, "验证码不存在或已过期喵喵"
-	}
-
-	parts := strings.Split(storedData, ":")
-	if len(parts) != 2 {
-		return false, "验证码格式错误喵喵"
-	}
-
-	storedCode, storedSalt := parts[0], parts[1]
-	if code != storedCode || codeSalt != storedSalt {
-		return false, "验证码错误喵喵"
-	}
-
-	db.Del(codeKey)
-	return true, ""
 }

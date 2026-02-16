@@ -6,6 +6,8 @@ import (
 	"forestwhisperGo/magic/models"
 	"forestwhisperGo/magic/models/rbac"
 	"forestwhisperGo/magic/utils/db"
+
+	"gorm.io/gorm"
 )
 
 func GetOrCreateRole(roleName, description string) *rbac.Role {
@@ -43,6 +45,19 @@ func AssignRoleToUser(userId int, roleName string, grantedBy int) bool {
 	userRole := rbac.UserRole{UserId: userId, RoleId: role.Id, GrantedAt: int(time.Now().Unix()), GrantedBy: grantedBy}
 	db.GetDB().Create(&userRole)
 	return true
+}
+
+func AssignRoleToUserTx(tx *gorm.DB, userId int, roleName string, grantedBy int) error {
+	var role rbac.Role
+	if err := tx.Where("name = ?", roleName).First(&role).Error; err != nil {
+		return err
+	}
+	var existing rbac.UserRole
+	if tx.Where("user_id = ? AND role_id = ?", userId, role.Id).First(&existing).Error == nil {
+		return nil
+	}
+	userRole := rbac.UserRole{UserId: userId, RoleId: role.Id, GrantedAt: int(time.Now().Unix()), GrantedBy: grantedBy}
+	return tx.Create(&userRole).Error
 }
 
 func RemoveRoleFromUser(userId int, roleName string) bool {

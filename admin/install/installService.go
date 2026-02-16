@@ -2,10 +2,11 @@ package install
 
 import (
 	"fmt"
-	"time"
 
 	"forestwhisperGo/magic/models"
 	"forestwhisperGo/magic/models/rbac"
+	"forestwhisperGo/magic/service"
+	rbacSvc "forestwhisperGo/magic/service/rbac"
 	"forestwhisperGo/magic/utils"
 	"forestwhisperGo/magic/utils/db"
 
@@ -13,15 +14,12 @@ import (
 	"gorm.io/gorm"
 )
 
-type InstallService struct{}
-
 type DbConfig struct {
-	DbType   string `json:"dbType"`
-	DbUser   string `json:"dbUser"`
-	DbPass   string `json:"dbPass"`
-	DbHost   string `json:"dbHost"`
-	DbPort   int    `json:"dbPort"`
-	DbName   string `json:"dbName"`
+	DbUser string `json:"dbUser"`
+	DbPass string `json:"dbPass"`
+	DbHost string `json:"dbHost"`
+	DbPort int    `json:"dbPort"`
+	DbName string `json:"dbName"`
 }
 
 func TestDbConnection(dbType string, dbConfig map[string]interface{}) (bool, string) {
@@ -30,7 +28,6 @@ func TestDbConnection(dbType string, dbConfig map[string]interface{}) (bool, str
 	}
 
 	cfg := DbConfig{
-		DbType: dbType,
 		DbUser: getString(dbConfig, "dbUser"),
 		DbPass: getString(dbConfig, "dbPassword"),
 		DbHost: getString(dbConfig, "dbHost"),
@@ -78,6 +75,7 @@ func InitDatabase() error {
 		&models.Relationship{},
 		&models.Review{},
 		&models.ContentField{},
+		&models.AIConversation{},
 		&rbac.Role{},
 		&rbac.Permission{},
 		&rbac.UserRole{},
@@ -86,66 +84,17 @@ func InitDatabase() error {
 }
 
 func CreateAdminUser(username, email, password string) error {
+	rbacSvc.InitDefaultRbac()
+
 	passwordHash := utils.HashPassword(password)
-	now := int(time.Now().Unix())
-	user := models.User{
-		Name: username, Mail: email, Password: passwordHash,
-		CreatedAt: now, LastLogin: 0, LastIp: "", IsActive: 1,
+	user, err := service.CreateUser(username, email, passwordHash, "", "superadmin", false)
+	if err != nil {
+		return fmt.Errorf("创建管理员失败: %v", err)
 	}
-	if err := db.GetDB().Create(&user).Error; err != nil {
-		return err
+	if user == nil {
+		return fmt.Errorf("创建管理员失败")
 	}
-	InitDefaultRbac(user.Uid)
-	createDefaultUsermeta(user.Uid)
 	return nil
-}
-
-func InitDefaultRbac(uid int) {
-	now := int(time.Now().Unix())
-	roles := []rbac.Role{
-		{Name: "superadmin", Description: "超级管理员", CreatedAt: now, UpdatedAt: now},
-		{Name: "admin", Description: "管理员", CreatedAt: now, UpdatedAt: now},
-		{Name: "editor", Description: "编辑", CreatedAt: now, UpdatedAt: now},
-		{Name: "author", Description: "作者", CreatedAt: now, UpdatedAt: now},
-		{Name: "contributor", Description: "贡献者", CreatedAt: now, UpdatedAt: now},
-		{Name: "subscriber", Description: "订阅者", CreatedAt: now, UpdatedAt: now},
-	}
-	for _, role := range roles {
-		db.GetDB().FirstOrCreate(&role, rbac.Role{Name: role.Name})
-	}
-
-	permissions := []rbac.Permission{
-		{Name: "manage_users", Description: "管理用户", Category: "user", CreatedAt: now},
-		{Name: "manage_content", Description: "管理内容", Category: "content", CreatedAt: now},
-		{Name: "manage_comments", Description: "管理评论", Category: "comment", CreatedAt: now},
-		{Name: "manage_meta", Description: "管理分类标签", Category: "meta", CreatedAt: now},
-		{Name: "manage_system", Description: "管理系统", Category: "system", CreatedAt: now},
-	}
-	for _, perm := range permissions {
-		db.GetDB().FirstOrCreate(&perm, rbac.Permission{Name: perm.Name})
-	}
-
-	var superadminRole rbac.Role
-	db.GetDB().Where("name = ?", "superadmin").First(&superadminRole)
-	userRole := rbac.UserRole{UserId: uid, RoleId: superadminRole.Id, GrantedAt: now, GrantedBy: 0}
-	db.GetDB().FirstOrCreate(&userRole, rbac.UserRole{UserId: uid, RoleId: superadminRole.Id})
-
-	var perms []rbac.Permission
-	db.GetDB().Find(&perms)
-	for _, perm := range perms {
-		rolePerm := rbac.RolePermission{RoleId: superadminRole.Id, PermissionId: perm.Id}
-		db.GetDB().FirstOrCreate(&rolePerm, rbac.RolePermission{RoleId: superadminRole.Id, PermissionId: perm.Id})
-	}
-}
-
-func createDefaultUsermeta(uid int) {
-	now := int(time.Now().Unix())
-	defaults := []struct{ key, val string }{
-		{"gender", "0"}, {"birthday", ""}, {"bio", "系统默认签名，送给每一位小可爱~"},
-	}
-	for _, d := range defaults {
-		db.GetDB().Create(&models.Usermeta{UserId: uid, MetaKey: d.key, MetaValue: d.val, CreatedAt: now, UpdatedAt: now})
-	}
 }
 
 func getString(m map[string]interface{}, key string) string {

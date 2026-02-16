@@ -20,10 +20,6 @@ func GetInstallHtml(c *gin.Context) {
 	c.Data(http.StatusOK, "text/html; charset=utf-8", content)
 }
 
-func InstallIndex(c *gin.Context) {
-	GetInstallHtml(c)
-}
-
 func InstallPage(c *gin.Context) {
 	GetInstallHtml(c)
 }

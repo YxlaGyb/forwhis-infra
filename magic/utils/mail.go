@@ -1,11 +1,11 @@
 package utils
 
 import (
-	"bytes"
 	"crypto/tls"
 	"fmt"
 	"net/smtp"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/pelletier/go-toml/v2"
@@ -46,6 +46,13 @@ func mailInt(key string) int {
 	return 0
 }
 
+func mailBool(key string) bool {
+	if v, ok := mailVal(key).(bool); ok {
+		return v
+	}
+	return false
+}
+
 func SendMail(subject string, receivers []string, html string) bool {
 	host, port := mailStr("MAIL_SERVER"), mailInt("MAIL_PORT")
 	user, pass := mailStr("MAIL_USERNAME"), mailStr("MAIL_PASSWORD")
@@ -54,27 +61,70 @@ func SendMail(subject string, receivers []string, html string) bool {
 		name = "ForestWhisper"
 	}
 
-	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf("From: %s <%s>\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n%s",
-		name, user, receivers[0], subject, html))
+	from := fmt.Sprintf("%s <%s>", name, user)
+	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n%s",
+		from, strings.Join(receivers, ","), subject, html)
 
 	auth := smtp.PlainAuth("", user, pass, host)
-	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:%d", host, port), &tls.Config{InsecureSkipVerify: true, ServerName: host})
+
+	addr := fmt.Sprintf("%s:%d", host, port)
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: mailBool("MAIL_SKIP_TLS_VERIFY"),
+		ServerName:         host,
+	}
+
+	conn, err := tls.Dial("tcp", addr, tlsConfig)
 	if err != nil {
+		fmt.Printf("邮件连接失败: %v\n", err)
 		return false
 	}
 	defer conn.Close()
 
-	client, _ := smtp.NewClient(conn, host)
-	defer client.Close()
-	client.Auth(auth)
-	client.Mail(user)
-	for _, r := range receivers {
-		client.Rcpt(r)
+	client, err := smtp.NewClient(conn, host)
+	if err != nil {
+		fmt.Printf("创建SMTP客户端失败: %v\n", err)
+		return false
 	}
-	w, _ := client.Data()
-	w.Write(buf.Bytes())
-	w.Close()
-	client.Quit()
+	defer client.Close()
+
+	if err = client.Auth(auth); err != nil {
+		fmt.Printf("SMTP认证失败: %v\n", err)
+		return false
+	}
+
+	if err = client.Mail(user); err != nil {
+		fmt.Printf("设置发件人失败: %v\n", err)
+		return false
+	}
+
+	for _, r := range receivers {
+		if err = client.Rcpt(r); err != nil {
+			fmt.Printf("设置收件人失败: %v\n", err)
+			return false
+		}
+	}
+
+	w, err := client.Data()
+	if err != nil {
+		fmt.Printf("准备邮件数据失败: %v\n", err)
+		return false
+	}
+
+	_, err = w.Write([]byte(msg))
+	if err != nil {
+		fmt.Printf("写入邮件内容失败: %v\n", err)
+		return false
+	}
+
+	if err = w.Close(); err != nil {
+		fmt.Printf("关闭邮件写入失败: %v\n", err)
+		return false
+	}
+
+	if err = client.Quit(); err != nil {
+		fmt.Printf("退出SMTP连接失败: %v\n", err)
+		return false
+	}
+
 	return true
 }

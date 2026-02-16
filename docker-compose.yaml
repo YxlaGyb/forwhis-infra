@@ -1,0 +1,37 @@
+version: '1.0'
+
+services:
+  app:
+    image: forestwhispergo:latest
+    container_name: forestwhispergo
+    ports:
+      - "2324:2324"
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - forestwhisper-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: forestwhisper-redis
+    ports:
+      - "6380:6380"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - forestwhisper-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  forestwhisper-net:
+  driver: bridge

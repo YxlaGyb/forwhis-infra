@@ -48,16 +48,11 @@ func CanPerformAction(user *models.User, resource, action string) bool {
 
 func GetUserPermissions(userId int) []string {
 	var perms []string
-	var userRoles []rbac.UserRole
-	db.GetDB().Where("user_id = ?", userId).Find(&userRoles)
-	for _, ur := range userRoles {
-		var rolePerms []rbac.RolePermission
-		db.GetDB().Where("role_id = ?", ur.RoleId).Find(&rolePerms)
-		for _, rp := range rolePerms {
-			var perm rbac.Permission
-			db.GetDB().First(&perm, rp.PermissionId)
-			perms = append(perms, perm.Name)
-		}
-	}
+	db.GetDB().Table("permission").
+		Select("DISTINCT permission.name").
+		Joins(`JOIN "rolePermission" ON "rolePermission".permission_id = permission.id`).
+		Joins(`JOIN "userrole" ON "userrole".role_id = "rolePermission".role_id`).
+		Where(`"userrole".user_id = ?`, userId).
+		Pluck("name", &perms)
 	return perms
 }

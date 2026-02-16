@@ -14,12 +14,14 @@ func main() {
 	router := gin.New()
 	router.Use(utils.Logger())
 	router.Use(middleware.RecoveryMiddleware())
+	router.Use(middleware.Cors())
 	router.SetTrustedProxies([]string{"127.0.0.1"})
 
 	if !utils.ConfigExists() {
 		install.SetupInstallRoutes(router)
 	} else {
 		router.GET("/", index)
+		router.Static("/static", "./static")
 		routes.SetupAllRoutes(router)
 	}
 

@@ -1,7 +1,7 @@
 package service
 
 import (
-	"math/rand"
+	"strings"
 	"time"
 
 	"forestwhisperGo/magic/models"
@@ -9,15 +9,17 @@ import (
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 	"forestwhisperGo/magic/utils"
 	"forestwhisperGo/magic/utils/db"
+
+	"gorm.io/gorm"
 )
 
+type UserWithRoles struct {
+	User  *models.User
+	Roles []rbac.UserRole
+}
+
 func GenerateRandomName() string {
-	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, 6)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
-	}
-	return "小可爱" + string(b)
+	return "小可爱" + utils.SecureRandomLowerNumeric(6)
 }
 
 func GetUserByEmail(email string) *models.User {
@@ -28,59 +30,62 @@ func GetUserByEmail(email string) *models.User {
 	return &user
 }
 
-func CreateUser(name, email, password, ip, role string, autoGenerateName bool) *models.User {
-	if autoGenerateName {
-		name = GenerateRandomName()
-	}
-	now := int(time.Now().Unix())
-	user := models.User{
-		Name: name, Mail: email, Password: password,
-		CreatedAt: now, LastLogin: 0, LastIp: ip, IsActive: 1,
-	}
-	db.GetDB().Create(&user)
-	rbacSvc.AssignRoleToUser(user.Uid, role, 0)
-	createDefaultUsermeta(user.Uid)
-	return &user
-}
-
-func createDefaultUsermeta(uid int) {
-	now := int(time.Now().Unix())
-	defaults := []struct{ key, val string }{
-		{"gender", "0"}, {"birthday", ""}, {"bio", "系统默认签名，送给每一位小可爱~"},
-	}
-	for _, d := range defaults {
-		db.GetDB().Create(&models.Usermeta{UserId: uid, MetaKey: d.key, MetaValue: d.val, CreatedAt: now, UpdatedAt: now})
-	}
-}
-
-func CreateUserinfo(uid int, t, content string) {
-	db.GetDB().Create(&models.Userinfo{Uid: uid, Type: t, Content: content, Time: int(time.Now().Unix())})
-}
-
-func LoginUser(email, password, ip string) (map[string]interface{}, int) {
-	user := GetUserByEmail(email)
-	if user == nil {
-		return nil, 10101
-	}
-	if !utils.VerifyPassword(user.Password, password) {
-		return nil, 10102
-	}
-	now := int(time.Now().Unix())
-	db.GetDB().Model(user).Updates(map[string]interface{}{"last_login": now, "last_ip": ip})
-	CreateUserinfo(user.Uid, "login", "登录成功, IP: "+ip)
-
-	token, _ := utils.GenerateToken("", user.Uid, user.Mail)
-	perms := rbacSvc.GetUserPermissions(user.Uid)
+func GetUserWithRoles(uid int) (*UserWithRoles, bool) {
+	var user models.User
 	var roles []rbac.UserRole
-	db.GetDB().Where("user_id = ?", user.Uid).Preload("Role").Find(&roles)
-	roleNames := []string{}
-	for _, r := range roles {
-		roleNames = append(roleNames, r.Role.Name)
+
+	db.GetDB().Where("user_id = ?", uid).Preload("Role").Find(&roles)
+	if db.GetDB().First(&user, uid).Error != nil || user.Uid == 0 {
+		return nil, false
 	}
-	return map[string]interface{}{
-		"uid": user.Uid, "name": user.Name, "email": user.Mail,
-		"roles": roleNames, "permissions": perms, "token": token,
-	}, 0
+
+	return &UserWithRoles{
+		User:  &user,
+		Roles: roles,
+	}, true
+}
+
+func GetUsersByUsername(name, exactly string) []map[string]interface{} {
+	var users []map[string]interface{}
+	if exactly == "1" {
+		user := GetUserByEmail(name)
+		if user != nil {
+			users = []map[string]interface{}{{
+				"uid":   user.Uid,
+				"name":  user.Name,
+				"email": user.Mail,
+			}}
+		}
+	} else {
+		var userList []models.User
+		db.GetDB().Where("name LIKE ?", "%"+escapeLike(name)+"%").Find(&userList)
+		for _, u := range userList {
+			users = append(users, map[string]interface{}{
+				"uid":   u.Uid,
+				"name":  u.Name,
+				"email": u.Mail,
+			})
+		}
+	}
+	return users
+}
+
+func GetUserProfile(uid int) map[string]string {
+	var metas []models.Usermeta
+	db.GetDB().Where("user_id = ?", uid).Find(&metas)
+	profile := map[string]string{}
+	for _, m := range metas {
+		profile[m.MetaKey] = m.MetaValue
+	}
+	return profile
+}
+
+func GetUsermeta(uid int, metaKey string) string {
+	var meta models.Usermeta
+	if db.GetDB().Where("user_id = ? AND meta_key = ?", uid, metaKey).First(&meta).Error != nil {
+		return ""
+	}
+	return meta.MetaValue
 }
 
 func GetUsersList() []map[string]interface{} {
@@ -99,6 +104,90 @@ func GetUsersList() []map[string]interface{} {
 		})
 	}
 	return result
+}
+
+func CreateUser(name, email, password, ip, role string, autoGenerateName bool) (*models.User, error) {
+	if autoGenerateName {
+		name = GenerateRandomName()
+	}
+
+	now := int(time.Now().Unix())
+	user := models.User{
+		Name: name, Mail: email, Password: password,
+		CreatedAt: now, LastLogin: 0, LastIp: ip, IsActive: 1,
+	}
+	err := db.GetDB().Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&user).Error; err != nil {
+			return err
+		}
+		if err := rbacSvc.AssignRoleToUserTx(tx, user.Uid, role, 0); err != nil {
+			return err
+		}
+		return createDefaultUsermetaTx(tx, user.Uid)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func createDefaultUsermeta(uid int) {
+	now := int(time.Now().Unix())
+	defaults := []struct{ key, val string }{
+		{"gender", "0"},
+		{"birthday", ""},
+		{"bio", "系统默认签名，送给每一位小可爱~"},
+	}
+	for _, d := range defaults {
+		db.GetDB().Create(&models.Usermeta{UserId: uid, MetaKey: d.key, MetaValue: d.val, CreatedAt: now, UpdatedAt: now})
+	}
+}
+
+func createDefaultUsermetaTx(tx *gorm.DB, uid int) error {
+	now := int(time.Now().Unix())
+	defaults := []struct{ key, val string }{
+		{"gender", "0"}, {"birthday", ""}, {"bio", "系统默认签名，送给每一位小可爱~"},
+	}
+	for _, d := range defaults {
+		if err := tx.Create(&models.Usermeta{UserId: uid, MetaKey: d.key, MetaValue: d.val, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func CreateUserinfo(uid int, t, content string) {
+	db.GetDB().Create(&models.Userinfo{Uid: uid, Type: t, Content: content, Time: int(time.Now().Unix())})
+}
+
+func LoginUser(email, password, ip string) (map[string]interface{}, int) {
+	user := GetUserByEmail(email)
+	if user == nil {
+		return nil, 10101
+	}
+	if !utils.VerifyPassword(user.Password, password) {
+		return nil, 10102
+	}
+	now := int(time.Now().Unix())
+	db.GetDB().Model(user).Updates(map[string]interface{}{"last_login": now, "last_ip": ip})
+	CreateUserinfo(user.Uid, "login", "登录成功, IP: "+ip)
+
+	token, err := utils.GenerateToken("", user.Uid, user.Mail)
+	if err != nil {
+		return nil, 10103
+	}
+	perms := rbacSvc.GetUserPermissions(user.Uid)
+	var roles []rbac.UserRole
+	db.GetDB().Where("user_id = ?", user.Uid).Preload("Role").Find(&roles)
+	roleNames := []string{}
+	for _, r := range roles {
+		roleNames = append(roleNames, r.Role.Name)
+	}
+	return map[string]interface{}{
+		"uid": user.Uid, "name": user.Name, "email": user.Mail,
+		"roles": roleNames, "permissions": perms, "token": token,
+	}, 0
 }
 
 func UpdateUser(uid int, data map[string]interface{}) bool {
@@ -143,14 +232,6 @@ func ChangePassword(uid int, oldPwd, newPwd string) (bool, string) {
 	return true, ""
 }
 
-func GetUsermeta(uid int, metaKey string) string {
-	var meta models.Usermeta
-	if db.GetDB().Where("user_id = ? AND meta_key = ?", uid, metaKey).First(&meta).Error != nil {
-		return ""
-	}
-	return meta.MetaValue
-}
-
 func UpdateUsermeta(uid int, metaKey, metaValue string) (bool, string) {
 	var meta models.Usermeta
 	result := db.GetDB().Where("user_id = ? AND meta_key = ?", uid, metaKey).First(&meta)
@@ -176,12 +257,8 @@ func UpdateUsermeta(uid int, metaKey, metaValue string) (bool, string) {
 	return true, ""
 }
 
-func GetUserProfile(uid int) map[string]string {
-	var metas []models.Usermeta
-	db.GetDB().Where("user_id = ?", uid).Find(&metas)
-	profile := map[string]string{}
-	for _, m := range metas {
-		profile[m.MetaKey] = m.MetaValue
-	}
-	return profile
+func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, "%", "\\%")
+	s = strings.ReplaceAll(s, "_", "\\_")
+	return s
 }
