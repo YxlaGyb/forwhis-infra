@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/models"
 	"forestwhisperGo/magic/models/rbac"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
@@ -81,6 +82,66 @@ func RoleMiddleware(roles ...string) gin.HandlerFunc {
 	}
 }
 
+func RequireAuth(handler gin.HandlerFunc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user := GetCurrentUser(c)
+		if user == nil {
+			JSONError(c, "未登录或登录已过期喵", nil)
+			c.Abort()
+			return
+		}
+		c.Set("currentUser", user)
+		handler(c)
+	}
+}
+
+func RequirePerm(perm constants.Permission) func(gin.HandlerFunc) gin.HandlerFunc {
+	return func(handler gin.HandlerFunc) gin.HandlerFunc {
+		return func(c *gin.Context) {
+			user := GetCurrentUser(c)
+			if user == nil {
+				JSONError(c, "未登录或登录已过期喵", nil)
+				c.Abort()
+				return
+			}
+			if !rbacSvc.HasPermission(user, string(perm)) {
+				JSONError(c, "没有权限喵", nil)
+				c.Abort()
+				return
+			}
+			c.Set("currentUser", user)
+			handler(c)
+		}
+	}
+}
+
+func RequireRole(roles ...constants.Role) func(gin.HandlerFunc) gin.HandlerFunc {
+	return func(handler gin.HandlerFunc) gin.HandlerFunc {
+		return func(c *gin.Context) {
+			user := GetCurrentUser(c)
+			if user == nil {
+				JSONError(c, "未登录或登录已过期喵", nil)
+				c.Abort()
+				return
+			}
+			hasRole := false
+			for _, role := range roles {
+				if rbacSvc.HasRole(user, string(role)) {
+					hasRole = true
+					break
+				}
+			}
+			if !hasRole {
+				JSONError(c, "没有权限喵", nil)
+				c.Abort()
+				return
+			}
+			c.Set("currentUser", user)
+			handler(c)
+		}
+	}
+}
+
 func GetCurrentUser(c *gin.Context) *models.User {
 	if uid, exists := c.Get("uid"); exists {
 		var user models.User
@@ -106,6 +167,13 @@ func GetCurrentUser(c *gin.Context) *models.User {
 
 	c.Set("uid", user.Uid)
 	return &user
+}
+
+func GetCurrentUserFromContext(c *gin.Context) *models.User {
+	if user, exists := c.Get("currentUser"); exists {
+		return user.(*models.User)
+	}
+	return GetCurrentUser(c)
 }
 
 func GetUserWithRoles(c *gin.Context) *models.User {

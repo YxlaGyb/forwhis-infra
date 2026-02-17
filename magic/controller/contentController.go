@@ -58,11 +58,7 @@ func CreateContent(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUser(c)
-	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵", nil)
-		return
-	}
+	user := middleware.GetCurrentUserFromContext(c)
 	contentType := req.Type
 	if contentType == "" {
 		contentType = "post"
@@ -137,12 +133,7 @@ func UpdateContent(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUser(c)
-	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵", nil)
-		return
-	}
-
+	user := middleware.GetCurrentUserFromContext(c)
 	isAdmin := rbacSvc.HasRole(user, "admin")
 	if user.Uid != content.AuthorID && !isAdmin {
 		middleware.JSONError(c, "无权修改此文章喵", nil)
@@ -187,12 +178,7 @@ func DeleteContent(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUser(c)
-	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵", nil)
-		return
-	}
-
+	user := middleware.GetCurrentUserFromContext(c)
 	isAdmin := rbacSvc.HasRole(user, "admin")
 	if user.Uid != content.AuthorID && !isAdmin {
 		middleware.JSONError(c, "无权删除此文章喵", nil)
@@ -210,12 +196,7 @@ func DeleteContent(c *gin.Context) {
 }
 
 func GetMyContents(c *gin.Context) {
-	user := middleware.GetCurrentUser(c)
-	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵", nil)
-		return
-	}
-
+	user := middleware.GetCurrentUserFromContext(c)
 	contents := service.GetContentsByAuthor(user.Uid)
 	middleware.JSONSuccess(c, "获取成功喵", contents)
 }

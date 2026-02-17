@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -16,20 +15,6 @@ import (
 )
 
 const codeExpirationTime = 300
-
-func verifyCode(email, code string) (bool, string) {
-	codeKey := db.FormatKey("verify:code", email)
-	storedHash, err := db.Get(codeKey)
-
-	if err != nil || storedHash == "" {
-		return false, "验证码不存在或已过期喵喵"
-	}
-	if !utils.VerifyPassword(storedHash, code) {
-		return false, "验证码错误喵喵"
-	}
-	db.Del(codeKey)
-	return true, ""
-}
 
 func Login(c *gin.Context) {
 	var req struct {
@@ -144,15 +129,15 @@ func SendEmailCodeRegister(c *gin.Context) {
 
 	code := utils.SecureRandomString(6)
 	hashedCode := utils.HashPassword(code)
-	htmlContent := fmt.Sprintf(`
+	htmlContent := `
 		<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
 			<h2 style="color: #333;">✨ 注册验证码待查收</h2>
-			<p>您的验证码是 <b style="font-size: 24px; color: #007bff;">%s</b></p>
-			<p style="color: #666;">请在 %d 分钟内完成验证，请勿泄露喵~</p>
+			<p>您的验证码是 <b style="font-size: 24px; color: #007bff;">` + code + `</b></p>
+			<p style="color: #666;">请在 5 分钟内完成验证，请勿泄露喵~</p>
 			<hr style="border: none; border-top: 1px solid #eee;">
 			<footer style="font-size: 12px; color: #999;">来自：数数洞洞平台</footer>
 		</div>
-	`, code, codeExpirationTime/60)
+	`
 
 	if !utils.SendMail("注册验证码", []string{req.Email}, htmlContent) {
 		middleware.JSONSystemError(c, "邮件服务连接超时, 请稍后再试喵喵", nil)
@@ -181,21 +166,17 @@ func DeleteUserByUid(c *gin.Context) {
 	var req struct {
 		Uid int `json:"uid"`
 	}
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
 	}
+
 	if req.Uid == 0 {
 		middleware.JSONError(c, "用户ID不能为空喵", nil)
 		return
 	}
 
-	currentUser := middleware.GetCurrentUser(c)
-	if currentUser == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵喵", nil)
-		return
-	}
+	currentUser := middleware.GetCurrentUserFromContext(c)
 	if currentUser.Uid == req.Uid {
 		middleware.JSONError(c, "不能删除自己喵", nil)
 		return
@@ -228,11 +209,11 @@ func ChangePassword(c *gin.Context) {
 		OldPassword string `json:"oldPassword"`
 		NewPassword string `json:"newPassword"`
 	}
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
 	}
+
 	if req.OldPassword == "" || req.NewPassword == "" {
 		middleware.JSONError(c, "旧密码和新密码不能为空喵", nil)
 		return
@@ -242,11 +223,7 @@ func ChangePassword(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUser(c)
-	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵喵", nil)
-		return
-	}
+	user := middleware.GetCurrentUserFromContext(c)
 
 	success, errMsg := service.ChangePassword(user.Uid, req.OldPassword, req.NewPassword)
 	if !success {
@@ -264,11 +241,7 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUser(c)
-	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵喵", nil)
-		return
-	}
+	user := middleware.GetCurrentUserFromContext(c)
 
 	allowedKeys := map[string]int{
 		models.MetaGender:   0,
@@ -298,4 +271,18 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	middleware.JSONSuccess(c, "资料已提交审核或更新喵", nil)
+}
+
+func verifyCode(email, code string) (bool, string) {
+	codeKey := db.FormatKey("verify:code", email)
+	storedHash, err := db.Get(codeKey)
+
+	if err != nil || storedHash == "" {
+		return false, "验证码不存在或已过期喵喵"
+	}
+	if !utils.VerifyPassword(storedHash, code) {
+		return false, "验证码错误喵喵"
+	}
+	db.Del(codeKey)
+	return true, ""
 }

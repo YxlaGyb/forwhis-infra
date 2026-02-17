@@ -5,3 +5,4 @@ config.toml
 *.tar
 *.zip
 *.7z
+static/

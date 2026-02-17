@@ -6,12 +6,12 @@ import (
 
 func InitDefaultRbac() {
 	for _, p := range constants.AllPermissions {
-		GetOrCreatePermission(p.Name, p.Desc, p.Category)
+		GetOrCreatePermission(string(p.Name), p.Desc, string(p.Category))
 	}
 	for roleName, perms := range constants.RolePermissions {
-		GetOrCreateRole(roleName, constants.RoleDescriptions[roleName])
+		GetOrCreateRole(string(roleName), constants.RoleDescriptions[roleName])
 		for _, perm := range perms {
-			GrantPermissionToRole(roleName, perm)
+			GrantPermissionToRole(string(roleName), string(perm))
 		}
 	}
 }

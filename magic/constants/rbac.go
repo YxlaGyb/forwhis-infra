@@ -1,74 +1,80 @@
 package constants
 
-const (
-	RoleSuperadmin = "superadmin"
-	RoleAdmin      = "admin"
-	RoleEditor     = "editor"
-	RoleUser       = "user"
-	RoleVisitor    = "visitor"
-)
+type Role string
 
 const (
-	CatUserMgmt    = "用户管理"
-	CatContentMgmt = "内容管理"
-	CatSystemMgmt  = "系统管理"
+	RoleSuperadmin Role = "superadmin"
+	RoleAdmin      Role = "admin"
+	RoleEditor     Role = "editor"
+	RoleUser       Role = "user"
+	RoleVisitor    Role = "visitor"
 )
 
+type Permission string
+
 const (
-	UserRead        = "user:read"
-	UserCreate      = "user:create"
-	UserEdit        = "user:edit"
-	UserDelete      = "user:delete"
-	PostRead        = "post:read"
-	PostCreate      = "post:create"
-	PostEdit        = "post:edit"
-	PostDelete      = "post:delete"
-	PostPublish     = "post:publish"
-	CommentRead     = "comment:read"
-	CommentCreate   = "comment:create"
-	CommentDelete   = "comment:delete"
-	CommentModerate = "comment:moderate"
-	SystemConfig    = "system:config"
-	SystemLogs      = "system:logs"
-	SystemBackup    = "system:backup"
-	SystemPlugin    = "system:plugin"
+	PermUserRead        Permission = "user:read"
+	PermUserCreate      Permission = "user:create"
+	PermUserEdit        Permission = "user:edit"
+	PermUserDelete      Permission = "user:delete"
+	PermPostRead        Permission = "post:read"
+	PermPostCreate      Permission = "post:create"
+	PermPostEdit        Permission = "post:edit"
+	PermPostDelete      Permission = "post:delete"
+	PermPostPublish     Permission = "post:publish"
+	PermCommentRead     Permission = "comment:read"
+	PermCommentCreate   Permission = "comment:create"
+	PermCommentDelete   Permission = "comment:delete"
+	PermCommentModerate Permission = "comment:moderate"
+	PermSystemConfig    Permission = "system:config"
+	PermSystemLogs      Permission = "system:logs"
+	PermSystemBackup    Permission = "system:backup"
+	PermSystemPlugin    Permission = "system:plugin"
+)
+
+type PermissionCategory string
+
+const (
+	CatUserMgmt    PermissionCategory = "用户管理"
+	CatContentMgmt PermissionCategory = "内容管理"
+	CatSystemMgmt  PermissionCategory = "系统管理"
 )
 
 type PermDef struct {
-	Name     string
+	Name     Permission
 	Desc     string
-	Category string
+	Category PermissionCategory
 }
 
 var AllPermissions = []PermDef{
-	{UserRead, "查看用户信息", CatUserMgmt},
-	{UserCreate, "创建新用户", CatUserMgmt},
-	{UserEdit, "编辑用户信息", CatUserMgmt},
-	{UserDelete, "删除用户", CatUserMgmt},
-	{PostRead, "查看文章", CatContentMgmt},
-	{PostCreate, "创建文章", CatContentMgmt},
-	{PostEdit, "编辑文章", CatContentMgmt},
-	{PostDelete, "删除文章", CatContentMgmt},
-	{PostPublish, "发布文章", CatContentMgmt},
-	{CommentRead, "查看评论", CatContentMgmt},
-	{CommentCreate, "创建评论", CatContentMgmt},
-	{CommentDelete, "删除评论", CatContentMgmt},
-	{CommentModerate, "审核评论", CatContentMgmt},
-	{SystemConfig, "系统配置", CatSystemMgmt},
-	{SystemLogs, "查看日志", CatSystemMgmt},
-	{SystemBackup, "数据备份", CatSystemMgmt},
-	{SystemPlugin, "插件管理", CatSystemMgmt},
+	{PermUserRead, "查看用户信息", CatUserMgmt},
+	{PermUserCreate, "创建新用户", CatUserMgmt},
+	{PermUserEdit, "编辑用户信息", CatUserMgmt},
+	{PermUserDelete, "删除用户", CatUserMgmt},
+	{PermPostRead, "查看文章", CatContentMgmt},
+	{PermPostCreate, "创建文章", CatContentMgmt},
+	{PermPostEdit, "编辑文章", CatContentMgmt},
+	{PermPostDelete, "删除文章", CatContentMgmt},
+	{PermPostPublish, "发布文章", CatContentMgmt},
+	{PermCommentRead, "查看评论", CatContentMgmt},
+	{PermCommentCreate, "创建评论", CatContentMgmt},
+	{PermCommentDelete, "删除评论", CatContentMgmt},
+	{PermCommentModerate, "审核评论", CatContentMgmt},
+	{PermSystemConfig, "系统配置", CatSystemMgmt},
+	{PermSystemLogs, "查看日志", CatSystemMgmt},
+	{PermSystemBackup, "数据备份", CatSystemMgmt},
+	{PermSystemPlugin, "插件管理", CatSystemMgmt},
 }
 
-var RolePermissions = map[string][]string{
-	RoleSuperadmin: {UserRead, UserCreate, UserEdit, UserDelete, PostRead, PostCreate, PostEdit, PostDelete, PostPublish, CommentRead, CommentCreate, CommentDelete, CommentModerate, SystemConfig, SystemLogs, SystemBackup, SystemPlugin},
-	RoleAdmin:      {UserRead, UserCreate, UserEdit, UserDelete, PostRead, PostCreate, PostEdit, PostDelete, PostPublish, CommentRead, CommentCreate, CommentDelete, CommentModerate, SystemLogs},
-	RoleEditor:     {PostRead, PostCreate, PostEdit, PostPublish, CommentRead, CommentCreate},
-	RoleUser:       {PostRead, CommentRead, CommentCreate},
-	RoleVisitor:    {PostRead},
+var RolePermissions = map[Role][]Permission{
+	RoleSuperadmin: {PermUserRead, PermUserCreate, PermUserEdit, PermUserDelete, PermPostRead, PermPostCreate, PermPostEdit, PermPostDelete, PermPostPublish, PermCommentRead, PermCommentCreate, PermCommentDelete, PermCommentModerate, PermSystemConfig, PermSystemLogs, PermSystemBackup, PermSystemPlugin},
+	RoleAdmin:      {PermUserRead, PermUserCreate, PermUserEdit, PermUserDelete, PermPostRead, PermPostCreate, PermPostEdit, PermPostDelete, PermPostPublish, PermCommentRead, PermCommentCreate, PermCommentDelete, PermCommentModerate, PermSystemLogs},
+	RoleEditor:     {PermPostRead, PermPostCreate, PermPostEdit, PermPostPublish, PermCommentRead, PermCommentCreate},
+	RoleUser:       {PermPostRead, PermCommentRead, PermCommentCreate},
+	RoleVisitor:    {PermPostRead},
 }
 
-var RoleDescriptions = map[string]string{
+var RoleDescriptions = map[Role]string{
 	RoleSuperadmin: "超级管理员，拥有系统所有权限",
 	RoleAdmin:      "管理员，负责系统日常管理",
 	RoleEditor:     "编辑者，负责内容创作和编辑",

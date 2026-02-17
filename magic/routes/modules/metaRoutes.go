@@ -2,6 +2,7 @@ package modules
 
 import (
 	"forestwhisperGo/magic/controller"
+	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/routes"
 
 	"github.com/gin-gonic/gin"
@@ -13,9 +14,9 @@ func init() {
 		{
 			v1.GET("/", controller.GetMetas)
 			v1.GET("/:mid", controller.GetMeta)
-			v1.POST("/", controller.CreateMeta)
-			v1.POST("/:mid", controller.UpdateMeta)
-			v1.POST("/:mid/del", controller.DeleteMeta)
+			v1.POST("/", middleware.RequireAuth(controller.CreateMeta))
+			v1.POST("/:mid", middleware.RequireAuth(controller.UpdateMeta))
+			v1.POST("/:mid/del", middleware.RequireAuth(controller.DeleteMeta))
 		}
 	})
 }

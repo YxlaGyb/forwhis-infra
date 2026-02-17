@@ -61,10 +61,8 @@ func CreateMeta(c *gin.Context) {
 		req.Parent,
 	)
 
-	user := middleware.GetCurrentUser(c)
-	if user != nil {
-		service.CreateUserinfo(user.Uid, "createMeta", "创建了分类: "+req.Name+"喵")
-	}
+	user := middleware.GetCurrentUserFromContext(c)
+	service.CreateUserinfo(user.Uid, "createMeta", "创建了分类: "+req.Name+"喵")
 
 	middleware.JSONSuccess(c, "分类创建成功喵", map[string]interface{}{
 		"mid":  meta.Mid,
@@ -110,10 +108,8 @@ func UpdateMeta(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUser(c)
-	if user != nil {
-		service.CreateUserinfo(user.Uid, "updateMeta", "更新了分类: "+updated.Name+"喵")
-	}
+	user := middleware.GetCurrentUserFromContext(c)
+	service.CreateUserinfo(user.Uid, "updateMeta", "更新了分类: "+updated.Name+"喵")
 
 	middleware.JSONSuccess(c, "分类更新成功喵", map[string]interface{}{
 		"mid":  updated.Mid,
@@ -140,10 +136,8 @@ func DeleteMeta(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUser(c)
-	if user != nil {
-		service.CreateUserinfo(user.Uid, "deleteMeta", "删除了分类: "+strconv.Itoa(mid)+"喵")
-	}
+	user := middleware.GetCurrentUserFromContext(c)
+	service.CreateUserinfo(user.Uid, "deleteMeta", "删除了分类: "+strconv.Itoa(mid)+"喵")
 
 	middleware.JSONSuccess(c, "分类删除成功喵", nil)
 }

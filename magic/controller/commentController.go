@@ -102,12 +102,7 @@ func ApproveComment(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUser(c)
-	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵", nil)
-		return
-	}
-
+	user := middleware.GetCurrentUserFromContext(c)
 	content := service.GetContentByCid(comment.Cid)
 	isAdmin := rbacSvc.HasRole(user, "admin")
 	if content != nil && content.AuthorID != user.Uid && !isAdmin {
@@ -138,12 +133,7 @@ func DeleteComment(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUser(c)
-	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵", nil)
-		return
-	}
-
+	user := middleware.GetCurrentUserFromContext(c)
 	content := service.GetContentByCid(comment.Cid)
 	isOwner := content != nil && content.AuthorID == user.Uid
 	isAuthor := comment.AuthorID == user.Uid
