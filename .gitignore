@@ -1,8 +1,11 @@
 .trae/
 doc/
+static/
+node_modules/
+dist/
+weSTS/
 
 config.toml
 *.tar
 *.zip
 *.7z
-static/

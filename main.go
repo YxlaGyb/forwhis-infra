@@ -1,6 +1,7 @@
 package main
 
 import (
+	"forestwhisperGo/admin/fix"
 	"forestwhisperGo/admin/install"
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/routes"
@@ -23,6 +24,7 @@ func main() {
 		router.GET("/", index)
 		router.Static("/static", "./static")
 		routes.SetupAllRoutes(router)
+		fix.SetupFixRoutes(router)
 	}
 
 	router.Run(":2324")

@@ -16,6 +16,7 @@ func init() {
 			v1.GET("/users", controller.GetUserByUsername)
 			v1.GET("/me", middleware.RequireAuth(user.GetCurrentUserInfo))
 			v1.POST("/login", controller.Login)
+			v1.POST("/logout", controller.Logout)
 			v1.POST("/register", controller.Register)
 			v1.POST("/email/code/register", controller.SendEmailCodeRegister)
 			v1.POST("/users/del", middleware.RequireAuth(controller.DeleteUserByUid))

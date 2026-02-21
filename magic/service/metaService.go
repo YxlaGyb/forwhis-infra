@@ -14,7 +14,7 @@ func GetMetasList(metaType string) []map[string]interface{} {
 		query = query.Where("type = ?", metaType)
 	}
 	var metas []models.Meta
-	query.Order("order asc, mid asc").Find(&metas)
+	query.Order("\"order\" ASC, mid ASC").Find(&metas)
 	items := []map[string]interface{}{}
 	for _, m := range metas {
 		items = append(items, metaToDict(&m))

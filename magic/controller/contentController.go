@@ -32,13 +32,13 @@ func GetContents(c *gin.Context) {
 
 func CreateContent(c *gin.Context) {
 	var req struct {
-		Title    string `json:"title"`
-		Text     string `json:"text"`
-		Slug     string `json:"slug"`
-		Type     string `json:"type"`
-		Status   string `json:"status"`
-		Password string `json:"password"`
-		Template string `json:"template"`
+		Title       string `json:"title"`
+		Text        string `json:"text"`
+		Type        string `json:"type"`
+		Status      string `json:"status"`
+		Password    string `json:"password"`
+		Template    string `json:"template"`
+		CategoryMid int    `json:"categoryMid"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -51,6 +51,10 @@ func CreateContent(c *gin.Context) {
 	}
 	if strings.TrimSpace(req.Text) == "" {
 		middleware.JSONError(c, "文章内容不能为空喵", nil)
+		return
+	}
+	if req.CategoryMid == 0 {
+		middleware.JSONError(c, "请选择分类喵", nil)
 		return
 	}
 	if len(req.Title) > 150 {
@@ -72,18 +76,22 @@ func CreateContent(c *gin.Context) {
 		strings.TrimSpace(req.Title),
 		req.Text,
 		user.Uid,
-		req.Slug,
 		contentType,
 		status,
 		req.Password,
 		req.Template,
+		req.CategoryMid,
 	)
+
+	if content == nil {
+		middleware.JSONSystemError(c, "文章创建失败喵", nil)
+		return
+	}
 
 	service.CreateUserinfo(user.Uid, "createContent", "创建了文章: "+req.Title+"喵")
 	middleware.JSONSuccess(c, "文章创建成功喵", map[string]interface{}{
 		"cid":     content.Cid,
 		"title":   content.Title,
-		"slug":    content.Slug,
 		"created": content.Created,
 	})
 }
@@ -101,17 +109,52 @@ func GetContent(c *gin.Context) {
 		return
 	}
 
-	middleware.JSONSuccess(c, "获取成功喵", map[string]interface{}{
-		"cid":       content.Cid,
-		"title":     content.Title,
-		"slug":      content.Slug,
-		"text":      content.Text,
-		"created":   content.Created,
-		"modified":  content.Modified,
-		"type":      content.Type,
-		"status":    content.Status,
-		"author_id": content.AuthorID,
-	})
+	if content.Password != "" {
+		user := middleware.GetCurrentUser(c)
+		isOwner := user != nil && user.Uid == content.AuthorID
+		if !isOwner {
+			var req struct {
+				Password string `json:"password"`
+			}
+			if err := c.ShouldBindJSON(&req); err != nil || req.Password != content.Password {
+				middleware.JSONError(c, "该文章需要密码访问喵", map[string]interface{}{
+					"needPassword": true,
+					"cid":          content.Cid,
+					"title":        content.Title,
+				})
+				return
+			}
+		}
+	}
+
+	service.IncrementViews(cid)
+
+	category := service.GetContentCategory(cid)
+	author := service.GetContentAuthor(content.AuthorID)
+	result := map[string]interface{}{
+		"cid":          content.Cid,
+		"title":        content.Title,
+		"text":         content.Text,
+		"created":      content.Created,
+		"modified":     content.Modified,
+		"type":         content.Type,
+		"status":       content.Status,
+		"author_id":    content.AuthorID,
+		"password":     content.Password,
+		"views":        content.Views + 1,
+		"comments_num": content.CommentsNum,
+	}
+	if category != nil {
+		result["category"] = map[string]interface{}{
+			"mid":  category.Mid,
+			"name": category.Name,
+		}
+		result["categoryMid"] = category.Mid
+	}
+	if author != nil {
+		result["author"] = author
+	}
+	middleware.JSONSuccess(c, "获取成功喵", result)
 }
 
 func UpdateContent(c *gin.Context) {

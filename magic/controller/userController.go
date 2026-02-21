@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -52,6 +53,19 @@ func Login(c *gin.Context) {
 	middleware.JSONSuccess(c, "登录成功喵", gin.H{
 		"uid": result["uid"], "name": result["name"], "email": result["email"],
 	})
+}
+
+func Logout(c *gin.Context) {
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "forestwhisper",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+	})
+	middleware.JSONSuccess(c, "退出成功喵", nil)
 }
 
 func Register(c *gin.Context) {

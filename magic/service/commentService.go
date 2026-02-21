@@ -39,10 +39,14 @@ func GetCommentByCoid(coid int) *models.Comment {
 }
 
 func CreateComment(cid int, text string, authorID int, author, mail, url, commentType string, parent int) *models.Comment {
+	status := models.CommentStatusPending
+	if authorID > 0 {
+		status = models.CommentStatusApproved
+	}
 	comment := models.Comment{
 		Cid: cid, Text: text, AuthorID: authorID, Author: author,
 		Mail: mail, Url: url, Type: commentType, Parent: parent,
-		Created: int(time.Now().Unix()), Status: models.CommentStatusPending,
+		Created: int(time.Now().Unix()), Status: status,
 	}
 	db.GetDB().Create(&comment)
 	return &comment

@@ -1,7 +1,6 @@
 package service
 
 import (
-	"regexp"
 	"time"
 
 	"forestwhisperGo/magic/models"
@@ -36,28 +35,49 @@ func GetContentByCid(cid int) *models.Content {
 	return &content
 }
 
-func GetContentBySlug(slug string) *models.Content {
-	var content models.Content
-	if db.GetDB().Where("slug = ?", slug).First(&content).Error != nil {
-		return nil
-	}
-	return &content
+func IncrementViews(cid int) {
+	db.GetDB().Model(&models.Content{}).Where("cid = ?", cid).UpdateColumn("views", db.GetDB().Raw("views + 1"))
 }
 
-func CreateContent(title, text string, authorID int, slug, contentType, status, password, template string) *models.Content {
-	if slug == "" {
-		slug = generateSlug(title)
+func GetContentCategory(cid int) *models.Meta {
+	var relationship models.Relationship
+	if db.GetDB().Where("cid = ?", cid).First(&relationship).Error != nil {
+		return nil
 	}
-	if GetContentBySlug(slug) != nil {
-		slug = slug + "-" + string(rune(time.Now().Unix()))
+	var meta models.Meta
+	if db.GetDB().First(&meta, relationship.Mid).Error != nil {
+		return nil
 	}
+	return &meta
+}
+
+func GetContentAuthor(authorID int) map[string]interface{} {
+	var user models.User
+	if db.GetDB().First(&user, authorID).Error != nil {
+		return nil
+	}
+	return map[string]interface{}{
+		"uid":  user.Uid,
+		"name": user.Name,
+	}
+}
+
+func CreateContent(title, text string, authorID int, contentType, status, password, template string, categoryMid int) *models.Content {
 	now := int(time.Now().Unix())
 	content := models.Content{
-		Title: title, Slug: slug, Text: text, AuthorID: authorID,
+		Title: title, Text: text, AuthorID: authorID,
 		Type: contentType, Status: status, Password: password, Template: template,
 		Created: now, Modified: now,
 	}
-	db.GetDB().Create(&content)
+	if err := db.GetDB().Create(&content).Error; err != nil {
+		return nil
+	}
+
+	if categoryMid > 0 {
+		relationship := models.Relationship{Cid: content.Cid, Mid: categoryMid}
+		db.GetDB().Create(&relationship)
+	}
+
 	return &content
 }
 
@@ -67,13 +87,22 @@ func UpdateContent(cid int, data map[string]interface{}) *models.Content {
 		return nil
 	}
 	updates := map[string]interface{}{}
-	for _, k := range []string{"title", "text", "slug", "status", "password", "template"} {
+	for _, k := range []string{"title", "text", "status", "password", "template"} {
 		if v, ok := data[k]; ok {
 			updates[k] = v
 		}
 	}
 	updates["modified"] = int(time.Now().Unix())
 	db.GetDB().Model(content).Updates(updates)
+
+	if categoryMid, ok := data["categoryMid"].(float64); ok {
+		db.GetDB().Where("cid = ?", cid).Delete(&models.Relationship{})
+		if int(categoryMid) > 0 {
+			relationship := models.Relationship{Cid: cid, Mid: int(categoryMid)}
+			db.GetDB().Create(&relationship)
+		}
+	}
+
 	return content
 }
 
@@ -83,6 +112,7 @@ func DeleteContent(cid int) bool {
 		return false
 	}
 	db.GetDB().Delete(content)
+	db.GetDB().Where("cid = ?", cid).Delete(&models.Relationship{})
 	return true
 }
 
@@ -97,15 +127,23 @@ func GetContentsByAuthor(authorID int) []map[string]interface{} {
 }
 
 func contentToDict(c *models.Content) map[string]interface{} {
-	return map[string]interface{}{
-		"cid": c.Cid, "title": c.Title, "slug": c.Slug,
+	result := map[string]interface{}{
+		"cid": c.Cid, "title": c.Title,
 		"created": c.Created, "modified": c.Modified,
 		"type": c.Type, "status": c.Status, "author_id": c.AuthorID,
+		"views": c.Views, "comments_num": c.CommentsNum,
+		"text": c.Text,
 	}
-}
-
-func generateSlug(title string) string {
-	slug := regexp.MustCompile(`[^\w\s-]`).ReplaceAllString(title, "")
-	slug = regexp.MustCompile(`[\s_-]+`).ReplaceAllString(slug, "-")
-	return regexp.MustCompile(`^-|-$`).ReplaceAllString(slug, "")
+	category := GetContentCategory(c.Cid)
+	if category != nil {
+		result["category"] = map[string]interface{}{
+			"mid":  category.Mid,
+			"name": category.Name,
+		}
+	}
+	author := GetContentAuthor(c.AuthorID)
+	if author != nil {
+		result["author"] = author
+	}
+	return result
 }
