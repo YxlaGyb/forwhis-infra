@@ -16,6 +16,7 @@ func init() {
 			v1.GET("/content/:cid", controller.GetContentComments)
 			v1.GET("/:coid", controller.GetComment)
 			v1.POST("/", controller.CreateComment)
+			v1.POST("/:coid", middleware.RequireAuth(controller.UpdateComment))
 			v1.POST("/:coid/approve", middleware.RequireAuth(controller.ApproveComment))
 			v1.POST("/:coid/del", middleware.RequireAuth(controller.DeleteComment))
 		}

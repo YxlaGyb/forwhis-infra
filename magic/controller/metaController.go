@@ -6,6 +6,7 @@ import (
 
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/service"
+	rbacSvc "forestwhisperGo/magic/service/rbac"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,6 +24,12 @@ func GetMetas(c *gin.Context) {
 }
 
 func CreateMeta(c *gin.Context) {
+	user := middleware.GetCurrentUserFromContext(c)
+	if !rbacSvc.HasRole(user, "admin") {
+		middleware.JSONError(c, "无权创建分类喵", nil)
+		return
+	}
+
 	var req struct {
 		Name        string `json:"name"`
 		Type        string `json:"type"`
@@ -61,7 +68,6 @@ func CreateMeta(c *gin.Context) {
 		req.Parent,
 	)
 
-	user := middleware.GetCurrentUserFromContext(c)
 	service.CreateUserinfo(user.Uid, "createMeta", "创建了分类: "+req.Name+"喵")
 
 	middleware.JSONSuccess(c, "分类创建成功喵", map[string]interface{}{
@@ -73,6 +79,12 @@ func CreateMeta(c *gin.Context) {
 }
 
 func UpdateMeta(c *gin.Context) {
+	user := middleware.GetCurrentUserFromContext(c)
+	if !rbacSvc.HasRole(user, "admin") {
+		middleware.JSONError(c, "无权修改分类喵", nil)
+		return
+	}
+
 	mid, err := strconv.Atoi(c.Param("mid"))
 	if err != nil {
 		middleware.JSONError(c, "分类ID无效喵", nil)
@@ -108,7 +120,6 @@ func UpdateMeta(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUserFromContext(c)
 	service.CreateUserinfo(user.Uid, "updateMeta", "更新了分类: "+updated.Name+"喵")
 
 	middleware.JSONSuccess(c, "分类更新成功喵", map[string]interface{}{
@@ -118,6 +129,12 @@ func UpdateMeta(c *gin.Context) {
 }
 
 func DeleteMeta(c *gin.Context) {
+	user := middleware.GetCurrentUserFromContext(c)
+	if !rbacSvc.HasRole(user, "admin") {
+		middleware.JSONError(c, "无权删除分类喵", nil)
+		return
+	}
+
 	mid, err := strconv.Atoi(c.Param("mid"))
 	if err != nil {
 		middleware.JSONError(c, "分类ID无效喵", nil)
@@ -136,7 +153,6 @@ func DeleteMeta(c *gin.Context) {
 		return
 	}
 
-	user := middleware.GetCurrentUserFromContext(c)
 	service.CreateUserinfo(user.Uid, "deleteMeta", "删除了分类: "+strconv.Itoa(mid)+"喵")
 
 	middleware.JSONSuccess(c, "分类删除成功喵", nil)

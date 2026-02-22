@@ -39,14 +39,10 @@ func GetCommentByCoid(coid int) *models.Comment {
 }
 
 func CreateComment(cid int, text string, authorID int, author, mail, url, commentType string, parent int) *models.Comment {
-	status := models.CommentStatusPending
-	if authorID > 0 {
-		status = models.CommentStatusApproved
-	}
 	comment := models.Comment{
 		Cid: cid, Text: text, AuthorID: authorID, Author: author,
 		Mail: mail, Url: url, Type: commentType, Parent: parent,
-		Created: int(time.Now().Unix()), Status: status,
+		Created: int(time.Now().Unix()), Status: models.CommentStatusPending,
 	}
 	db.GetDB().Create(&comment)
 	return &comment
@@ -80,13 +76,24 @@ func DeleteComment(coid int) bool {
 	return true
 }
 
-func GetCommentsByContent(cid int, status string) []map[string]interface{} {
+func GetCommentsByContent(cid int, status string, viewerID int) []map[string]interface{} {
 	query := db.GetDB().Where("cid = ?", cid)
 	if status != "" {
 		query = query.Where("status = ?", status)
 	} else {
-		query = query.Where("status = ?", models.CommentStatusApproved)
+		query = query.Where("status = ? OR (status = ? AND author_id = ?)", models.CommentStatusApproved, models.CommentStatusPending, viewerID)
 	}
+	var comments []models.Comment
+	query.Order("created asc").Find(&comments)
+	items := []map[string]interface{}{}
+	for _, c := range comments {
+		items = append(items, commentToDict(&c))
+	}
+	return items
+}
+
+func GetAllCommentsByContent(cid int) []map[string]interface{} {
+	query := db.GetDB().Where("cid = ?", cid)
 	var comments []models.Comment
 	query.Order("created asc").Find(&comments)
 	items := []map[string]interface{}{}

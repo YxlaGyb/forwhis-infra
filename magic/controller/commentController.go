@@ -134,12 +134,10 @@ func DeleteComment(c *gin.Context) {
 	}
 
 	user := middleware.GetCurrentUserFromContext(c)
-	content := service.GetContentByCid(comment.Cid)
-	isOwner := content != nil && content.AuthorID == user.Uid
-	isAuthor := comment.AuthorID == user.Uid
 	isAdmin := rbacSvc.HasRole(user, "admin")
+	isCommentAuthor := comment.AuthorID == user.Uid
 
-	if !isOwner && !isAuthor && !isAdmin {
+	if !isAdmin && !isCommentAuthor {
 		middleware.JSONError(c, "无权删除此评论喵", nil)
 		return
 	}
@@ -179,6 +177,43 @@ func GetComment(c *gin.Context) {
 	})
 }
 
+func UpdateComment(c *gin.Context) {
+	coid, err := strconv.Atoi(c.Param("coid"))
+	if err != nil {
+		middleware.JSONError(c, "评论ID无效喵", nil)
+		return
+	}
+
+	comment := service.GetCommentByCoid(coid)
+	if comment == nil {
+		middleware.JSONError(c, "评论不存在喵", nil)
+		return
+	}
+
+	user := middleware.GetCurrentUserFromContext(c)
+	if !rbacSvc.HasRole(user, "admin") {
+		middleware.JSONError(c, "无权修改此评论喵", nil)
+		return
+	}
+
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		middleware.JSONError(c, "请求数据不能为空喵", nil)
+		return
+	}
+
+	updated := service.UpdateComment(coid, req)
+	if updated == nil {
+		middleware.JSONError(c, "评论修改失败喵", nil)
+		return
+	}
+
+	middleware.JSONSuccess(c, "评论修改成功喵", map[string]interface{}{
+		"coid":   updated.Coid,
+		"status": updated.Status,
+	})
+}
+
 func GetContentComments(c *gin.Context) {
 	cid, err := strconv.Atoi(c.Param("cid"))
 	if err != nil {
@@ -192,6 +227,19 @@ func GetContentComments(c *gin.Context) {
 		return
 	}
 
-	comments := service.GetCommentsByContent(cid, "")
+	user := middleware.GetCurrentUser(c)
+	var viewerID int
+	var isAdmin bool
+	if user != nil {
+		viewerID = user.Uid
+		isAdmin = rbacSvc.HasRole(user, "admin")
+	}
+
+	var comments []map[string]interface{}
+	if isAdmin {
+		comments = service.GetAllCommentsByContent(cid)
+	} else {
+		comments = service.GetCommentsByContent(cid, "", viewerID)
+	}
 	middleware.JSONSuccess(c, "获取成功喵", comments)
 }
