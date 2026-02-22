@@ -10,6 +10,7 @@ export interface ContentStats {
     drafts: number;
     published: number;
     private: number;
+    views: number;
 }
 
 export interface CommentStats {
@@ -30,6 +31,7 @@ export interface TrendData {
     user: number;
     content: number;
     comment: number;
+    views: number;
 }
 
 export interface TooltipPayloadEntry {

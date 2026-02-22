@@ -3,17 +3,19 @@ import { Layout, Menu, Avatar, Dropdown, Space, Typography, theme, message, Draw
 import {
     DashboardOutlined,
     UserOutlined,
-    MessageOutlined,
     BellOutlined,
     SettingOutlined,
     LogoutOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
-    MenuOutlined
+    MenuOutlined,
+    FileTextOutlined,
+    CommentOutlined
 } from '@ant-design/icons';
 import Dashboard from '../pages/Dashboard';
 import UserManagement from '../pages/UserManagement';
-import Messages from '../pages/Messages';
+import ArticleManagement from '../pages/ArticleManagement';
+import CommentManagement from '../pages/CommentManagement';
 import Settings from '../pages/Settings';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
@@ -117,9 +119,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
         label: '用户管理',
         },
         {
-        key: 'messages',
-        icon: <MessageOutlined />,
-        label: '消息管理',
+        key: 'articles',
+        icon: <FileTextOutlined />,
+        label: '文章管理',
+        },
+        {
+        key: 'comments',
+        icon: <CommentOutlined />,
+        label: '评论管理',
         },
         {
         key: 'settings',
@@ -147,8 +154,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
             return <Dashboard />;
         case 'users':
             return <UserManagement />;
-        case 'messages':
-            return <Messages />;
+        case 'articles':
+            return <ArticleManagement />;
+        case 'comments':
+            return <CommentManagement />;
         case 'settings':
             return <Settings />;
         default:

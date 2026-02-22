@@ -174,17 +174,8 @@ export const likeApi = {
 export const settingsApi = {
     getSettings: () =>
         api.get('/api/v1/admin/settings'),
-    
-    updateSettings: (data: {
-        siteName?: string;
-        siteDescription?: string;
-        adminEmail?: string;
-        language?: string;
-        timezone?: string;
-        enableRegistration?: boolean;
-        enableComments?: boolean;
-        maintenanceMode?: boolean;
-    }) =>
+
+    updateSettings: (data: unknown) =>
         api.post('/api/v1/admin/settings', data)
 };
 

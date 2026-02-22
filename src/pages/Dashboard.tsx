@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Row, Col, Card, Statistic, Typography, Spin, message, Slider } from 'antd';
-import { UserOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons';
+import { UserOutlined, FileTextOutlined, MessageOutlined, EyeOutlined } from '@ant-design/icons';
 import { statsApi } from '../api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { DashboardData, TrendData, TooltipProps } from '../types';
@@ -95,13 +95,14 @@ const Dashboard: React.FC = () => {
 
     const increments = useMemo(() => {
         const selectedDaysData = trendData.slice(-days);
-        let userInc = 0, contentInc = 0, commentInc = 0;
+        let userInc = 0, contentInc = 0, commentInc = 0, viewsInc = 0;
         selectedDaysData.forEach(item => {
             userInc += item.user;
             contentInc += item.content;
             commentInc += item.comment;
+            viewsInc += item.views;
         });
-        return { userInc, contentInc, commentInc };
+        return { userInc, contentInc, commentInc, viewsInc };
     }, [trendData, days]);
 
     const toggleLine = useCallback((dataKey: string) => {
@@ -201,6 +202,20 @@ const Dashboard: React.FC = () => {
                         </div>
                     </Card>
                 </Col>
+
+                <Col xs={24} sm={12} lg={8}>
+                    <Card>
+                        <Statistic
+                            title="文章访问量"
+                            value={dashboardData.contents?.views || 0}
+                            prefix={<EyeOutlined />}
+                            valueStyle={{ color: '#722ed1' }}
+                        />
+                        <div style={{ marginTop: 8, fontSize: 12, color: '#888' }}>
+                            总阅读量统计
+                        </div>
+                    </Card>
+                </Col>
             </Row>
 
             <div style={{ marginTop: 24, marginBottom: 8, fontSize: 16, fontWeight: 600, color: '#333' }}>
@@ -218,22 +233,28 @@ const Dashboard: React.FC = () => {
                 tooltip={{ formatter: null }}
             />
             <Row gutter={[24, 24]} style={{ marginTop: 8 }}>
-                <Col xs={24} sm={8}>
+                <Col xs={24} sm={12} lg={6}>
                     <Card style={{ textAlign: 'center' }}>
                         <div style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>新增用户</div>
                         <div style={{ fontSize: 28, fontWeight: 'bold', color: '#3f8600' }}>+{increments.userInc}</div>
                     </Card>
                 </Col>
-                <Col xs={24} sm={8}>
+                <Col xs={24} sm={12} lg={6}>
                     <Card style={{ textAlign: 'center' }}>
                         <div style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>新增文章</div>
                         <div style={{ fontSize: 28, fontWeight: 'bold', color: '#1890ff' }}>+{increments.contentInc}</div>
                     </Card>
                 </Col>
-                <Col xs={24} sm={8}>
+                <Col xs={24} sm={12} lg={6}>
                     <Card style={{ textAlign: 'center' }}>
                         <div style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>新增评论</div>
                         <div style={{ fontSize: 28, fontWeight: 'bold', color: '#cf1322' }}>+{increments.commentInc}</div>
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                    <Card style={{ textAlign: 'center' }}>
+                        <div style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>新增访问</div>
+                        <div style={{ fontSize: 28, fontWeight: 'bold', color: '#722ed1' }}>+{increments.viewsInc}</div>
                     </Card>
                 </Col>
             </Row>
@@ -248,7 +269,8 @@ const Dashboard: React.FC = () => {
                             {[
                                 { key: 'user', name: '用户', color: '#3f8600' },
                                 { key: 'content', name: '文章', color: '#1890ff' },
-                                { key: 'comment', name: '评论', color: '#cf1322' }
+                                { key: 'comment', name: '评论', color: '#cf1322' },
+                                { key: 'views', name: '访问', color: '#722ed1' }
                             ].map(item => (
                                 <div 
                                     key={item.key}
@@ -291,6 +313,10 @@ const Dashboard: React.FC = () => {
                                         <linearGradient id="colorComment" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#cf1322" stopOpacity={0.3}/>
                                             <stop offset="95%" stopColor="#cf1322" stopOpacity={0}/>
+                                        </linearGradient>
+                                        <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#722ed1" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#722ed1" stopOpacity={0}/>
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" vertical={false} />
@@ -346,6 +372,19 @@ const Dashboard: React.FC = () => {
                                             strokeWidth={2.5}
                                             fillOpacity={1}
                                             fill="url(#colorComment)"
+                                            dot={false}
+                                            activeDot={{ r: 5, strokeWidth: 0 }}
+                                        />
+                                    )}
+                                    {!hiddenLines.has('views') && (
+                                        <Area 
+                                            type="monotone" 
+                                            dataKey="views" 
+                                            name="访问" 
+                                            stroke="#722ed1" 
+                                            strokeWidth={2.5}
+                                            fillOpacity={1}
+                                            fill="url(#colorViews)"
                                             dot={false}
                                             activeDot={{ r: 5, strokeWidth: 0 }}
                                         />

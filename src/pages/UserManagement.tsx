@@ -199,7 +199,7 @@ const UserManagement: React.FC = () => {
             width: 80,
         },
         {
-            title: '姓名',
+            title: '昵称',
             dataIndex: 'name',
             key: 'name',
             render: (text: string) => (
@@ -270,7 +270,7 @@ const UserManagement: React.FC = () => {
             <Card>
                 <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
                     <Input
-                        placeholder="搜索用户姓名或邮箱"
+                        placeholder="搜索用户昵称或邮箱"
                         prefix={<SearchOutlined />}
                         style={{ width: 300 }}
                         onChange={(e) => handleSearch(e.target.value)}
@@ -307,11 +307,11 @@ const UserManagement: React.FC = () => {
                     name="userForm"
                 >
                     <Form.Item
-                        label="姓名"
+                        label="昵称"
                         name="name"
-                        rules={[{ required: true, message: '请输入用户姓名' }]}
+                        rules={[{ required: true, message: '请输入用户昵称' }]}
                     >
-                        <Input placeholder="请输入用户姓名" />
+                        <Input placeholder="请输入用户昵称" />
                     </Form.Item>
 
                     <Form.Item
