@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Row, Col, Card, Statistic, Typography, Spin, message, Slider } from 'antd';
 import { UserOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons';
 import { statsApi } from '../api';
@@ -40,6 +40,18 @@ interface TrendData {
     comment: number;
 }
 
+interface TooltipPayloadEntry {
+    name: string;
+    value: number;
+    color: string;
+}
+
+interface TooltipProps {
+    active?: boolean;
+    payload?: TooltipPayloadEntry[];
+    label?: string;
+}
+
 const Dashboard: React.FC = () => {
     const [dashboardData, setDashboardData] = useState<DashboardData>({});
     const [trendData, setTrendData] = useState<TrendData[]>([]);
@@ -47,60 +59,86 @@ const Dashboard: React.FC = () => {
     const [trendLoading, setTrendLoading] = useState(false);
     const [days, setDays] = useState(7);
     const [hiddenLines, setHiddenLines] = useState<Set<string>>(new Set());
+    
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const trendAbortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         fetchDashboardData();
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
     }, []);
 
     useEffect(() => {
         fetchTrendData();
+        return () => {
+            if (trendAbortControllerRef.current) {
+                trendAbortControllerRef.current.abort();
+            }
+        };
     }, [days]);
 
     const fetchDashboardData = async () => {
+        abortControllerRef.current = new AbortController();
         try {
             setLoading(true);
             const response = await statsApi.getDashboard();
+            
+            if (abortControllerRef.current?.signal.aborted) return;
             
             if (response.data.code === 200 && response.data.data) {
                 setDashboardData(response.data.data);
             } else {
                 message.warning('获取数据失败，使用默认展示');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            if (abortControllerRef.current?.signal.aborted) return;
             console.error('获取仪表盘数据失败:', error);
-            if (error.response?.status === 401) {
+            const err = error as { response?: { status?: number } };
+            if (err.response?.status === 401) {
                 message.error('未登录或登录已过期');
             } else {
                 message.error('获取仪表盘数据失败');
             }
         } finally {
-            setLoading(false);
+            if (!abortControllerRef.current?.signal.aborted) {
+                setLoading(false);
+            }
         }
     };
 
     const fetchTrendData = async () => {
+        trendAbortControllerRef.current = new AbortController();
         try {
             setTrendLoading(true);
             const response = await statsApi.getTrend(days);
             
+            if (trendAbortControllerRef.current?.signal.aborted) return;
+            
             if (response.data.code === 200 && response.data.data) {
                 setTrendData(response.data.data);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            if (trendAbortControllerRef.current?.signal.aborted) return;
             console.error('获取趋势数据失败:', error);
         } finally {
-            setTrendLoading(false);
+            if (!trendAbortControllerRef.current?.signal.aborted) {
+                setTrendLoading(false);
+            }
         }
     };
 
-    const formatDate = (dateStr: string) => {
+    const formatDate = useCallback((dateStr: string) => {
         const date = new Date(dateStr);
         const month = date.getMonth() + 1;
         const day = date.getDate();
         return `${month}/${day}`;
-    };
+    }, []);
 
-    const getIncrements = () => {
+    const increments = useMemo(() => {
         const selectedDaysData = trendData.slice(-days);
         let userInc = 0, contentInc = 0, commentInc = 0;
         selectedDaysData.forEach(item => {
@@ -109,11 +147,9 @@ const Dashboard: React.FC = () => {
             commentInc += item.comment;
         });
         return { userInc, contentInc, commentInc };
-    };
+    }, [trendData, days]);
 
-    const increments = getIncrements();
-
-    const toggleLine = (dataKey: string) => {
+    const toggleLine = useCallback((dataKey: string) => {
         const newHidden = new Set(hiddenLines);
         if (newHidden.has(dataKey)) {
             newHidden.delete(dataKey);
@@ -121,9 +157,9 @@ const Dashboard: React.FC = () => {
             newHidden.add(dataKey);
         }
         setHiddenLines(newHidden);
-    };
+    }, [hiddenLines]);
 
-    const CustomTooltip = ({ active, payload, label }: any) => {
+    const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
         if (active && payload && payload.length) {
             return (
                 <div style={{ 
@@ -134,7 +170,7 @@ const Dashboard: React.FC = () => {
                     border: '1px solid rgba(0,0,0,0.05)'
                 }}>
                     <div style={{ fontWeight: 600, marginBottom: 8, color: '#333' }}>{label}</div>
-                    {payload.map((entry: any, index: number) => (
+                    {payload.map((entry, index) => (
                         <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <div style={{ 
                                 width: 8, 

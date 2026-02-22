@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:2324';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:2324';
+
+export { API_BASE_URL };
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -26,7 +28,7 @@ api.interceptors.response.use(
 
 export const authApi = {
     login: (email: string, password: string) =>
-        api.post('/api/v1/user/login', { email, passwd: password }),
+        api.post('/api/v1/user/login', { email, password }),
     
     register: (email: string, password: string, name?: string, code?: string) =>
         api.post('/api/v1/user/register', { email, password, name, code }),
@@ -78,6 +80,12 @@ export const userApi = {
     
     getUserByUsername: (username: string) =>
         api.get('/api/v1/user/users', { params: { username } }),
+    
+    createUser: (data: { name: string; email: string; password: string; role?: string; status?: string }) =>
+        api.post('/api/v1/user/users', data),
+    
+    updateUser: (uid: number, data: { name?: string; email?: string; role?: string; status?: string }) =>
+        api.post(`/api/v1/user/users/${uid}/update`, data),
     
     deleteUser: (uid: number) =>
         api.post(`/api/v1/user/users/del`, { uid })
@@ -161,6 +169,23 @@ export const likeApi = {
     
     getMyLikesCount: () =>
         api.get('/api/v1/like/my/count')
+};
+
+export const settingsApi = {
+    getSettings: () =>
+        api.get('/api/v1/admin/settings'),
+    
+    updateSettings: (data: {
+        siteName?: string;
+        siteDescription?: string;
+        adminEmail?: string;
+        language?: string;
+        timezone?: string;
+        enableRegistration?: boolean;
+        enableComments?: boolean;
+        maintenanceMode?: boolean;
+    }) =>
+        api.post('/api/v1/admin/settings', data)
 };
 
 export default api;

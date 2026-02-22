@@ -63,7 +63,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     borderRadius: '12px',
                     backgroundColor: 'rgba(255, 255, 255, 0.5)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, -10)'
+                    border: '1px solid rgba(255, 255, 255, 0.3)'
                 }}
             >
                 <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -89,7 +89,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                             placeholder="请输入邮箱地址"
                             size="large"
                             style={{ 
-                                backgroundColor: 'rgba(255, 255, 255, -1)', 
+                                backgroundColor: 'rgba(255, 255, 255, 0.85)', 
                                 backdropFilter: 'blur(0px)',
                                 border: '1px solid rgba(255, 255, 255, 0.5)'
                             }}
@@ -107,7 +107,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                             size="large"
                             iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
                             style={{ 
-                                backgroundColor: 'rgba(255, 255, 255, -1)', 
+                                backgroundColor: 'rgba(255, 255, 255, 0.85)', 
                                 backdropFilter: 'blur(0px)',
                                 border: '1px solid rgba(255, 255, 255, 0.5)'
                             }}

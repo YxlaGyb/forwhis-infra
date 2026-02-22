@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Table,
     Card,
@@ -21,6 +21,7 @@ import {
     UserOutlined
 } from '@ant-design/icons';
 import { userApi } from '../api';
+import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -37,19 +38,33 @@ interface User {
 const UserManagement: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
-    const [searchText, setSearchText] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [form] = Form.useForm();
+    
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    const { filteredData: filteredUsers, handleSearch } = useSearchFilter<User>({
+        data: users,
+        searchKeys: ['name', 'email']
+    });
 
     useEffect(() => {
         fetchUsers();
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
     }, []);
 
     const fetchUsers = async () => {
+        abortControllerRef.current = new AbortController();
         setLoading(true);
         try {
             const response = await userApi.getUsers();
+            
+            if (abortControllerRef.current?.signal.aborted) return;
             
             if (response.data.code === 200 && response.data.data) {
                 setUsers(response.data.data);
@@ -57,21 +72,15 @@ const UserManagement: React.FC = () => {
                 message.error('获取用户列表失败');
             }
         } catch (error) {
+            if (abortControllerRef.current?.signal.aborted) return;
             console.error('获取用户列表失败:', error);
             message.error('获取用户列表失败');
         } finally {
-            setLoading(false);
+            if (!abortControllerRef.current?.signal.aborted) {
+                setLoading(false);
+            }
         }
     };
-
-    const handleSearch = (value: string) => {
-        setSearchText(value);
-    };
-
-    const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchText.toLowerCase())
-    );
 
     const handleAddUser = () => {
         setEditingUser(null);
@@ -87,7 +96,7 @@ const UserManagement: React.FC = () => {
 
     const handleDeleteUser = async (userId: string) => {
         try {
-            await userApi.deleteUser(userId);
+            await userApi.deleteUser(parseInt(userId));
             setUsers(users.filter(user => user.id !== userId));
             message.success('用户删除成功');
         } catch (error) {
@@ -101,15 +110,46 @@ const UserManagement: React.FC = () => {
             const values = await form.validateFields();
             
             if (editingUser) {
-                message.success('用户更新成功');
+                const response = await userApi.updateUser(parseInt(editingUser.id), {
+                    name: values.name,
+                    email: values.email,
+                    role: values.role,
+                    status: values.status
+                });
+                
+                if (response.data.code === 200) {
+                    message.success('用户更新成功');
+                    fetchUsers();
+                } else {
+                    message.error(response.data.msg || '用户更新失败');
+                }
             } else {
-                message.success('用户添加成功');
+                if (!values.password) {
+                    message.error('请输入密码');
+                    return;
+                }
+                
+                const response = await userApi.createUser({
+                    name: values.name,
+                    email: values.email,
+                    password: values.password,
+                    role: values.role,
+                    status: values.status
+                });
+                
+                if (response.data.code === 200) {
+                    message.success('用户添加成功');
+                    fetchUsers();
+                } else {
+                    message.error(response.data.msg || '用户添加失败');
+                }
             }
             
             setIsModalVisible(false);
             form.resetFields();
         } catch (error) {
             console.error('表单验证失败:', error);
+            message.error('操作失败');
         }
     };
 
@@ -170,7 +210,7 @@ const UserManagement: React.FC = () => {
         {
             title: '操作',
             key: 'action',
-            render: (_: any, record: User) => (
+            render: (_record: unknown, record: User) => (
                 <Space size="middle">
                     <Button
                         type="link"
@@ -257,6 +297,16 @@ const UserManagement: React.FC = () => {
                     >
                         <Input placeholder="请输入邮箱地址" />
                     </Form.Item>
+
+                    {!editingUser && (
+                        <Form.Item
+                            label="密码"
+                            name="password"
+                            rules={[{ required: !editingUser, message: '请输入密码' }]}
+                        >
+                            <Input.Password placeholder="请输入密码" />
+                        </Form.Item>
+                    )}
 
                     <Form.Item
                         label="角色"

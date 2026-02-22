@@ -14,7 +14,7 @@ import {
     Col
 } from 'antd';
 import { SettingOutlined, SaveOutlined } from '@ant-design/icons';
-import { authApi, metaApi } from '../api';
+import { settingsApi } from '../api';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -43,22 +43,23 @@ const Settings: React.FC = () => {
     const fetchSettings = async () => {
         setLoading(true);
         try {
-            const response = await authApi.getCurrentUser();
+            const response = await settingsApi.getSettings();
             
-            if (response.data.code === 200) {
+            if (response.data.code === 200 && response.data.data) {
                 form.setFieldsValue({
-                    siteName: 'Lmoadll',
-                    siteDescription: '一个现代化的内容管理系统',
-                    adminEmail: response.data.data.email || 'admin@lmoadll.com',
-                    language: 'zh-CN',
-                    timezone: 'Asia/Shanghai',
-                    enableRegistration: true,
-                    enableComments: true,
-                    maintenanceMode: false
+                    siteName: response.data.data.siteName || '',
+                    siteDescription: response.data.data.siteDescription || '',
+                    adminEmail: response.data.data.adminEmail || '',
+                    language: response.data.data.language || 'zh-CN',
+                    timezone: response.data.data.timezone || 'Asia/Shanghai',
+                    enableRegistration: response.data.data.enableRegistration ?? true,
+                    enableComments: response.data.data.enableComments ?? true,
+                    maintenanceMode: response.data.data.maintenanceMode ?? false
                 });
             }
         } catch (error) {
             console.error('获取设置失败:', error);
+            message.error('获取设置失败');
         } finally {
             setLoading(false);
         }
@@ -67,12 +68,13 @@ const Settings: React.FC = () => {
     const onFinish = async (values: SettingsData) => {
         setSaving(true);
         try {
-            await authApi.updateProfile({
-                name: values.siteName,
-                avatar: values.siteDescription as any
-            });
+            const response = await settingsApi.updateSettings(values);
             
-            message.success('设置保存成功');
+            if (response.data.code === 200) {
+                message.success('设置保存成功');
+            } else {
+                message.error(response.data.msg || '设置保存失败');
+            }
         } catch (error) {
             console.error('保存设置失败:', error);
             message.error('保存设置失败');

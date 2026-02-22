@@ -4,9 +4,8 @@ import zhCN from 'antd/locale/zh_CN';
 import axios from 'axios';
 import Login from './pages/Login';
 import AdminLayout from './layouts/AdminLayout';
+import { API_BASE_URL } from './api';
 import './App.css';
-
-const API_BASE_URL = 'http://127.0.0.1:2324';
 
 const App = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);

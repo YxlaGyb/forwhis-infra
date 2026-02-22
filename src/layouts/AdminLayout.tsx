@@ -16,6 +16,7 @@ import UserManagement from '../pages/UserManagement';
 import Messages from '../pages/Messages';
 import Settings from '../pages/Settings';
 import axios from 'axios';
+import { API_BASE_URL } from '../api';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -62,7 +63,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
       }
 
       // 从服务器获取最新用户信息
-      const response = await axios.get('http://127.0.0.1:2324/api/v1/user/me', {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/user/me`, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json'
@@ -97,9 +98,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
           isAdmin: isAdmin
         }));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('获取管理员信息失败:', error);
-      if (error.response?.status === 401) {
+      const err = error as { response?: { status?: number } };
+      if (err.response?.status === 401) {
         // 未登录，清除localStorage
         localStorage.removeItem('userInfo');
       }

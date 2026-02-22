@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Table,
     Card,
@@ -20,6 +20,7 @@ import {
     DeleteOutlined
 } from '@ant-design/icons';
 import { commentApi } from '../api';
+import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -37,18 +38,32 @@ interface Message {
 const Messages: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
-    const [searchText, setSearchText] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+    
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    const { filteredData: filteredMessages, handleSearch } = useSearchFilter<Message>({
+        data: messages,
+        searchKeys: ['title', 'content', 'sender']
+    });
 
     useEffect(() => {
         fetchMessages();
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
     }, []);
 
     const fetchMessages = async () => {
+        abortControllerRef.current = new AbortController();
         setLoading(true);
         try {
             const response = await commentApi.getComments();
+            
+            if (abortControllerRef.current?.signal.aborted) return;
             
             if (response.data.code === 200 && response.data.data) {
                 setMessages(response.data.data);
@@ -56,31 +71,31 @@ const Messages: React.FC = () => {
                 message.error('获取消息列表失败');
             }
         } catch (error) {
+            if (abortControllerRef.current?.signal.aborted) return;
             console.error('获取消息列表失败:', error);
             message.error('获取消息列表失败');
         } finally {
-            setLoading(false);
+            if (!abortControllerRef.current?.signal.aborted) {
+                setLoading(false);
+            }
         }
     };
 
-    const handleSearch = (value: string) => {
-        setSearchText(value);
-    };
-
-    const filteredMessages = messages.filter(message =>
-        message.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        message.content.toLowerCase().includes(searchText.toLowerCase()) ||
-        message.sender.toLowerCase().includes(searchText.toLowerCase())
-    );
-
-    const handleViewMessage = (message: Message) => {
-        setSelectedMessage(message);
+    const handleViewMessage = async (messageItem: Message) => {
+        setSelectedMessage(messageItem);
         setIsModalVisible(true);
         
-        if (message.status === 'unread') {
-            setMessages(messages.map(msg => 
-                msg.id === message.id ? { ...msg, status: 'read' } : msg
-            ));
+        if (messageItem.status === 'unread') {
+            try {
+                const coid = parseInt(messageItem.id);
+                await commentApi.approveComment(coid);
+                
+                setMessages(messages.map(msg => 
+                    msg.id === messageItem.id ? { ...msg, status: 'read' } : msg
+                ));
+            } catch (error) {
+                console.error('标记已读失败:', error);
+            }
         }
     };
 
@@ -147,7 +162,7 @@ const Messages: React.FC = () => {
         {
             title: '操作',
             key: 'action',
-            render: (_: any, record: Message) => (
+            render: (_record: unknown, record: Message) => (
                 <Space size="middle">
                     <Button
                         type="link"
