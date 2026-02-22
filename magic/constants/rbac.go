@@ -30,6 +30,7 @@ const (
 	PermSystemLogs      Permission = "system:logs"
 	PermSystemBackup    Permission = "system:backup"
 	PermSystemPlugin    Permission = "system:plugin"
+	PermSettingsEdit    Permission = "settings:edit"
 )
 
 type PermissionCategory string
@@ -64,11 +65,12 @@ var AllPermissions = []PermDef{
 	{PermSystemLogs, "查看日志", CatSystemMgmt},
 	{PermSystemBackup, "数据备份", CatSystemMgmt},
 	{PermSystemPlugin, "插件管理", CatSystemMgmt},
+	{PermSettingsEdit, "编辑系统设置", CatSystemMgmt},
 }
 
 var RolePermissions = map[Role][]Permission{
-	RoleSuperadmin: {PermUserRead, PermUserCreate, PermUserEdit, PermUserDelete, PermPostRead, PermPostCreate, PermPostEdit, PermPostDelete, PermPostPublish, PermCommentRead, PermCommentCreate, PermCommentDelete, PermCommentModerate, PermSystemConfig, PermSystemLogs, PermSystemBackup, PermSystemPlugin},
-	RoleAdmin:      {PermUserRead, PermUserCreate, PermUserEdit, PermUserDelete, PermPostRead, PermPostCreate, PermPostEdit, PermPostDelete, PermPostPublish, PermCommentRead, PermCommentCreate, PermCommentDelete, PermCommentModerate, PermSystemLogs},
+	RoleSuperadmin: {PermUserRead, PermUserCreate, PermUserEdit, PermUserDelete, PermPostRead, PermPostCreate, PermPostEdit, PermPostDelete, PermPostPublish, PermCommentRead, PermCommentCreate, PermCommentDelete, PermCommentModerate, PermSystemConfig, PermSystemLogs, PermSystemBackup, PermSystemPlugin, PermSettingsEdit},
+	RoleAdmin:      {PermUserRead, PermUserCreate, PermUserEdit, PermUserDelete, PermPostRead, PermPostCreate, PermPostEdit, PermPostDelete, PermPostPublish, PermCommentRead, PermCommentCreate, PermCommentDelete, PermCommentModerate, PermSystemLogs, PermSettingsEdit},
 	RoleEditor:     {PermPostRead, PermPostCreate, PermPostEdit, PermPostPublish, PermCommentRead, PermCommentCreate},
 	RoleUser:       {PermPostRead, PermCommentRead, PermCommentCreate},
 	RoleVisitor:    {PermPostRead},

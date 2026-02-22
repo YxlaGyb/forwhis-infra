@@ -19,13 +19,14 @@ func GetUserStats() map[string]int {
 }
 
 func GetContentStats() map[string]int {
-	var posts, pages, drafts, published, private int64
+	var posts, pages, drafts, published, private, views int64
 	db.GetDB().Model(&models.Content{}).Where("type = ?", models.TypePost).Count(&posts)
 	db.GetDB().Model(&models.Content{}).Where("type = ?", models.TypePage).Count(&pages)
 	db.GetDB().Model(&models.Content{}).Where("status = ?", models.StatusDraft).Count(&drafts)
 	db.GetDB().Model(&models.Content{}).Where("status = ?", models.StatusPublish).Count(&published)
 	db.GetDB().Model(&models.Content{}).Where("status = ?", models.StatusPrivate).Count(&private)
-	return map[string]int{"posts": int(posts), "pages": int(pages), "drafts": int(drafts), "published": int(published), "private": int(private)}
+	db.GetDB().Model(&models.Content{}).Where("type = ?", models.TypePost).Select("COALESCE(SUM(views), 0)").Scan(&views)
+	return map[string]int{"posts": int(posts), "pages": int(pages), "drafts": int(drafts), "published": int(published), "private": int(private), "views": int(views)}
 }
 
 func GetCommentStats() map[string]int {
@@ -50,6 +51,7 @@ type TrendData struct {
 	User    int    `json:"user"`
 	Content int    `json:"content"`
 	Comment int    `json:"comment"`
+	Views   int    `json:"views"`
 }
 
 func GetTrendData(days int) []TrendData {
@@ -62,24 +64,27 @@ func GetTrendData(days int) []TrendData {
 
 	result := make([]TrendData, days)
 	now := time.Now()
+	loc := now.Location()
 
 	for i := days - 1; i >= 0; i-- {
 		date := now.AddDate(0, 0, -i)
 		dateStr := date.Format("2006-01-02")
-		dayStart := int(date.Unix())
+		dayStart := int(time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, loc).Unix())
 		dayEnd := dayStart + 86400
 
-		var userCount, contentCount, commentCount int64
+		var userCount, contentCount, commentCount, viewsCount int64
 
 		db.GetDB().Model(&models.User{}).Where("created_at >= ? AND created_at < ?", dayStart, dayEnd).Count(&userCount)
 		db.GetDB().Model(&models.Content{}).Where("created >= ? AND created < ?", dayStart, dayEnd).Count(&contentCount)
 		db.GetDB().Model(&models.Comment{}).Where("created >= ? AND created < ?", dayStart, dayEnd).Count(&commentCount)
+		db.GetDB().Model(&models.Content{}).Where("type = ? AND created >= ? AND created < ?", models.TypePost, dayStart, dayEnd).Select("COALESCE(SUM(views), 0)").Scan(&viewsCount)
 
 		result[days-1-i] = TrendData{
 			Date:    dateStr,
 			User:    int(userCount),
 			Content: int(contentCount),
 			Comment: int(commentCount),
+			Views:   int(viewsCount),
 		}
 	}
 

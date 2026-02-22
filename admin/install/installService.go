@@ -77,6 +77,7 @@ func InitDatabase() error {
 		&models.ContentField{},
 		&models.AIConversation{},
 		&models.Like{},
+		&models.Option{},
 		&rbac.Role{},
 		&rbac.Permission{},
 		&rbac.UserRole{},
