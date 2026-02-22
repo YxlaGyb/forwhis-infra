@@ -21,7 +21,30 @@ func GetOptions(c *gin.Context) {
 		options = service.GetAllOptions()
 	}
 
-	middleware.JSONSuccess(c, "获取成功", options)
+	flatOptions := flattenOptions(options)
+
+	middleware.JSONSuccess(c, "获取成功", flatOptions)
+}
+
+func flattenOptions(options map[string]string) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	for key, value := range options {
+		parts := strings.Split(key, ".")
+		if len(parts) == 2 {
+			section, field := parts[0], parts[1]
+			if _, ok := result[section]; !ok {
+				result[section] = make(map[string]interface{})
+			}
+			if sectionMap, ok := result[section].(map[string]interface{}); ok {
+				sectionMap[field] = value
+			}
+		} else {
+			result[key] = value
+		}
+	}
+
+	return result
 }
 
 func GetOption(c *gin.Context) {
@@ -89,7 +112,7 @@ func SetOptions(c *gin.Context) {
 		return
 	}
 
-	var req map[string]string
+	var req map[string]interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空", nil)
 		return
@@ -100,7 +123,9 @@ func SetOptions(c *gin.Context) {
 		return
 	}
 
-	for key := range req {
+	flatOptions := expandOptions(req)
+
+	for key := range flatOptions {
 		if strings.TrimSpace(key) == "" {
 			middleware.JSONError(c, "选项键不能为空", nil)
 			return
@@ -111,7 +136,7 @@ func SetOptions(c *gin.Context) {
 		}
 	}
 
-	if err := service.SetOptions(req); err != nil {
+	if err := service.SetOptions(flatOptions); err != nil {
 		middleware.JSONSystemError(c, "设置保存失败", nil)
 		return
 	}
@@ -119,6 +144,47 @@ func SetOptions(c *gin.Context) {
 	service.CreateUserinfo(user.Uid, "setOptions", "批量修改了系统设置")
 
 	middleware.JSONSuccess(c, "设置保存成功", req)
+}
+
+func expandOptions(nested map[string]interface{}) map[string]string {
+	result := make(map[string]string)
+
+	for sectionKey, sectionValue := range nested {
+		if sectionMap, ok := sectionValue.(map[string]interface{}); ok {
+			for fieldKey, fieldValue := range sectionMap {
+				key := sectionKey + "." + fieldKey
+				switch v := fieldValue.(type) {
+				case bool:
+					if v {
+						result[key] = "1"
+					} else {
+						result[key] = "0"
+					}
+				case string:
+					result[key] = v
+				default:
+					if v != nil {
+						result[key] = "1"
+					} else {
+						result[key] = "0"
+					}
+				}
+			}
+		} else {
+			switch v := sectionValue.(type) {
+			case bool:
+				if v {
+					result[sectionKey] = "1"
+				} else {
+					result[sectionKey] = "0"
+				}
+			case string:
+				result[sectionKey] = v
+			}
+		}
+	}
+
+	return result
 }
 
 func DeleteOption(c *gin.Context) {

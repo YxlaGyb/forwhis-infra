@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	jwtIss        = "lmoadll"
-	jwtAud        = "lmoadll"
+	JwtIss        = "lmoadll"
+	JwtAud        = "lmoadll"
 	keySize       = 32
 	rotationDays  = 7
 	maxActiveKeys = 3
@@ -173,9 +173,17 @@ func (m *JWTManager) rotateKey() error {
 	}
 
 	// 3. 生成并存储新 Key
+	id, err := generateID()
+	if err != nil {
+		return err
+	}
+	secret, err := generateSecret()
+	if err != nil {
+		return err
+	}
 	newKey := &Key{
-		ID:        generateID(),
-		Secret:    generateSecret(),
+		ID:        id,
+		Secret:    secret,
 		CreatedAt: time.Now(),
 	}
 
@@ -294,8 +302,8 @@ func (m *JWTManager) generateToken(jid string, uid int, email string) (string, e
 		UID:   uid,
 		Email: email,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    jwtIss,
-			Audience:  jwt.ClaimStrings{jwtAud},
+			Issuer:    JwtIss,
+			Audience:  jwt.ClaimStrings{JwtAud},
 			ExpiresAt: jwt.NewNumericDate(now.Add(tokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(now),
 		},
@@ -349,15 +357,13 @@ func (m *JWTManager) validateToken(tokenString string) (*types.Payload, error) {
 		return nil, ErrTokenRevoked
 	}
 
-	// 业务级校验
-	if claims.Issuer != jwtIss {
+	if claims.Issuer != JwtIss {
 		return nil, ErrInvalidIssuer
 	}
 
-	// 安全修复：防止Audience为空导致Panic
 	audMatch := false
 	for _, aud := range claims.Audience {
-		if aud == jwtAud {
+		if aud == JwtAud {
 			audMatch = true
 			break
 		}
@@ -366,14 +372,13 @@ func (m *JWTManager) validateToken(tokenString string) (*types.Payload, error) {
 		return nil, ErrInvalidAudience
 	}
 
-	// 构造 Payload 返回给上层业务
 	return &types.Payload{
 		JID:     claims.JID,
 		UID:     claims.UID,
 		Email:   claims.Email,
 		Expired: claims.ExpiresAt.Unix(),
 		ISS:     claims.Issuer,
-		AUD:     jwtAud,
+		AUD:     JwtAud,
 	}, nil
 }
 
@@ -426,14 +431,18 @@ func jitter() time.Duration {
 	return time.Duration(n.Int64()) * time.Millisecond
 }
 
-func generateID() string {
+func generateID() (string, error) {
 	b := make([]byte, 8)
-	rand.Read(b)
-	return hex.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
-func generateSecret() []byte {
+func generateSecret() ([]byte, error) {
 	b := make([]byte, keySize)
-	rand.Read(b)
-	return b
+	if _, err := rand.Read(b); err != nil {
+		return nil, err
+	}
+	return b, nil
 }

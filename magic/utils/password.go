@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 
 	"golang.org/x/crypto/argon2"
 )
@@ -15,11 +16,15 @@ const (
 	saltLen    = 16
 )
 
-func HashPassword(password string) string {
+var ErrRandomReadFailed = errors.New("failed to generate random salt")
+
+func HashPassword(password string) (string, error) {
 	salt := make([]byte, saltLen)
-	rand.Read(salt)
+	if _, err := rand.Read(salt); err != nil {
+		return "", ErrRandomReadFailed
+	}
 	hash := argon2.IDKey([]byte(password), salt, timeCost, memoryCost, threads, keyLen)
-	return base64.StdEncoding.EncodeToString(append(salt, hash...))
+	return base64.StdEncoding.EncodeToString(append(salt, hash...)), nil
 }
 
 func VerifyPassword(hashed, password string) bool {

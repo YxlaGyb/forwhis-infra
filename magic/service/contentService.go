@@ -20,9 +20,13 @@ func GetContentsList(page, limit int, status string, authorID int) map[string]in
 	var contents []models.Content
 	offset := (page - 1) * limit
 	query.Order("created desc").Offset(offset).Limit(limit).Find(&contents)
+
+	categoryMap := batchGetContentCategories(contents)
+	authorMap := batchGetContentAuthors(contents)
+
 	items := []map[string]interface{}{}
 	for _, c := range contents {
-		items = append(items, contentToDict(&c))
+		items = append(items, contentToDictOptimized(&c, categoryMap, authorMap))
 	}
 	return map[string]interface{}{"total": total, "page": page, "limit": limit, "items": items}
 }
@@ -60,6 +64,70 @@ func GetContentAuthor(authorID int) map[string]interface{} {
 		"uid":  user.Uid,
 		"name": user.Name,
 	}
+}
+
+func batchGetContentCategories(contents []models.Content) map[int]*models.Meta {
+	if len(contents) == 0 {
+		return nil
+	}
+	cids := make([]int, len(contents))
+	for i, c := range contents {
+		cids[i] = c.Cid
+	}
+
+	var relationships []models.Relationship
+	db.GetDB().Where("cid IN ?", cids).Find(&relationships)
+	if len(relationships) == 0 {
+		return nil
+	}
+
+	mids := make([]int, len(relationships))
+	cidToMid := make(map[int]int)
+	for i, r := range relationships {
+		mids[i] = r.Mid
+		cidToMid[r.Cid] = r.Mid
+	}
+
+	var metas []models.Meta
+	db.GetDB().Where("mid IN ?", mids).Find(&metas)
+	metaMap := make(map[int]*models.Meta)
+	for i := range metas {
+		metaMap[metas[i].Mid] = &metas[i]
+	}
+
+	result := make(map[int]*models.Meta)
+	for cid, mid := range cidToMid {
+		if meta, ok := metaMap[mid]; ok {
+			result[cid] = meta
+		}
+	}
+	return result
+}
+
+func batchGetContentAuthors(contents []models.Content) map[int]map[string]interface{} {
+	if len(contents) == 0 {
+		return nil
+	}
+	authorIDs := make(map[int]bool)
+	for _, c := range contents {
+		authorIDs[c.AuthorID] = true
+	}
+	ids := make([]int, 0, len(authorIDs))
+	for id := range authorIDs {
+		ids = append(ids, id)
+	}
+
+	var users []models.User
+	db.GetDB().Where("uid IN ?", ids).Find(&users)
+
+	result := make(map[int]map[string]interface{})
+	for _, u := range users {
+		result[u.Uid] = map[string]interface{}{
+			"uid":  u.Uid,
+			"name": u.Name,
+		}
+	}
+	return result
 }
 
 func CreateContent(title, text string, authorID int, contentType, status, password, template string, categoryMid int) *models.Content {
@@ -121,9 +189,13 @@ func DeleteContent(cid int) bool {
 func GetContentsByAuthor(authorID int) []map[string]interface{} {
 	var contents []models.Content
 	db.GetDB().Where("author_id = ?", authorID).Find(&contents)
+
+	categoryMap := batchGetContentCategories(contents)
+	authorMap := batchGetContentAuthors(contents)
+
 	items := []map[string]interface{}{}
 	for _, c := range contents {
-		items = append(items, contentToDict(&c))
+		items = append(items, contentToDictOptimized(&c, categoryMap, authorMap))
 	}
 	return items
 }
@@ -146,6 +218,30 @@ func contentToDict(c *models.Content) map[string]interface{} {
 	author := GetContentAuthor(c.AuthorID)
 	if author != nil {
 		result["author"] = author
+	}
+	return result
+}
+
+func contentToDictOptimized(c *models.Content, categoryMap map[int]*models.Meta, authorMap map[int]map[string]interface{}) map[string]interface{} {
+	result := map[string]interface{}{
+		"cid": c.Cid, "title": c.Title,
+		"created": c.Created, "modified": c.Modified,
+		"type": c.Type, "status": c.Status, "author_id": c.AuthorID,
+		"views": c.Views, "comments_num": c.CommentsNum,
+		"text": c.Text,
+	}
+	if categoryMap != nil {
+		if category, ok := categoryMap[c.Cid]; ok {
+			result["category"] = map[string]interface{}{
+				"mid":  category.Mid,
+				"name": category.Name,
+			}
+		}
+	}
+	if authorMap != nil {
+		if author, ok := authorMap[c.AuthorID]; ok {
+			result["author"] = author
+		}
 	}
 	return result
 }

@@ -69,6 +69,11 @@ func Logout(c *gin.Context) {
 }
 
 func Register(c *gin.Context) {
+	if !service.GetOptionBool("feature_enableRegistration", true) {
+		middleware.JSONError(c, "当前系统已关闭用户注册功能喵", nil)
+		return
+	}
+
 	var req struct {
 		Email    string `json:"email"`
 		Username string `json:"username"`
@@ -80,8 +85,8 @@ func Register(c *gin.Context) {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
 	}
-	if !utils.IsValidEmail(req.Email) || len(req.Username) < 2 || len(req.Username) > 50 || len(req.Passwd) < 8 {
-		middleware.JSONError(c, "邮箱、用户名或密码格式不正确喵", nil)
+	if !utils.IsValidEmail(req.Email) || !utils.IsValidName(req.Username) || !utils.IsValidPassword(req.Passwd) {
+		middleware.JSONError(c, "邮箱、用户名或密码格式不正确喵（密码需8-72位，包含大小写字母和数字）", nil)
 		return
 	}
 	if len(req.Code) != 6 {
@@ -100,10 +105,15 @@ func Register(c *gin.Context) {
 	}
 
 	clientIP := c.ClientIP()
-	_, err := service.CreateUser(
+	hashedPwd, err := utils.HashPassword(req.Passwd)
+	if err != nil {
+		middleware.JSONSystemError(c, "密码加密失败喵喵", nil)
+		return
+	}
+	_, err = service.CreateUser(
 		req.Username,
 		req.Email,
-		utils.HashPassword(req.Passwd),
+		hashedPwd,
 		clientIP, "user",
 		true)
 
@@ -124,6 +134,11 @@ func Register(c *gin.Context) {
 }
 
 func SendEmailCodeRegister(c *gin.Context) {
+	if !service.GetOptionBool("feature_enableRegistration", true) {
+		middleware.JSONError(c, "当前系统已关闭用户注册功能喵", nil)
+		return
+	}
+
 	var req struct {
 		Email string `json:"email"`
 	}
@@ -142,7 +157,11 @@ func SendEmailCodeRegister(c *gin.Context) {
 	}
 
 	code := utils.SecureRandomString(6)
-	hashedCode := utils.HashPassword(code)
+	hashedCode, err := utils.HashPassword(code)
+	if err != nil {
+		middleware.JSONSystemError(c, "验证码生成失败喵喵", nil)
+		return
+	}
 	htmlContent := `
 		<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
 			<h2 style="color: #333;">✨ 注册验证码待查收</h2>
@@ -232,8 +251,8 @@ func ChangePassword(c *gin.Context) {
 		middleware.JSONError(c, "旧密码和新密码不能为空喵", nil)
 		return
 	}
-	if len(req.NewPassword) < 8 {
-		middleware.JSONError(c, "新密码长度应不少于8个字符喵喵", nil)
+	if !utils.IsValidPassword(req.NewPassword) {
+		middleware.JSONError(c, "新密码需8-72位，包含大小写字母和数字喵", nil)
 		return
 	}
 

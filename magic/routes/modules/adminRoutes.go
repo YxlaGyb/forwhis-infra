@@ -17,6 +17,8 @@ func init() {
 			v1.GET("/reviews", middleware.RequireAuth(controller.GetReviews))
 			v1.POST("/reviews/:id/approve", middleware.RequireAuth(controller.ApproveReviewItem))
 			v1.POST("/reviews/:id/reject", middleware.RequireAuth(controller.RejectReviewItem))
+			v1.GET("/settings", controller.GetOptions)
+			v1.POST("/settings", middleware.RequirePerm(constants.PermSettingsEdit)(controller.SetOptions))
 		}
 	})
 }

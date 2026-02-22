@@ -15,17 +15,22 @@ func IsValidEmail(email string) bool {
 }
 
 func IsValidPassword(password string) bool {
-	if len(password) < 6 || len(password) > 72 {
+	if len(password) < 8 || len(password) > 72 {
 		return false
 	}
-	hasLetter := false
+	hasUpper := false
+	hasLower := false
+	hasDigit := false
 	for _, r := range password {
-		if unicode.IsLetter(r) {
-			hasLetter = true
-			break
+		if unicode.IsUpper(r) {
+			hasUpper = true
+		} else if unicode.IsLower(r) {
+			hasLower = true
+		} else if unicode.IsDigit(r) {
+			hasDigit = true
 		}
 	}
-	return hasLetter
+	return hasUpper && hasLower && hasDigit
 }
 
 func IsValidName(name string) bool {

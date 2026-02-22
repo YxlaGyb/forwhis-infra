@@ -116,7 +116,7 @@ func GetCommentsByAuthor(authorID int) []map[string]interface{} {
 func commentToDict(c *models.Comment) map[string]interface{} {
 	return map[string]interface{}{
 		"coid": c.Coid, "cid": c.Cid, "created": c.Created,
-		"author": c.Author, "author_id": c.AuthorID, "text": c.Text,
+		"author": c.Author, "authorId": c.AuthorID, "text": c.Text,
 		"type": c.Type, "status": c.Status, "parent": c.Parent,
 		"mail": c.Mail, "url": c.Url,
 	}

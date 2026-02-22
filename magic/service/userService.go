@@ -91,13 +91,29 @@ func GetUsermeta(uid int, metaKey string) string {
 func GetUsersList() []map[string]interface{} {
 	var users []models.User
 	db.GetDB().Find(&users)
+
+	if len(users) == 0 {
+		return []map[string]interface{}{}
+	}
+
+	userIDs := make([]int, len(users))
+	for i, u := range users {
+		userIDs[i] = u.Uid
+	}
+
+	var allRoles []rbac.UserRole
+	db.GetDB().Where("user_id IN ?", userIDs).Preload("Role").Find(&allRoles)
+
+	userRolesMap := make(map[int][]string)
+	for _, ur := range allRoles {
+		userRolesMap[ur.UserId] = append(userRolesMap[ur.UserId], ur.Role.Name)
+	}
+
 	result := []map[string]interface{}{}
 	for _, u := range users {
-		var roles []rbac.UserRole
-		db.GetDB().Where("user_id = ?", u.Uid).Preload("Role").Find(&roles)
-		roleNames := []string{}
-		for _, r := range roles {
-			roleNames = append(roleNames, r.Role.Name)
+		roleNames := userRolesMap[u.Uid]
+		if roleNames == nil {
+			roleNames = []string{}
 		}
 		result = append(result, map[string]interface{}{
 			"uid": u.Uid, "name": u.Name, "email": u.Mail, "roles": roleNames, "createdAt": u.CreatedAt,
@@ -130,18 +146,6 @@ func CreateUser(name, email, password, ip, role string, autoGenerateName bool) (
 		return nil, err
 	}
 	return &user, nil
-}
-
-func createDefaultUsermeta(uid int) {
-	now := int(time.Now().Unix())
-	defaults := []struct{ key, val string }{
-		{"gender", "0"},
-		{"birthday", ""},
-		{"bio", "系统默认签名，送给每一位小可爱~"},
-	}
-	for _, d := range defaults {
-		db.GetDB().Create(&models.Usermeta{UserId: uid, MetaKey: d.key, MetaValue: d.val, CreatedAt: now, UpdatedAt: now})
-	}
 }
 
 func createDefaultUsermetaTx(tx *gorm.DB, uid int) error {
@@ -227,7 +231,11 @@ func ChangePassword(uid int, oldPwd, newPwd string) (bool, string) {
 	if !utils.VerifyPassword(user.Password, oldPwd) {
 		return false, "旧密码错误喵喵"
 	}
-	db.GetDB().Model(user).Update("password", utils.HashPassword(newPwd))
+	hashedPwd, err := utils.HashPassword(newPwd)
+	if err != nil {
+		return false, "密码加密失败喵喵"
+	}
+	db.GetDB().Model(user).Update("password", hashedPwd)
 	CreateUserinfo(uid, "changePassword", "用户修改了密码喵")
 	return true, ""
 }

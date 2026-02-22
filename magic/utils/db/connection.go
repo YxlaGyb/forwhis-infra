@@ -6,6 +6,8 @@ import (
 	"os"
 	"sync"
 
+	"forestwhisperGo/magic/utils/configutil"
+
 	"github.com/pelletier/go-toml/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -22,29 +24,6 @@ var (
 	cfgOnce sync.Once
 )
 
-func getStr(section, key string) string {
-	if s, ok := cfg[section]; ok {
-		if v, ok := s[key].(string); ok {
-			return v
-		}
-	}
-	return ""
-}
-
-func getInt(section, key string) int {
-	if s, ok := cfg[section]; ok {
-		switch n := s[key].(type) {
-		case int:
-			return n
-		case int64:
-			return int(n)
-		case float64:
-			return int(n)
-		}
-	}
-	return 0
-}
-
 func loadConfig() {
 	data, err := os.ReadFile("config.toml")
 	if err != nil {
@@ -56,11 +35,11 @@ func loadConfig() {
 func initDB() {
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
-		getStr("db", "PGSQLHOST"),
-		getStr("db", "PGSQLUSER"),
-		getStr("db", "PGSQLPWD"),
-		getStr("db", "PGSQL_DB"),
-		getInt("db", "PGSQLPORT"),
+		configutil.GetSectionString(cfg, "db", "PGSQLHOST"),
+		configutil.GetSectionString(cfg, "db", "PGSQLUSER"),
+		configutil.GetSectionString(cfg, "db", "PGSQLPWD"),
+		configutil.GetSectionString(cfg, "db", "PGSQL_DB"),
+		configutil.GetSectionInt(cfg, "db", "PGSQLPORT"),
 	)
 	var err error
 	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})

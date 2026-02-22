@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"forestwhisperGo/magic/utils/configutil"
+
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -28,27 +30,22 @@ func mailVal(key string) interface{} {
 }
 
 func mailStr(key string) string {
-	if v, ok := mailVal(key).(string); ok {
-		return v
+	if s, ok := mailCfg["smtp"]; ok {
+		return configutil.GetString(s, key)
 	}
 	return ""
 }
 
 func mailInt(key string) int {
-	switch n := mailVal(key).(type) {
-	case int:
-		return n
-	case int64:
-		return int(n)
-	case float64:
-		return int(n)
+	if s, ok := mailCfg["smtp"]; ok {
+		return configutil.GetInt(s, key)
 	}
 	return 0
 }
 
 func mailBool(key string) bool {
-	if v, ok := mailVal(key).(bool); ok {
-		return v
+	if s, ok := mailCfg["smtp"]; ok {
+		return configutil.GetBool(s, key)
 	}
 	return false
 }

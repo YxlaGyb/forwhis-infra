@@ -54,6 +54,11 @@ type TrendData struct {
 	Views   int    `json:"views"`
 }
 
+type dailyCount struct {
+	Date  string
+	Count int
+}
+
 func GetTrendData(days int) []TrendData {
 	if days <= 0 {
 		days = 30
@@ -62,30 +67,71 @@ func GetTrendData(days int) []TrendData {
 		days = 90
 	}
 
-	result := make([]TrendData, days)
 	now := time.Now()
 	loc := now.Location()
+	startDate := now.AddDate(0, 0, -(days - 1))
+	dayStart := int(time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, loc).Unix())
 
-	for i := days - 1; i >= 0; i-- {
-		date := now.AddDate(0, 0, -i)
+	dateMap := make(map[string]*TrendData)
+	for i := 0; i < days; i++ {
+		date := startDate.AddDate(0, 0, i)
 		dateStr := date.Format("2006-01-02")
-		dayStart := int(time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, loc).Unix())
-		dayEnd := dayStart + 86400
+		dateMap[dateStr] = &TrendData{Date: dateStr}
+	}
 
-		var userCount, contentCount, commentCount, viewsCount int64
-
-		db.GetDB().Model(&models.User{}).Where("created_at >= ? AND created_at < ?", dayStart, dayEnd).Count(&userCount)
-		db.GetDB().Model(&models.Content{}).Where("created >= ? AND created < ?", dayStart, dayEnd).Count(&contentCount)
-		db.GetDB().Model(&models.Comment{}).Where("created >= ? AND created < ?", dayStart, dayEnd).Count(&commentCount)
-		db.GetDB().Model(&models.Content{}).Where("type = ? AND created >= ? AND created < ?", models.TypePost, dayStart, dayEnd).Select("COALESCE(SUM(views), 0)").Scan(&viewsCount)
-
-		result[days-1-i] = TrendData{
-			Date:    dateStr,
-			User:    int(userCount),
-			Content: int(contentCount),
-			Comment: int(commentCount),
-			Views:   int(viewsCount),
+	var userCounts []dailyCount
+	db.GetDB().Model(&models.User{}).
+		Select("to_char(to_timestamp(created_at), 'YYYY-MM-DD') as date, COUNT(*) as count").
+		Where("created_at >= ?", dayStart).
+		Group("date").
+		Scan(&userCounts)
+	for _, uc := range userCounts {
+		if td, ok := dateMap[uc.Date]; ok {
+			td.User = uc.Count
 		}
+	}
+
+	var contentCounts []dailyCount
+	db.GetDB().Model(&models.Content{}).
+		Select("to_char(to_timestamp(created), 'YYYY-MM-DD') as date, COUNT(*) as count").
+		Where("created >= ?", dayStart).
+		Group("date").
+		Scan(&contentCounts)
+	for _, cc := range contentCounts {
+		if td, ok := dateMap[cc.Date]; ok {
+			td.Content = cc.Count
+		}
+	}
+
+	var commentCounts []dailyCount
+	db.GetDB().Model(&models.Comment{}).
+		Select("to_char(to_timestamp(created), 'YYYY-MM-DD') as date, COUNT(*) as count").
+		Where("created >= ?", dayStart).
+		Group("date").
+		Scan(&commentCounts)
+	for _, cc := range commentCounts {
+		if td, ok := dateMap[cc.Date]; ok {
+			td.Comment = cc.Count
+		}
+	}
+
+	var viewsCounts []dailyCount
+	db.GetDB().Model(&models.Content{}).
+		Select("to_char(to_timestamp(created), 'YYYY-MM-DD') as date, COALESCE(SUM(views), 0) as count").
+		Where("type = ? AND created >= ?", models.TypePost, dayStart).
+		Group("date").
+		Scan(&viewsCounts)
+	for _, vc := range viewsCounts {
+		if td, ok := dateMap[vc.Date]; ok {
+			td.Views = vc.Count
+		}
+	}
+
+	result := make([]TrendData, days)
+	for i := 0; i < days; i++ {
+		date := startDate.AddDate(0, 0, i)
+		dateStr := date.Format("2006-01-02")
+		result[i] = *dateMap[dateStr]
 	}
 
 	return result

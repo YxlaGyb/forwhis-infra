@@ -8,6 +8,7 @@ import (
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 	"forestwhisperGo/magic/utils"
+	"forestwhisperGo/magic/utils/configutil"
 	"forestwhisperGo/magic/utils/db"
 
 	"gorm.io/driver/postgres"
@@ -28,11 +29,11 @@ func TestDbConnection(dbType string, dbConfig map[string]interface{}) (bool, str
 	}
 
 	cfg := DbConfig{
-		DbUser: getString(dbConfig, "dbUser"),
-		DbPass: getString(dbConfig, "dbPassword"),
-		DbHost: getString(dbConfig, "dbHost"),
-		DbPort: getInt(dbConfig, "dbPort"),
-		DbName: getString(dbConfig, "dbName"),
+		DbUser: configutil.GetString(dbConfig, "dbUser"),
+		DbPass: configutil.GetString(dbConfig, "dbPassword"),
+		DbHost: configutil.GetString(dbConfig, "dbHost"),
+		DbPort: configutil.GetInt(dbConfig, "dbPort"),
+		DbName: configutil.GetString(dbConfig, "dbName"),
 	}
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
@@ -50,11 +51,11 @@ func SaveConfig(siteName, siteUrl, dbType string, dbConfig map[string]interface{
 	utils.SetConfig("server", "siteUrl", siteUrl)
 	utils.SetConfig("server", "install", true)
 	utils.SetConfig("db", "SQLNAME", dbType)
-	utils.SetConfig("db", "PGSQLHOST", getString(dbConfig, "dbHost"))
-	utils.SetConfig("db", "PGSQLPORT", getInt(dbConfig, "dbPort"))
-	utils.SetConfig("db", "PGSQLUSER", getString(dbConfig, "dbUser"))
-	utils.SetConfig("db", "PGSQLPWD", getString(dbConfig, "dbPassword"))
-	utils.SetConfig("db", "PGSQL_DB", getString(dbConfig, "dbName"))
+	utils.SetConfig("db", "PGSQLHOST", configutil.GetString(dbConfig, "dbHost"))
+	utils.SetConfig("db", "PGSQLPORT", configutil.GetInt(dbConfig, "dbPort"))
+	utils.SetConfig("db", "PGSQLUSER", configutil.GetString(dbConfig, "dbUser"))
+	utils.SetConfig("db", "PGSQLPWD", configutil.GetString(dbConfig, "dbPassword"))
+	utils.SetConfig("db", "PGSQL_DB", configutil.GetString(dbConfig, "dbName"))
 	utils.SetConfig("jwt", "JWT_ISS", "lmoadll")
 	utils.SetConfig("jwt", "JWT_AUD", "lmoadll")
 	return nil
@@ -88,7 +89,10 @@ func InitDatabase() error {
 func CreateAdminUser(username, email, password string) error {
 	rbacSvc.InitDefaultRbac()
 
-	passwordHash := utils.HashPassword(password)
+	passwordHash, err := utils.HashPassword(password)
+	if err != nil {
+		return fmt.Errorf("密码加密失败: %v", err)
+	}
 	user, err := service.CreateUser(username, email, passwordHash, "", "superadmin", false)
 	if err != nil {
 		return fmt.Errorf("创建管理员失败: %v", err)
@@ -97,23 +101,4 @@ func CreateAdminUser(username, email, password string) error {
 		return fmt.Errorf("创建管理员失败")
 	}
 	return nil
-}
-
-func getString(m map[string]interface{}, key string) string {
-	if v, ok := m[key].(string); ok {
-		return v
-	}
-	return ""
-}
-
-func getInt(m map[string]interface{}, key string) int {
-	switch v := m[key].(type) {
-	case int:
-		return v
-	case int64:
-		return int(v)
-	case float64:
-		return int(v)
-	}
-	return 0
 }
