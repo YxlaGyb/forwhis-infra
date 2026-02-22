@@ -5,6 +5,7 @@ import (
 
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/service"
+	rbacSvc "forestwhisperGo/magic/service/rbac"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,14 +18,19 @@ func GetCurrentUserInfo(c *gin.Context) {
 	}
 
 	profile := service.GetUserProfile(user.Uid)
+	roles := rbacSvc.GetUserRoles(user.Uid)
+	canAccessAdmin := rbacSvc.HasAnyAdminRole(user)
+
 	data := gin.H{
-		"uid":       user.Uid,
-		"name":      user.Name,
-		"email":     user.Mail,
-		"lastip":    user.LastIp,
-		"createdAt": user.CreatedAt,
-		"lastLogin": user.LastLogin,
-		"isActive":  user.IsActive,
+		"uid":            user.Uid,
+		"name":           user.Name,
+		"email":          user.Mail,
+		"lastip":         user.LastIp,
+		"createdAt":      user.CreatedAt,
+		"lastLogin":      user.LastLogin,
+		"isActive":       user.IsActive,
+		"roles":          roles,
+		"canAccessAdmin": canAccessAdmin,
 	}
 	for k, v := range profile {
 		data[k] = v

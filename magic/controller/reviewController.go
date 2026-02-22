@@ -5,8 +5,8 @@ import (
 
 	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/middleware"
-	rbacSvc "forestwhisperGo/magic/service/rbac"
 	"forestwhisperGo/magic/service"
+	rbacSvc "forestwhisperGo/magic/service/rbac"
 
 	"github.com/gin-gonic/gin"
 )

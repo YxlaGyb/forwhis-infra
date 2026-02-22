@@ -18,6 +18,39 @@ func IsSuperadmin(user *models.User) bool {
 	return false
 }
 
+func GetUserRoles(userId int) []string {
+	var roles []rbac.UserRole
+	db.GetDB().Where("user_id = ?", userId).Preload("Role").Find(&roles)
+	roleNames := []string{}
+	for _, ur := range roles {
+		roleNames = append(roleNames, ur.Role.Name)
+	}
+	return roleNames
+}
+
+func HasRole(user *models.User, roleName string) bool {
+	roles := GetUserRoles(user.Uid)
+	for _, r := range roles {
+		if r == roleName {
+			return true
+		}
+	}
+	return false
+}
+
+func HasAnyAdminRole(user *models.User) bool {
+	if IsSuperadmin(user) {
+		return true
+	}
+	roles := GetUserRoles(user.Uid)
+	for _, r := range roles {
+		if r == string(constants.RoleAdmin) {
+			return true
+		}
+	}
+	return false
+}
+
 func HasPermission(user *models.User, permissionName string) bool {
 	if IsSuperadmin(user) {
 		return true
