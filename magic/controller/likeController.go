@@ -105,3 +105,16 @@ func GetUserLikes(c *gin.Context) {
 	result := service.GetLikesByUser(user.Uid, targetType, page, limit)
 	middleware.JSONSuccess(c, "获取成功喵", result)
 }
+
+func GetMyLikesCount(c *gin.Context) {
+	user := middleware.GetCurrentUser(c)
+	if user == nil {
+		middleware.JSONError(c, "请先登录喵", nil)
+		return
+	}
+
+	count := service.GetUserLikedCount(user.Uid)
+	middleware.JSONSuccess(c, "获取成功喵", map[string]interface{}{
+		"count": count,
+	})
+}

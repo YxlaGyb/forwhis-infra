@@ -16,6 +16,7 @@ func init() {
 			v1.GET("/count", controller.GetLikeCount)
 			v1.GET("/status", controller.GetLikeStatus)
 			v1.GET("/user", middleware.RequireAuth(controller.GetUserLikes))
+			v1.GET("/my/count", middleware.RequireAuth(controller.GetMyLikesCount))
 		}
 	})
 }

@@ -103,6 +103,16 @@ func GetAllCommentsByContent(cid int) []map[string]interface{} {
 	return items
 }
 
+func GetCommentsByAuthor(authorID int) []map[string]interface{} {
+	var comments []models.Comment
+	db.GetDB().Where("author_id = ?", authorID).Order("created desc").Find(&comments)
+	items := []map[string]interface{}{}
+	for _, c := range comments {
+		items = append(items, commentToDict(&c))
+	}
+	return items
+}
+
 func commentToDict(c *models.Comment) map[string]interface{} {
 	return map[string]interface{}{
 		"coid": c.Coid, "cid": c.Cid, "created": c.Created,

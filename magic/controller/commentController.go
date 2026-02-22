@@ -31,6 +31,12 @@ func GetComments(c *gin.Context) {
 	middleware.JSONSuccess(c, "获取成功喵", result)
 }
 
+func GetMyComments(c *gin.Context) {
+	user := middleware.GetCurrentUserFromContext(c)
+	comments := service.GetCommentsByAuthor(user.Uid)
+	middleware.JSONSuccess(c, "获取成功喵", comments)
+}
+
 func CreateComment(c *gin.Context) {
 	var req struct {
 		Cid    int    `json:"cid"`

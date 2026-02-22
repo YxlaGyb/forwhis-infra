@@ -82,3 +82,9 @@ func GetLikeStatus(userID int, targetType string, targetID int) map[string]inter
 		"count":     count,
 	}
 }
+
+func GetUserLikedCount(userID int) int64 {
+	var count int64
+	db.GetDB().Model(&models.Like{}).Where("user_id = ?", userID).Count(&count)
+	return count
+}
