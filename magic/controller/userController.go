@@ -300,6 +300,11 @@ func UpdateProfile(c *gin.Context) {
 	middleware.JSONError(c, "没有需要更新的内容喵", nil)
 }
 
+func GetAllUsers(c *gin.Context) {
+	users := service.GetUsersList()
+	middleware.JSONSuccess(c, "ok", users)
+}
+
 func verifyCode(email, code string) (bool, string) {
 	codeKey := db.FormatKey("verify:code", email)
 	storedHash, err := db.Get(codeKey)
