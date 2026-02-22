@@ -106,11 +106,12 @@ const ArticleManagement: React.FC = () => {
             if (abortControllerRef.current?.signal.aborted) return;
 
             if (response.data.code === 200 && response.data.data) {
-                setArticles(response.data.data);
+                const items = response.data.data.items || response.data.data;
+                setArticles(items);
             } else {
                 message.error(response.data.msg || '获取文章列表失败');
             }
-        } catch (error) {
+        } catch {
             if (abortControllerRef.current?.signal.aborted) return;
             message.error('获取文章列表失败');
         } finally {
@@ -150,7 +151,7 @@ const ArticleManagement: React.FC = () => {
             } else {
                 message.error(response.data.msg || '删除失败');
             }
-        } catch (error) {
+        } catch {
             message.error('删除失败');
         }
     };
@@ -164,7 +165,7 @@ const ArticleManagement: React.FC = () => {
             } else {
                 message.error(response.data.msg || '发布失败');
             }
-        } catch (error) {
+        } catch {
             message.error('发布失败');
         }
     };
@@ -192,7 +193,7 @@ const ArticleManagement: React.FC = () => {
                     message.error(response.data.msg || '创建失败');
                 }
             }
-        } catch (error) {
+        } catch {
             message.error('操作失败');
         }
     };
@@ -224,26 +225,28 @@ const ArticleManagement: React.FC = () => {
             title: '标题',
             dataIndex: 'title',
             key: 'title',
+            width: 80,
             ellipsis: true,
         },
         {
             title: '别名',
             dataIndex: 'slug',
             key: 'slug',
+            width: 80,
             ellipsis: true,
         },
         {
             title: '类型',
             dataIndex: 'type',
             key: 'type',
-            width: 100,
+            width: 80,
             render: (type: string) => getTypeName(type),
         },
         {
             title: '状态',
             dataIndex: 'status',
             key: 'status',
-            width: 100,
+            width: 80,
             render: (status: string) => (
                 <Tag color={getStatusColor(status)}>
                     {getStatusName(status)}
@@ -254,25 +257,25 @@ const ArticleManagement: React.FC = () => {
             title: '作者',
             dataIndex: 'author',
             key: 'author',
-            width: 120,
+            width: 80,
         },
         {
             title: '评论数',
             dataIndex: 'commentsNum',
             key: 'commentsNum',
-            width: 80,
+            width: 100,
         },
         {
             title: '创建时间',
             dataIndex: 'created',
             key: 'created',
-            width: 160,
+            width: 120,
             render: (created: number) => formatTimestamp(created),
         },
         {
             title: '操作',
             key: 'action',
-            width: 200,
+            width: 80,
             render: (_: unknown, record: Content) => (
                 <Space size="small">
                     <Button

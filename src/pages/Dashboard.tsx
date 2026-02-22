@@ -159,7 +159,10 @@ const Dashboard: React.FC = () => {
                 实时展示系统各项核心数据指标及变化趋势
             </Paragraph>
 
-            <div style={{ marginBottom: 16, fontSize: 16, fontWeight: 600, color: '#333' }}>数据总和</div>
+            <div style={{ marginBottom: 8, fontSize: 16, fontWeight: 600, color: '#333' }}>数据总和</div>
+            <Paragraph type="secondary" style={{ marginBottom: 16 }}>
+                网站在建立以来, 各项指标的总和数据
+            </Paragraph>
             <Row gutter={[24, 24]}>
                 <Col xs={24} sm={12} lg={8}>
                     <Card>
@@ -224,6 +227,9 @@ const Dashboard: React.FC = () => {
                     调整时间范围
                 </Text>
             </div>
+            <Paragraph type="secondary" style={{ marginBottom: 16 }}>
+                网站在指定时间段内, 各项指标的增量数据
+            </Paragraph>
             <Slider
                 min={1}
                 max={30}
@@ -261,6 +267,9 @@ const Dashboard: React.FC = () => {
 
             <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
                 <Col span={24}>
+                    <Paragraph type="secondary" style={{ marginBottom: 16 }}>
+                        如果要用一张可视化的图表来表示网站的增量数据状态, 那就是下面这张图
+                    </Paragraph>
                     <Card 
                         title="趋势图"
                         style={{ minHeight: 400, position: 'relative' }}

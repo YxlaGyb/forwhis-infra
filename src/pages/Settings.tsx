@@ -22,10 +22,7 @@ import {
     SettingOutlined,
     SaveOutlined,
     GlobalOutlined,
-    ToolOutlined,
-    SafetyOutlined,
     FileSearchOutlined,
-    ContactsOutlined,
     ReloadOutlined,
     ExclamationCircleOutlined
 } from '@ant-design/icons';
@@ -48,28 +45,10 @@ const sectionConfigs: SettingsSectionConfig[] = [
         description: '网站名称、Logo、描述等基本信息'
     },
     {
-        key: 'contact',
-        title: '联系方式',
-        icon: 'ContactsOutlined',
-        description: '管理员邮箱、联系电话、地址'
-    },
-    {
-        key: 'system',
-        title: '系统设置',
-        icon: 'ToolOutlined',
-        description: '语言、时区、日期时间格式'
-    },
-    {
         key: 'feature',
         title: '功能开关',
         icon: 'SettingOutlined',
         description: '注册、评论、验证码等功能控制'
-    },
-    {
-        key: 'security',
-        title: '安全设置',
-        icon: 'SafetyOutlined',
-        description: '登录限制、会话超时、密码策略'
     },
     {
         key: 'seo',
@@ -87,28 +66,11 @@ const defaultSettings: AllSettings = {
         favicon: '',
         icp: ''
     },
-    contact: {
-        adminEmail: '',
-        contactPhone: '',
-        contactAddress: ''
-    },
-    system: {
-        language: 'zh-CN',
-        timezone: 'Asia/Shanghai',
-        dateFormat: 'YYYY-MM-DD',
-        timeFormat: 'HH:mm:ss'
-    },
     feature: {
         enableRegistration: true,
         enableComments: true,
         enableEmailVerify: false,
         enableCaptcha: true
-    },
-    security: {
-        maintenanceMode: false,
-        loginFailLimit: 5,
-        sessionTimeout: 30,
-        passwordMinLength: 8
     },
     seo: {
         siteKeywords: '',
@@ -120,10 +82,7 @@ const defaultSettings: AllSettings = {
 
 const iconMap: Record<string, React.ReactNode> = {
     GlobalOutlined: <GlobalOutlined />,
-    ContactsOutlined: <ContactsOutlined />,
-    ToolOutlined: <ToolOutlined />,
     SettingOutlined: <SettingOutlined />,
-    SafetyOutlined: <SafetyOutlined />,
     FileSearchOutlined: <FileSearchOutlined />
 };
 
@@ -262,113 +221,6 @@ const Settings: React.FC = () => {
         </Space>
     );
 
-    const renderContactSection = () => (
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <Alert
-                message="联系方式设置"
-                description="设置管理员的联系信息，用于接收系统通知和用户反馈。"
-                type="info"
-                showIcon
-            />
-            <Row gutter={[24, 16]}>
-                <Col xs={24} md={12}>
-                    <Form.Item
-                        label="管理员邮箱"
-                        name={['contact', 'adminEmail']}
-                        rules={[
-                            { required: true, message: '请输入管理员邮箱' },
-                            { type: 'email', message: '请输入有效的邮箱地址' }
-                        ]}
-                        tooltip="用于接收系统通知和重要提醒"
-                    >
-                        <Input placeholder="admin@example.com" />
-                    </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                    <Form.Item
-                        label="联系电话"
-                        name={['contact', 'contactPhone']}
-                    >
-                        <Input placeholder="+86 138-xxxx-xxxx" />
-                    </Form.Item>
-                </Col>
-            </Row>
-            <Form.Item
-                label="联系地址"
-                name={['contact', 'contactAddress']}
-            >
-                <TextArea rows={2} placeholder="公司或组织的联系地址" />
-            </Form.Item>
-        </Space>
-    );
-
-    const renderSystemSection = () => (
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <Alert
-                message="系统区域设置"
-                description="配置系统的语言、时区和日期时间格式。"
-                type="info"
-                showIcon
-            />
-            <Row gutter={[24, 16]}>
-                <Col xs={24} md={12}>
-                    <Form.Item
-                        label="系统语言"
-                        name={['system', 'language']}
-                    >
-                        <Select>
-                            <Option value="zh-CN">简体中文</Option>
-                            <Option value="zh-TW">繁體中文</Option>
-                            <Option value="en-US">English</Option>
-                            <Option value="ja-JP">日本語</Option>
-                            <Option value="ko-KR">한국어</Option>
-                        </Select>
-                    </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                    <Form.Item
-                        label="时区"
-                        name={['system', 'timezone']}
-                    >
-                        <Select>
-                            <Option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</Option>
-                            <Option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</Option>
-                            <Option value="Europe/London">Europe/London (UTC+0)</Option>
-                            <Option value="America/New_York">America/New_York (UTC-5)</Option>
-                            <Option value="America/Los_Angeles">America/Los_Angeles (UTC-8)</Option>
-                        </Select>
-                    </Form.Item>
-                </Col>
-            </Row>
-            <Row gutter={[24, 16]}>
-                <Col xs={24} md={12}>
-                    <Form.Item
-                        label="日期格式"
-                        name={['system', 'dateFormat']}
-                    >
-                        <Select>
-                            <Option value="YYYY-MM-DD">YYYY-MM-DD</Option>
-                            <Option value="DD/MM/YYYY">DD/MM/YYYY</Option>
-                            <Option value="MM/DD/YYYY">MM/DD/YYYY</Option>
-                            <Option value="YYYY年MM月DD日">YYYY年MM月DD日</Option>
-                        </Select>
-                    </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                    <Form.Item
-                        label="时间格式"
-                        name={['system', 'timeFormat']}
-                    >
-                        <Select>
-                            <Option value="HH:mm:ss">24小时制 (HH:mm:ss)</Option>
-                            <Option value="hh:mm:ss A">12小时制 (hh:mm:ss AM/PM)</Option>
-                        </Select>
-                    </Form.Item>
-                </Col>
-            </Row>
-        </Space>
-    );
-
     const renderFeatureSection = () => (
         <Space direction="vertical" style={{ width: '100%' }} size="large">
             <Alert
@@ -436,61 +288,6 @@ const Settings: React.FC = () => {
         </Space>
     );
 
-    const renderSecuritySection = () => (
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <Alert
-                message="安全设置"
-                description="配置系统的安全策略，保护网站和用户数据安全。"
-                type="warning"
-                showIcon
-            />
-            <Card size="small" title="维护模式" style={{ borderColor: '#ff4d4f' }}>
-                <Form.Item
-                    label="启用维护模式"
-                    name={['security', 'maintenanceMode']}
-                    valuePropName="checked"
-                    style={{ marginBottom: 8 }}
-                >
-                    <Switch
-                        checkedChildren="开启"
-                        unCheckedChildren="关闭"
-                        style={{ backgroundColor: Form.useWatch(['security', 'maintenanceMode'], form) ? '#ff4d4f' : undefined }}
-                    />
-                </Form.Item>
-                <Text type="danger" style={{ fontSize: 12 }}>
-                    <ExclamationCircleOutlined /> 开启后只有管理员可以访问网站，其他用户将看到维护页面
-                </Text>
-            </Card>
-            <Row gutter={[24, 16]}>
-                <Col xs={24} md={12}>
-                    <Form.Item
-                        label="登录失败限制"
-                        name={['security', 'loginFailLimit']}
-                        tooltip="连续登录失败多少次后锁定账户"
-                    >
-                        <InputNumber min={1} max={10} style={{ width: '100%' }} addonAfter="次" />
-                    </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                    <Form.Item
-                        label="会话超时时间"
-                        name={['security', 'sessionTimeout']}
-                        tooltip="用户无操作多少分钟后自动退出登录"
-                    >
-                        <InputNumber min={5} max={1440} style={{ width: '100%' }} addonAfter="分钟" />
-                    </Form.Item>
-                </Col>
-            </Row>
-            <Form.Item
-                label="密码最小长度"
-                name={['security', 'passwordMinLength']}
-                tooltip="用户密码的最小长度要求"
-            >
-                <InputNumber min={6} max={32} style={{ width: 200 }} addonAfter="位字符" />
-            </Form.Item>
-        </Space>
-    );
-
     const renderSeoSection = () => (
         <Space direction="vertical" style={{ width: '100%' }} size="large">
             <Alert
@@ -544,10 +341,7 @@ Sitemap: https://example.com/sitemap.xml`}
 
     const sectionRenderers: Record<SettingsSection, () => React.ReactNode> = {
         site: renderSiteSection,
-        contact: renderContactSection,
-        system: renderSystemSection,
         feature: renderFeatureSection,
-        security: renderSecuritySection,
         seo: renderSeoSection
     };
 

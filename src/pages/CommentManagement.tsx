@@ -98,7 +98,8 @@ const CommentManagement: React.FC = () => {
             if (abortControllerRef.current?.signal.aborted) return;
 
             if (response.data.code === 200 && response.data.data) {
-                setComments(response.data.data);
+                const items = response.data.data.items || response.data.data;
+                setComments(items);
             } else {
                 message.error(response.data.msg || '获取评论列表失败');
             }

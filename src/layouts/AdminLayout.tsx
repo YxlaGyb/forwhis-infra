@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Space, Typography, theme, message, Drawer } from 'antd';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
     DashboardOutlined,
     UserOutlined,
@@ -12,11 +13,6 @@ import {
     FileTextOutlined,
     CommentOutlined
 } from '@ant-design/icons';
-import Dashboard from '../pages/Dashboard';
-import UserManagement from '../pages/UserManagement';
-import ArticleManagement from '../pages/ArticleManagement';
-import CommentManagement from '../pages/CommentManagement';
-import Settings from '../pages/Settings';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import type { AdminLayoutProps } from '../types';
@@ -26,10 +22,11 @@ const { Text } = Typography;
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
     const [collapsed, setCollapsed] = useState(true);
-    const [selectedKey, setSelectedKey] = useState('dashboard');
     const [adminInfo, setAdminInfo] = useState({ name: '管理员', identity: '管理员' });
     const [mobile, setMobile] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
     const {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
@@ -109,27 +106,27 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
 
     const menuItems = [
         {
-        key: 'dashboard',
+        key: '/',
         icon: <DashboardOutlined />,
         label: '仪表盘',
         },
         {
-        key: 'users',
+        key: '/users',
         icon: <UserOutlined />,
         label: '用户管理',
         },
         {
-        key: 'articles',
+        key: '/articles',
         icon: <FileTextOutlined />,
         label: '文章管理',
         },
         {
-        key: 'comments',
+        key: '/comments',
         icon: <CommentOutlined />,
         label: '评论管理',
         },
         {
-        key: 'settings',
+        key: '/settings',
         icon: <SettingOutlined />,
         label: '系统设置',
         },
@@ -148,25 +145,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
         },
     ];
 
-    const renderContent = () => {
-        switch (selectedKey) {
-        case 'dashboard':
-            return <Dashboard />;
-        case 'users':
-            return <UserManagement />;
-        case 'articles':
-            return <ArticleManagement />;
-        case 'comments':
-            return <CommentManagement />;
-        case 'settings':
-            return <Settings />;
-        default:
-            return <Dashboard />;
-        }
-    };
-
     const handleMenuClick = (key: string) => {
-        setSelectedKey(key);
+        navigate(key);
         if (mobile) {
             setDrawerVisible(false);
         }
@@ -191,7 +171,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
                 >
                     <Menu
                         mode="inline"
-                        selectedKeys={[selectedKey]}
+                        selectedKeys={[location.pathname]}
                         items={menuItems}
                         onClick={({ key }) => handleMenuClick(key)}
                         style={{ borderRight: 0 }}
@@ -234,9 +214,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
             
             <Menu
             mode="inline"
-            selectedKeys={[selectedKey]}
+            selectedKeys={[location.pathname]}
             items={menuItems}
-            onClick={({ key }) => setSelectedKey(key)}
+            onClick={({ key }) => handleMenuClick(key)}
             style={{ borderRight: 0, marginTop: 16 }}
             />
         </Sider>
@@ -294,7 +274,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
             borderRadius: borderRadiusLG,
             minHeight: 280
             }}>
-            {renderContent()}
+            <Outlet />
             </Content>
         </Layout>
         </Layout>

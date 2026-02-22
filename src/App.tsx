@@ -2,8 +2,14 @@ import { useState, useEffect } from 'react';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import axios from 'axios';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import AdminLayout from './layouts/AdminLayout';
+import Dashboard from './pages/Dashboard';
+import UserManagement from './pages/UserManagement';
+import ArticleManagement from './pages/ArticleManagement';
+import CommentManagement from './pages/CommentManagement';
+import Settings from './pages/Settings';
 import { API_BASE_URL } from './api';
 import './App.css';
 
@@ -97,11 +103,22 @@ const App = () => {
 
     return (
         <ConfigProvider locale={zhCN}>
-            {isLoggedIn ? (
-                <AdminLayout onLogout={handleLogout} />
-            ) : (
-                <Login onLogin={handleLogin} />
-            )}
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/login" element={
+                        isLoggedIn ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />
+                    } />
+                    <Route path="/" element={
+                        isLoggedIn ? <AdminLayout onLogout={handleLogout} /> : <Navigate to="/login" replace />
+                    }>
+                        <Route index element={<Dashboard />} />
+                        <Route path="users" element={<UserManagement />} />
+                        <Route path="articles" element={<ArticleManagement />} />
+                        <Route path="comments" element={<CommentManagement />} />
+                        <Route path="settings" element={<Settings />} />
+                    </Route>
+                </Routes>
+            </BrowserRouter>
         </ConfigProvider>
     );
 };

@@ -42,14 +42,11 @@ export interface SeoSettings {
 
 export interface AllSettings {
     site: SiteSettings;
-    contact: ContactSettings;
-    system: SystemSettings;
     feature: FeatureSettings;
-    security: SecuritySettings;
     seo: SeoSettings;
 }
 
-export type SettingsSection = 'site' | 'contact' | 'system' | 'feature' | 'security' | 'seo';
+export type SettingsSection = 'site' | 'feature' | 'seo';
 
 export interface SettingsSectionConfig {
     key: SettingsSection;
