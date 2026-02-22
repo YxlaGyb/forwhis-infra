@@ -27,6 +27,40 @@ import type { User } from '../types';
 const { Title } = Typography;
 const { Option } = Select;
 
+const formatTimestamp = (timestamp: number): string => {
+    if (!timestamp) return '-';
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
+const getRoleColor = (role: string): string => {
+    const colorMap: Record<string, string> = {
+        'superadmin': 'red',
+        'admin': 'orange',
+        'editor': 'blue',
+        'user': 'green',
+        'visitor': 'default'
+    };
+    return colorMap[role] || 'default';
+};
+
+const getRoleName = (role: string): string => {
+    const nameMap: Record<string, string> = {
+        'superadmin': '超级管理员',
+        'admin': '管理员',
+        'editor': '编辑',
+        'user': '用户',
+        'visitor': '访客'
+    };
+    return nameMap[role] || role;
+};
+
 const UserManagement: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
@@ -61,7 +95,7 @@ const UserManagement: React.FC = () => {
             if (response.data.code === 200 && response.data.data) {
                 setUsers(response.data.data);
             } else {
-                message.error('获取用户列表失败');
+                message.error(response.data.msg || '获取用户列表失败');
             }
         } catch (error) {
             if (abortControllerRef.current?.signal.aborted) return;
@@ -83,14 +117,22 @@ const UserManagement: React.FC = () => {
     const handleEditUser = (user: User) => {
         setEditingUser(user);
         setIsModalVisible(true);
-        form.setFieldsValue(user);
+        form.setFieldsValue({
+            name: user.name,
+            email: user.email,
+            roles: user.roles && user.roles.length > 0 ? user.roles[0] : 'user'
+        });
     };
 
-    const handleDeleteUser = async (userId: string) => {
+    const handleDeleteUser = async (uid: number) => {
         try {
-            await userApi.deleteUser(parseInt(userId));
-            setUsers(users.filter(user => user.id !== userId));
-            message.success('用户删除成功');
+            const response = await userApi.deleteUser(uid);
+            if (response.data.code === 200) {
+                setUsers(users.filter(user => user.uid !== uid));
+                message.success('用户删除成功');
+            } else {
+                message.error(response.data.msg || '用户删除失败');
+            }
         } catch (error) {
             console.error('删除用户失败:', error);
             message.error('删除用户失败');
@@ -102,11 +144,10 @@ const UserManagement: React.FC = () => {
             const values = await form.validateFields();
             
             if (editingUser) {
-                const response = await userApi.updateUser(parseInt(editingUser.id), {
+                const response = await userApi.updateUser(editingUser.uid, {
                     name: values.name,
                     email: values.email,
-                    role: values.role,
-                    status: values.status
+                    role: values.roles
                 });
                 
                 if (response.data.code === 200) {
@@ -125,8 +166,7 @@ const UserManagement: React.FC = () => {
                     name: values.name,
                     email: values.email,
                     password: values.password,
-                    role: values.role,
-                    status: values.status
+                    role: values.roles
                 });
                 
                 if (response.data.code === 200) {
@@ -153,9 +193,9 @@ const UserManagement: React.FC = () => {
 
     const columns = [
         {
-            title: 'ID',
-            dataIndex: 'id',
-            key: 'id',
+            title: 'UID',
+            dataIndex: 'uid',
+            key: 'uid',
             width: 80,
         },
         {
@@ -176,28 +216,23 @@ const UserManagement: React.FC = () => {
         },
         {
             title: '角色',
-            dataIndex: 'role',
-            key: 'role',
-            render: (role: string) => (
-                <Tag color={role === 'admin' ? 'red' : 'blue'}>
-                    {role === 'admin' ? '管理员' : '普通用户'}
-                </Tag>
-            ),
-        },
-        {
-            title: '状态',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status: string) => (
-                <Tag color={status === 'active' ? 'green' : 'red'}>
-                    {status === 'active' ? '活跃' : '禁用'}
-                </Tag>
+            dataIndex: 'roles',
+            key: 'roles',
+            render: (roles: string[]) => (
+                <Space>
+                    {roles && roles.map((role, index) => (
+                        <Tag key={index} color={getRoleColor(role)}>
+                            {getRoleName(role)}
+                        </Tag>
+                    ))}
+                </Space>
             ),
         },
         {
             title: '创建时间',
-            dataIndex: 'createTime',
-            key: 'createTime',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            render: (timestamp: number) => formatTimestamp(timestamp),
         },
         {
             title: '操作',
@@ -213,7 +248,7 @@ const UserManagement: React.FC = () => {
                     </Button>
                     <Popconfirm
                         title="确定删除这个用户吗？"
-                        onConfirm={() => handleDeleteUser(record.id)}
+                        onConfirm={() => handleDeleteUser(record.uid)}
                         okText="确定"
                         cancelText="取消"
                     >
@@ -249,7 +284,7 @@ const UserManagement: React.FC = () => {
                 <Table
                     columns={columns}
                     dataSource={filteredUsers}
-                    rowKey="id"
+                    rowKey="uid"
                     loading={loading}
                     pagination={{
                         showSizeChanger: true,
@@ -302,23 +337,14 @@ const UserManagement: React.FC = () => {
 
                     <Form.Item
                         label="角色"
-                        name="role"
+                        name="roles"
                         rules={[{ required: true, message: '请选择用户角色' }]}
                     >
                         <Select placeholder="请选择用户角色">
                             <Option value="user">普通用户</Option>
+                            <Option value="editor">编辑</Option>
                             <Option value="admin">管理员</Option>
-                        </Select>
-                    </Form.Item>
-
-                    <Form.Item
-                        label="状态"
-                        name="status"
-                        rules={[{ required: true, message: '请选择用户状态' }]}
-                    >
-                        <Select placeholder="请选择用户状态">
-                            <Option value="active">活跃</Option>
-                            <Option value="inactive">禁用</Option>
+                            <Option value="superadmin">超级管理员</Option>
                         </Select>
                     </Form.Item>
                 </Form>

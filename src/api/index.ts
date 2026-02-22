@@ -76,10 +76,10 @@ export const adminApi = {
 
 export const userApi = {
     getUsers: () =>
-        api.get('/api/v1/user/users'),
+        api.get('/api/v1/admin/users'),
     
     getUserByUsername: (username: string) =>
-        api.get('/api/v1/user/users', { params: { username } }),
+        api.get('/api/v1/user/users', { params: { name: username } }),
     
     createUser: (data: { name: string; email: string; password: string; role?: string; status?: string }) =>
         api.post('/api/v1/user/users', data),

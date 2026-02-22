@@ -1,8 +1,7 @@
 export interface User {
-    id: string;
+    uid: number;
     name: string;
     email: string;
-    role: string;
-    status: 'active' | 'inactive';
-    createTime: string;
+    roles: string[];
+    createdAt: number;
 }
