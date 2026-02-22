@@ -249,7 +249,7 @@ func ChangePassword(c *gin.Context) {
 }
 
 func UpdateProfile(c *gin.Context) {
-	var req map[string]string
+	var req map[string]interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
@@ -263,28 +263,41 @@ func UpdateProfile(c *gin.Context) {
 		models.MetaBio:      200,
 	}
 
+	pendingFields := map[string]string{}
+
 	for key, maxLen := range allowedKeys {
 		if value, ok := req[key]; ok {
-			if maxLen > 0 && len(value) > maxLen {
+			strValue, _ := value.(string)
+			if maxLen > 0 && len(strValue) > maxLen {
 				middleware.JSONError(c, key+"长度不能超过"+strconv.Itoa(maxLen)+"个字符喵", nil)
 				return
 			}
 			if key == models.MetaGender {
-				gender, _ := strconv.Atoi(value)
+				gender, _ := strconv.Atoi(strValue)
 				if gender < 0 || gender > 3 {
 					middleware.JSONError(c, "性别值无效喵", nil)
 					return
 				}
 			}
-			success, errMsg := service.UpdateUsermeta(user.Uid, key, value)
-			if !success {
-				middleware.JSONError(c, errMsg, nil)
-				return
-			}
+			pendingFields[key] = strValue
 		}
 	}
 
-	middleware.JSONSuccess(c, "资料已提交审核或更新喵", nil)
+	if nameValue, ok := req["name"].(string); ok {
+		if len(nameValue) > 50 {
+			middleware.JSONError(c, "昵称长度不能超过50个字符喵", nil)
+			return
+		}
+		pendingFields["name"] = nameValue
+	}
+
+	if len(pendingFields) > 0 {
+		service.CreateUserMetaReview(user.Uid, pendingFields)
+		middleware.JSONSuccess(c, "资料已提交审核喵", nil)
+		return
+	}
+
+	middleware.JSONError(c, "没有需要更新的内容喵", nil)
 }
 
 func verifyCode(email, code string) (bool, string) {

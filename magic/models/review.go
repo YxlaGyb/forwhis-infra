@@ -7,14 +7,15 @@ type Review struct {
 	ReviewerId int
 	Status     int    `gorm:"default:0"`
 	Reason     string `gorm:"type:text"`
+	Data       string `gorm:"type:text"`
 	CreatedAt  int    `gorm:"default:0"`
 	UpdatedAt  int    `gorm:"default:0"`
 }
 
 const (
-	ReviewStatusPending  = 0
-	ReviewStatusApproved = 1
-	ReviewStatusRejected = 2
+	ReviewStatusPending   = 0
+	ReviewStatusApproved  = 1
+	ReviewStatusRejected  = 2
 )
 
 const (

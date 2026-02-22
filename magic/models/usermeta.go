@@ -20,6 +20,7 @@ const (
 	MetaGender   = "gender"
 	MetaBirthday = "birthday"
 	MetaBio      = "bio"
+	MetaName     = "name"
 )
 
 func (Usermeta) TableName() string { return "usermeta" }
