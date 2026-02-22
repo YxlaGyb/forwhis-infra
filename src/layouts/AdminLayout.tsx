@@ -17,13 +17,10 @@ import Messages from '../pages/Messages';
 import Settings from '../pages/Settings';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
+import type { AdminLayoutProps } from '../types';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
-
-interface AdminLayoutProps {
-    onLogout: () => void;
-}
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
     const [collapsed, setCollapsed] = useState(true);

@@ -2,12 +2,9 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { authApi } from '../api';
+import type { LoginProps } from '../types';
 
 const { Title, Text } = Typography;
-
-interface LoginProps {
-    onLogin: () => void;
-}
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [loading, setLoading] = useState(false);

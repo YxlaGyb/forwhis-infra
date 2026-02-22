@@ -3,54 +3,9 @@ import { Row, Col, Card, Statistic, Typography, Spin, message, Slider } from 'an
 import { UserOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons';
 import { statsApi } from '../api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import type { DashboardData, TrendData, TooltipProps } from '../types';
 
 const { Title, Paragraph, Text } = Typography;
-
-interface UserStats {
-    total: number;
-    todayNew: number;
-    weekNew: number;
-}
-
-interface ContentStats {
-    posts: number;
-    pages: number;
-    drafts: number;
-    published: number;
-    private: number;
-}
-
-interface CommentStats {
-    total: number;
-    pending: number;
-    approved: number;
-    spam: number;
-}
-
-interface DashboardData {
-    users?: UserStats;
-    contents?: ContentStats;
-    comments?: CommentStats;
-}
-
-interface TrendData {
-    date: string;
-    user: number;
-    content: number;
-    comment: number;
-}
-
-interface TooltipPayloadEntry {
-    name: string;
-    value: number;
-    color: string;
-}
-
-interface TooltipProps {
-    active?: boolean;
-    payload?: TooltipPayloadEntry[];
-    label?: string;
-}
 
 const Dashboard: React.FC = () => {
     const [dashboardData, setDashboardData] = useState<DashboardData>({});

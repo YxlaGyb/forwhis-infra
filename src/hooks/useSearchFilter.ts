@@ -1,16 +1,5 @@
 import { useState, useMemo } from 'react';
-
-interface UseSearchFilterOptions<T> {
-    data: T[];
-    searchKeys: (keyof T)[];
-}
-
-interface UseSearchFilterResult<T> {
-    searchText: string;
-    setSearchText: (text: string) => void;
-    filteredData: T[];
-    handleSearch: (value: string) => void;
-}
+import type { UseSearchFilterOptions, UseSearchFilterResult } from '../types';
 
 export function useSearchFilter<T>({ data, searchKeys }: UseSearchFilterOptions<T>): UseSearchFilterResult<T> {
     const [searchText, setSearchText] = useState('');

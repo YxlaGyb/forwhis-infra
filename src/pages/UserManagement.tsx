@@ -22,18 +22,10 @@ import {
 } from '@ant-design/icons';
 import { userApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
+import type { User } from '../types';
 
 const { Title } = Typography;
 const { Option } = Select;
-
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    status: 'active' | 'inactive';
-    createTime: string;
-}
 
 const UserManagement: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);

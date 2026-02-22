@@ -21,19 +21,10 @@ import {
 } from '@ant-design/icons';
 import { commentApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
+import type { Message } from '../types';
 
 const { Title } = Typography;
 const { TextArea } = Input;
-
-interface Message {
-    id: string;
-    title: string;
-    content: string;
-    sender: string;
-    receiver: string;
-    status: 'unread' | 'read';
-    createTime: string;
-}
 
 const Messages: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);

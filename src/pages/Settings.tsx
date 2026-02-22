@@ -15,21 +15,11 @@ import {
 } from 'antd';
 import { SettingOutlined, SaveOutlined } from '@ant-design/icons';
 import { settingsApi } from '../api';
+import type { SettingsData } from '../types';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
-
-interface SettingsData {
-    siteName: string;
-    siteDescription: string;
-    adminEmail: string;
-    language: string;
-    timezone: string;
-    enableRegistration: boolean;
-    enableComments: boolean;
-    maintenanceMode: boolean;
-}
 
 const Settings: React.FC = () => {
     const [form] = Form.useForm();

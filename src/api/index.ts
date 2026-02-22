@@ -27,11 +27,11 @@ api.interceptors.response.use(
 );
 
 export const authApi = {
-    login: (email: string, password: string) =>
-        api.post('/api/v1/user/login', { email, password }),
+    login: (email: string, passwd: string) =>
+        api.post('/api/v1/user/login', { email, passwd }),
     
-    register: (email: string, password: string, name?: string, code?: string) =>
-        api.post('/api/v1/user/register', { email, password, name, code }),
+    register: (email: string, passwd: string, name?: string, code?: string) =>
+        api.post('/api/v1/user/register', { email, passwd, name, code }),
     
     logout: () =>
         api.post('/api/v1/user/logout'),
