@@ -1,0 +1,26 @@
+{
+	"name": "we_admin",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "rsbuild build",
+		"dev": "rsbuild dev --open",
+		"preview": "rsbuild preview"
+	},
+	"dependencies": {
+		"@ant-design/icons": "^6.1.0",
+		"antd": "^6.1.1",
+		"axios": "^1.13.2",
+		"react": "^19.2.3",
+		"react-dom": "^19.2.3",
+		"recharts": "^3.7.0"
+	},
+	"devDependencies": {
+		"@rsbuild/core": "^1.6.14",
+		"@rsbuild/plugin-react": "^1.4.2",
+		"@types/react": "^19.2.7",
+		"@types/react-dom": "^19.2.3",
+		"typescript": "^5.9.3"
+	}
+}
