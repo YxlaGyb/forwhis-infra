@@ -67,7 +67,7 @@ func RoleMiddleware(roles ...string) gin.HandlerFunc {
 
 		hasRole := false
 		for _, role := range roles {
-			if rbacSvc.HasRole(user, role) {
+			if rbacSvc.HasPermission(user, role) {
 				hasRole = true
 				break
 			}
@@ -126,7 +126,7 @@ func RequireRole(roles ...constants.Role) func(gin.HandlerFunc) gin.HandlerFunc 
 			}
 			hasRole := false
 			for _, role := range roles {
-				if rbacSvc.HasRole(user, string(role)) {
+				if rbacSvc.HasPermission(user, string(role)) {
 					hasRole = true
 					break
 				}

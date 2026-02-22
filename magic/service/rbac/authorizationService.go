@@ -18,21 +18,6 @@ func IsSuperadmin(user *models.User) bool {
 	return false
 }
 
-func HasRole(user *models.User, roleName string) bool {
-	var roles []rbac.UserRole
-	db.GetDB().Where("user_id = ?", user.Uid).Preload("Role").Find(&roles)
-	for _, ur := range roles {
-		if ur.Role.Name == roleName {
-			return true
-		}
-	}
-	return false
-}
-
-func HasRoleConst(user *models.User, role constants.Role) bool {
-	return HasRole(user, string(role))
-}
-
 func HasPermission(user *models.User, permissionName string) bool {
 	if IsSuperadmin(user) {
 		return true

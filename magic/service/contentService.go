@@ -111,8 +111,10 @@ func DeleteContent(cid int) bool {
 	if content == nil {
 		return false
 	}
-	db.GetDB().Delete(content)
+	db.GetDB().Where("cid = ?", cid).Delete(&models.Comment{})
 	db.GetDB().Where("cid = ?", cid).Delete(&models.Relationship{})
+	db.GetDB().Where("target_type = ? AND target_id = ?", "content", cid).Delete(&models.Like{})
+	db.GetDB().Delete(content)
 	return true
 }
 

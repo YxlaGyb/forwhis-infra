@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
@@ -109,9 +110,7 @@ func ApproveComment(c *gin.Context) {
 	}
 
 	user := middleware.GetCurrentUserFromContext(c)
-	content := service.GetContentByCid(comment.Cid)
-	isAdmin := rbacSvc.HasRole(user, "admin")
-	if content != nil && content.AuthorID != user.Uid && !isAdmin {
+	if !rbacSvc.HasPermissionConst(user, constants.PermCommentModerate) {
 		middleware.JSONError(c, "无权审核此评论喵", nil)
 		return
 	}
@@ -140,10 +139,9 @@ func DeleteComment(c *gin.Context) {
 	}
 
 	user := middleware.GetCurrentUserFromContext(c)
-	isAdmin := rbacSvc.HasRole(user, "admin")
-	isCommentAuthor := comment.AuthorID == user.Uid
+	canDelete := comment.AuthorID == user.Uid || rbacSvc.HasPermissionConst(user, constants.PermCommentDelete)
 
-	if !isAdmin && !isCommentAuthor {
+	if !canDelete {
 		middleware.JSONError(c, "无权删除此评论喵", nil)
 		return
 	}
@@ -197,7 +195,7 @@ func UpdateComment(c *gin.Context) {
 	}
 
 	user := middleware.GetCurrentUserFromContext(c)
-	if !rbacSvc.HasRole(user, "admin") {
+	if !rbacSvc.HasPermissionConst(user, constants.PermCommentModerate) {
 		middleware.JSONError(c, "无权修改此评论喵", nil)
 		return
 	}
@@ -235,14 +233,14 @@ func GetContentComments(c *gin.Context) {
 
 	user := middleware.GetCurrentUser(c)
 	var viewerID int
-	var isAdmin bool
+	var canModerate bool
 	if user != nil {
 		viewerID = user.Uid
-		isAdmin = rbacSvc.HasRole(user, "admin")
+		canModerate = rbacSvc.HasPermissionConst(user, constants.PermCommentModerate)
 	}
 
 	var comments []map[string]interface{}
-	if isAdmin {
+	if canModerate {
 		comments = service.GetAllCommentsByContent(cid)
 	} else {
 		comments = service.GetCommentsByContent(cid, "", viewerID)

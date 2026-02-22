@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
@@ -177,8 +178,8 @@ func UpdateContent(c *gin.Context) {
 	}
 
 	user := middleware.GetCurrentUserFromContext(c)
-	isAdmin := rbacSvc.HasRole(user, "admin")
-	if user.Uid != content.AuthorID && !isAdmin {
+	canEdit := user.Uid == content.AuthorID || rbacSvc.HasPermissionConst(user, constants.PermPostEdit)
+	if !canEdit {
 		middleware.JSONError(c, "无权修改此文章喵", nil)
 		return
 	}
@@ -222,8 +223,8 @@ func DeleteContent(c *gin.Context) {
 	}
 
 	user := middleware.GetCurrentUserFromContext(c)
-	isAdmin := rbacSvc.HasRole(user, "admin")
-	if user.Uid != content.AuthorID && !isAdmin {
+	canDelete := user.Uid == content.AuthorID || rbacSvc.HasPermissionConst(user, constants.PermPostDelete)
+	if !canDelete {
 		middleware.JSONError(c, "无权删除此文章喵", nil)
 		return
 	}

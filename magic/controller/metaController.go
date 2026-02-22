@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
@@ -25,7 +26,7 @@ func GetMetas(c *gin.Context) {
 
 func CreateMeta(c *gin.Context) {
 	user := middleware.GetCurrentUserFromContext(c)
-	if !rbacSvc.HasRole(user, "admin") {
+	if !rbacSvc.HasPermissionConst(user, constants.PermPostCreate) {
 		middleware.JSONError(c, "无权创建分类喵", nil)
 		return
 	}
@@ -80,7 +81,7 @@ func CreateMeta(c *gin.Context) {
 
 func UpdateMeta(c *gin.Context) {
 	user := middleware.GetCurrentUserFromContext(c)
-	if !rbacSvc.HasRole(user, "admin") {
+	if !rbacSvc.HasPermissionConst(user, constants.PermPostEdit) {
 		middleware.JSONError(c, "无权修改分类喵", nil)
 		return
 	}
@@ -130,7 +131,7 @@ func UpdateMeta(c *gin.Context) {
 
 func DeleteMeta(c *gin.Context) {
 	user := middleware.GetCurrentUserFromContext(c)
-	if !rbacSvc.HasRole(user, "admin") {
+	if !rbacSvc.HasPermissionConst(user, constants.PermPostDelete) {
 		middleware.JSONError(c, "无权删除分类喵", nil)
 		return
 	}
