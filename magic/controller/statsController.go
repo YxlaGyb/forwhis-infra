@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"strconv"
+
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/service"
 
@@ -24,5 +26,15 @@ func GetContentStats(c *gin.Context) {
 
 func GetCommentStats(c *gin.Context) {
 	data := service.GetCommentStats()
+	middleware.JSONSuccess(c, "获取成功喵", data)
+}
+
+func GetTrendStats(c *gin.Context) {
+	daysStr := c.DefaultQuery("days", "30")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil || days <= 0 {
+		days = 30
+	}
+	data := service.GetTrendData(days)
 	middleware.JSONSuccess(c, "获取成功喵", data)
 }

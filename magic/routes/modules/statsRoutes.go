@@ -15,6 +15,7 @@ func init() {
 			v1.GET("/users", controller.GetUserStats)
 			v1.GET("/contents", controller.GetContentStats)
 			v1.GET("/comments", controller.GetCommentStats)
+			v1.GET("/trend", controller.GetTrendStats)
 		}
 	})
 }

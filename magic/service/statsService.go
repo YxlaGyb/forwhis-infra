@@ -44,3 +44,44 @@ func GetDashboardData() map[string]map[string]int {
 		"comments": GetCommentStats(),
 	}
 }
+
+type TrendData struct {
+	Date    string `json:"date"`
+	User    int    `json:"user"`
+	Content int    `json:"content"`
+	Comment int    `json:"comment"`
+}
+
+func GetTrendData(days int) []TrendData {
+	if days <= 0 {
+		days = 30
+	}
+	if days > 90 {
+		days = 90
+	}
+
+	result := make([]TrendData, days)
+	now := time.Now()
+
+	for i := days - 1; i >= 0; i-- {
+		date := now.AddDate(0, 0, -i)
+		dateStr := date.Format("2006-01-02")
+		dayStart := int(date.Unix())
+		dayEnd := dayStart + 86400
+
+		var userCount, contentCount, commentCount int64
+
+		db.GetDB().Model(&models.User{}).Where("created_at >= ? AND created_at < ?", dayStart, dayEnd).Count(&userCount)
+		db.GetDB().Model(&models.Content{}).Where("created >= ? AND created < ?", dayStart, dayEnd).Count(&contentCount)
+		db.GetDB().Model(&models.Comment{}).Where("created >= ? AND created < ?", dayStart, dayEnd).Count(&commentCount)
+
+		result[days-1-i] = TrendData{
+			Date:    dateStr,
+			User:    int(userCount),
+			Content: int(contentCount),
+			Comment: int(commentCount),
+		}
+	}
+
+	return result
+}
