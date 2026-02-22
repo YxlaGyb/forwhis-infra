@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Table,
     Card,
@@ -25,43 +25,13 @@ import {
 } from '@ant-design/icons';
 import { commentApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
+import { formatTimestamp } from '../utils/format';
+import { getStatusColor, getStatusName } from '../utils/mapping';
 import type { Comment } from '../types';
 
 const { Title } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
-
-const formatTimestamp = (timestamp: number): string => {
-    if (!timestamp) return '-';
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-};
-
-const getStatusColor = (status: string): string => {
-    const colorMap: Record<string, string> = {
-        'approved': 'green',
-        'pending': 'orange',
-        'spam': 'red',
-        'trash': 'default'
-    };
-    return colorMap[status] || 'default';
-};
-
-const getStatusName = (status: string): string => {
-    const nameMap: Record<string, string> = {
-        'approved': '已通过',
-        'pending': '待审核',
-        'spam': '垃圾评论',
-        'trash': '回收站'
-    };
-    return nameMap[status] || status;
-};
 
 const CommentManagement: React.FC = () => {
     const [comments, setComments] = useState<Comment[]>([]);
@@ -73,8 +43,6 @@ const CommentManagement: React.FC = () => {
     const [form] = Form.useForm();
     const [statusFilter, setStatusFilter] = useState<string>('');
 
-    const abortControllerRef = useRef<AbortController | null>(null);
-
     const { filteredData: filteredComments, handleSearch } = useSearchFilter<Comment>({
         data: comments,
         searchKeys: ['text', 'author', 'mail']
@@ -82,20 +50,12 @@ const CommentManagement: React.FC = () => {
 
     useEffect(() => {
         fetchComments();
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
     }, []);
 
     const fetchComments = async () => {
-        abortControllerRef.current = new AbortController();
         setLoading(true);
         try {
             const response = await commentApi.getComments({ limit: 100 });
-
-            if (abortControllerRef.current?.signal.aborted) return;
 
             if (response.data.code === 200 && response.data.data) {
                 const items = response.data.data.items || response.data.data;
@@ -104,7 +64,7 @@ const CommentManagement: React.FC = () => {
                 message.error(response.data.msg || '获取评论列表失败');
             }
         } catch (error) {
-            if (abortControllerRef.current?.signal.aborted) return;
+            console.error('获取评论列表失败:', error);
             message.error('获取评论列表失败');
         } finally {
             setLoading(false);
@@ -135,6 +95,7 @@ const CommentManagement: React.FC = () => {
                 message.error(response.data.msg || '删除失败');
             }
         } catch (error) {
+            console.error('删除失败:', error);
             message.error('删除失败');
         }
     };
@@ -149,6 +110,7 @@ const CommentManagement: React.FC = () => {
                 message.error(response.data.msg || '审核失败');
             }
         } catch (error) {
+            console.error('审核失败:', error);
             message.error('审核失败');
         }
     };
@@ -163,6 +125,7 @@ const CommentManagement: React.FC = () => {
                 message.error(response.data.msg || '状态更新失败');
             }
         } catch (error) {
+            console.error('状态更新失败:', error);
             message.error('状态更新失败');
         }
     };
@@ -182,6 +145,7 @@ const CommentManagement: React.FC = () => {
                 }
             }
         } catch (error) {
+            console.error('操作失败:', error);
             message.error('操作失败');
         }
     };

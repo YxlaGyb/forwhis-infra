@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { AllSettings } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:2324';
 
@@ -175,7 +176,7 @@ export const settingsApi = {
     getSettings: () =>
         api.get('/api/v1/admin/settings'),
 
-    updateSettings: (data: unknown) =>
+    updateSettings: (data: AllSettings) =>
         api.post('/api/v1/admin/settings', data)
 };
 

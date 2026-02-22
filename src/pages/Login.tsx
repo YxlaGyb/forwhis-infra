@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { authApi } from '../api';
+import { storage } from '../utils/storage';
+import { config } from '../config';
 import type { LoginProps } from '../types';
 
 const { Title, Text } = Typography;
@@ -17,22 +19,23 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             const response = await authApi.login(values.email, values.password);
 
             if (response.data.code === 200) {
-                localStorage.setItem('userInfo', JSON.stringify({
+                storage.setUserInfo({
                     uid: response.data.data.uid,
                     name: response.data.data.name,
                     email: response.data.data.email
-                }));
+                });
                 
                 message.success('登录成功');
                 onLogin();
             } else {
                 message.error(response.data.msg || '登录失败');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('登录错误:', error);
-            if (error.response?.data?.message) {
-                message.error(error.response.data.message);
-            } else if (error.code === 'NETWORK_ERROR') {
+            const err = error as { response?: { data?: { message?: string } }; code?: string };
+            if (err.response?.data?.message) {
+                message.error(err.response.data.message);
+            } else if (err.code === 'NETWORK_ERROR') {
                 message.error('网络错误，请检查网络连接');
             } else {
                 message.error('登录失败，请检查网络连接');
@@ -48,7 +51,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             alignItems: 'center',
             justifyContent: 'center',
             minHeight: '100vh',
-            backgroundImage: 'url("https://api.klbbx.cc/random_image/Genshin_Impact")',
+            backgroundImage: `url("${config.loginBackgroundUrl}")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -77,7 +80,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     layout="vertical"
                 >
                     <Form.Item
-                        label="Email"
+                        label="邮箱"
                         name="email"
                         rules={[{ required: true, message: '请输入邮箱地址' }]}
                     >
@@ -94,7 +97,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     </Form.Item>
 
                     <Form.Item
-                        label="Password"
+                        label="密码"
                         name="password"
                         rules={[{ required: true, message: '请输入密码' }]}
                     >
@@ -127,15 +130,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(135, 133, 162, 1)'}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(135, 133, 162, 0.9)'}
                         >
-                            Login
+                            登录
                         </Button>
                     </Form.Item>
 
                     <Text 
                         style={{ color: '#f6f6f6', cursor: 'pointer' }} 
-                        onClick={() => window.open('https://banana404.top', '_blank')}
+                        onClick={() => window.open(config.siteUrl, '_blank')}
                     >
-                        Go to home
+                        返回首页
                     </Text>
                 </Form>
             </Card>

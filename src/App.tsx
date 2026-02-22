@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import axios from 'axios';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import AdminLayout from './layouts/AdminLayout';
@@ -10,7 +9,8 @@ import UserManagement from './pages/UserManagement';
 import ArticleManagement from './pages/ArticleManagement';
 import CommentManagement from './pages/CommentManagement';
 import Settings from './pages/Settings';
-import { API_BASE_URL } from './api';
+import { authApi } from './api';
+import { storage } from './utils/storage';
 import './App.css';
 
 const App = () => {
@@ -24,23 +24,20 @@ const App = () => {
 
     const checkLoginStatus = async () => {
         try {
-            const userInfo = localStorage.getItem('userInfo');
+            const userInfo = storage.getUserInfo();
             if (userInfo) {
-                const response = await axios.get(`${API_BASE_URL}/api/v1/user/me`, {
-                    withCredentials: true,
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                const response = await authApi.getCurrentUser();
                 
                 if (response.data.code === 200) {
                     const data = response.data.data;
-                    localStorage.setItem('userInfo', JSON.stringify({
+                    storage.setUserInfo({
                         uid: data.uid,
                         name: data.name,
                         email: data.email,
                         permissions: data.permissions,
                         roles: data.roles,
                         canAccessAdmin: data.canAccessAdmin
-                    }));
+                    });
                     
                     if (data.canAccessAdmin) {
                         setCanAccessAdmin(true);
@@ -49,12 +46,12 @@ const App = () => {
                         handleLogout();
                     }
                 } else {
-                    localStorage.removeItem('userInfo');
+                    storage.removeUserInfo();
                 }
             }
         } catch (error) {
             console.error('检查登录状态失败:', error);
-            localStorage.removeItem('userInfo');
+            storage.removeUserInfo();
         } finally {
             setLoading(false);
         }
@@ -66,14 +63,11 @@ const App = () => {
 
     const handleLogout = async () => {
         try {
-            await axios.post(`${API_BASE_URL}/api/v1/user/logout`, {}, {
-                withCredentials: true,
-                headers: { 'Content-Type': 'application/json' }
-            });
+            await authApi.logout();
         } catch (error) {
             console.error('登出API调用失败:', error);
         } finally {
-            localStorage.removeItem('userInfo');
+            storage.removeUserInfo();
             document.cookie = 'forestwhisper=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
             setIsLoggedIn(false);
             setCanAccessAdmin(false);

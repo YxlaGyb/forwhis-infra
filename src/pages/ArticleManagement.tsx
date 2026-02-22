@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Table,
     Card,
@@ -24,51 +24,13 @@ import {
 } from '@ant-design/icons';
 import { contentApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
+import { formatTimestamp } from '../utils/format';
+import { getStatusColor, getStatusName, getTypeName } from '../utils/mapping';
 import type { Content } from '../types';
 
 const { Title } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
-
-const formatTimestamp = (timestamp: number): string => {
-    if (!timestamp) return '-';
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-};
-
-const getStatusColor = (status: string): string => {
-    const colorMap: Record<string, string> = {
-        'publish': 'green',
-        'draft': 'orange',
-        'private': 'blue',
-        'trash': 'red'
-    };
-    return colorMap[status] || 'default';
-};
-
-const getStatusName = (status: string): string => {
-    const nameMap: Record<string, string> = {
-        'publish': '已发布',
-        'draft': '草稿',
-        'private': '私密',
-        'trash': '回收站'
-    };
-    return nameMap[status] || status;
-};
-
-const getTypeName = (type: string): string => {
-    const nameMap: Record<string, string> = {
-        'post': '文章',
-        'page': '页面'
-    };
-    return nameMap[type] || type;
-};
 
 const ArticleManagement: React.FC = () => {
     const [articles, setArticles] = useState<Content[]>([]);
@@ -81,8 +43,6 @@ const ArticleManagement: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<string>('');
     const [typeFilter, setTypeFilter] = useState<string>('');
 
-    const abortControllerRef = useRef<AbortController | null>(null);
-
     const { filteredData: filteredArticles, handleSearch } = useSearchFilter<Content>({
         data: articles,
         searchKeys: ['title', 'slug']
@@ -90,20 +50,12 @@ const ArticleManagement: React.FC = () => {
 
     useEffect(() => {
         fetchArticles();
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
     }, []);
 
     const fetchArticles = async () => {
-        abortControllerRef.current = new AbortController();
         setLoading(true);
         try {
             const response = await contentApi.getContents({ limit: 100 });
-
-            if (abortControllerRef.current?.signal.aborted) return;
 
             if (response.data.code === 200 && response.data.data) {
                 const items = response.data.data.items || response.data.data;
@@ -111,8 +63,8 @@ const ArticleManagement: React.FC = () => {
             } else {
                 message.error(response.data.msg || '获取文章列表失败');
             }
-        } catch {
-            if (abortControllerRef.current?.signal.aborted) return;
+        } catch (error) {
+            console.error('获取文章列表失败:', error);
             message.error('获取文章列表失败');
         } finally {
             setLoading(false);
@@ -151,7 +103,8 @@ const ArticleManagement: React.FC = () => {
             } else {
                 message.error(response.data.msg || '删除失败');
             }
-        } catch {
+        } catch (error) {
+            console.error('删除失败:', error);
             message.error('删除失败');
         }
     };
@@ -165,7 +118,8 @@ const ArticleManagement: React.FC = () => {
             } else {
                 message.error(response.data.msg || '发布失败');
             }
-        } catch {
+        } catch (error) {
+            console.error('发布失败:', error);
             message.error('发布失败');
         }
     };
@@ -193,7 +147,8 @@ const ArticleManagement: React.FC = () => {
                     message.error(response.data.msg || '创建失败');
                 }
             }
-        } catch {
+        } catch (error) {
+            console.error('操作失败:', error);
             message.error('操作失败');
         }
     };

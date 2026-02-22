@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Table,
     Card,
@@ -22,44 +22,12 @@ import {
 } from '@ant-design/icons';
 import { userApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
+import { formatTimestamp } from '../utils/format';
+import { getRoleColor, getRoleName } from '../utils/mapping';
 import type { User } from '../types';
 
 const { Title } = Typography;
 const { Option } = Select;
-
-const formatTimestamp = (timestamp: number): string => {
-    if (!timestamp) return '-';
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-};
-
-const getRoleColor = (role: string): string => {
-    const colorMap: Record<string, string> = {
-        'superadmin': 'red',
-        'admin': 'orange',
-        'editor': 'blue',
-        'user': 'green',
-        'visitor': 'default'
-    };
-    return colorMap[role] || 'default';
-};
-
-const getRoleName = (role: string): string => {
-    const nameMap: Record<string, string> = {
-        'superadmin': '超级管理员',
-        'admin': '管理员',
-        'editor': '编辑',
-        'user': '用户',
-        'visitor': '访客'
-    };
-    return nameMap[role] || role;
-};
 
 const UserManagement: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -67,8 +35,6 @@ const UserManagement: React.FC = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [form] = Form.useForm();
-    
-    const abortControllerRef = useRef<AbortController | null>(null);
 
     const { filteredData: filteredUsers, handleSearch } = useSearchFilter<User>({
         data: users,
@@ -77,20 +43,12 @@ const UserManagement: React.FC = () => {
 
     useEffect(() => {
         fetchUsers();
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
     }, []);
 
     const fetchUsers = async () => {
-        abortControllerRef.current = new AbortController();
         setLoading(true);
         try {
             const response = await userApi.getUsers();
-            
-            if (abortControllerRef.current?.signal.aborted) return;
             
             if (response.data.code === 200 && response.data.data) {
                 setUsers(response.data.data);
@@ -98,13 +56,10 @@ const UserManagement: React.FC = () => {
                 message.error(response.data.msg || '获取用户列表失败');
             }
         } catch (error) {
-            if (abortControllerRef.current?.signal.aborted) return;
             console.error('获取用户列表失败:', error);
             message.error('获取用户列表失败');
         } finally {
-            if (!abortControllerRef.current?.signal.aborted) {
-                setLoading(false);
-            }
+            setLoading(false);
         }
     };
 
@@ -329,9 +284,13 @@ const UserManagement: React.FC = () => {
                         <Form.Item
                             label="密码"
                             name="password"
-                            rules={[{ required: !editingUser, message: '请输入密码' }]}
+                            rules={[
+                                { required: true, message: '请输入密码' },
+                                { min: 8, message: '密码至少8个字符' },
+                                { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: '密码需包含大小写字母和数字' }
+                            ]}
                         >
-                            <Input.Password placeholder="请输入密码" />
+                            <Input.Password placeholder="请输入密码（至少8位，包含大小写字母和数字）" />
                         </Form.Item>
                     )}
 

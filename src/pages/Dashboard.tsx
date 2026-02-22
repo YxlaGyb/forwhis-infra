@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Row, Col, Card, Statistic, Typography, Spin, message, Slider } from 'antd';
 import { UserOutlined, FileTextOutlined, MessageOutlined, EyeOutlined } from '@ant-design/icons';
 import { statsApi } from '../api';
@@ -14,35 +14,19 @@ const Dashboard: React.FC = () => {
     const [trendLoading, setTrendLoading] = useState(false);
     const [days, setDays] = useState(7);
     const [hiddenLines, setHiddenLines] = useState<Set<string>>(new Set());
-    
-    const abortControllerRef = useRef<AbortController | null>(null);
-    const trendAbortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         fetchDashboardData();
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
     }, []);
 
     useEffect(() => {
         fetchTrendData();
-        return () => {
-            if (trendAbortControllerRef.current) {
-                trendAbortControllerRef.current.abort();
-            }
-        };
     }, [days]);
 
     const fetchDashboardData = async () => {
-        abortControllerRef.current = new AbortController();
         try {
             setLoading(true);
             const response = await statsApi.getDashboard();
-            
-            if (abortControllerRef.current?.signal.aborted) return;
             
             if (response.data.code === 200 && response.data.data) {
                 setDashboardData(response.data.data);
@@ -50,7 +34,6 @@ const Dashboard: React.FC = () => {
                 message.warning('获取数据失败，使用默认展示');
             }
         } catch (error: unknown) {
-            if (abortControllerRef.current?.signal.aborted) return;
             console.error('获取仪表盘数据失败:', error);
             const err = error as { response?: { status?: number } };
             if (err.response?.status === 401) {
@@ -59,30 +42,22 @@ const Dashboard: React.FC = () => {
                 message.error('获取仪表盘数据失败');
             }
         } finally {
-            if (!abortControllerRef.current?.signal.aborted) {
-                setLoading(false);
-            }
+            setLoading(false);
         }
     };
 
     const fetchTrendData = async () => {
-        trendAbortControllerRef.current = new AbortController();
         try {
             setTrendLoading(true);
             const response = await statsApi.getTrend(days);
-            
-            if (trendAbortControllerRef.current?.signal.aborted) return;
             
             if (response.data.code === 200 && response.data.data) {
                 setTrendData(response.data.data);
             }
         } catch (error: unknown) {
-            if (trendAbortControllerRef.current?.signal.aborted) return;
             console.error('获取趋势数据失败:', error);
         } finally {
-            if (!trendAbortControllerRef.current?.signal.aborted) {
-                setTrendLoading(false);
-            }
+            setTrendLoading(false);
         }
     };
 
