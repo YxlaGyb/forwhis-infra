@@ -5,7 +5,6 @@ import {
     Input,
     Button,
     Switch,
-    Select,
     Typography,
     message,
     Space,
@@ -15,7 +14,6 @@ import {
     Badge,
     Tooltip,
     Divider,
-    InputNumber,
     Alert
 } from 'antd';
 import {
@@ -34,7 +32,6 @@ import type {
 } from '../types';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 const { TextArea } = Input;
 
 const sectionConfigs: SettingsSectionConfig[] = [

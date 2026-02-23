@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Table,
     Card,
     Input,
     Button,
@@ -11,7 +10,7 @@ import {
     Form,
     Select,
     message,
-    Popconfirm
+    Avatar
 } from 'antd';
 import {
     SearchOutlined,
@@ -24,6 +23,8 @@ import { userApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 import { formatTimestamp } from '../utils/format';
 import { getRoleColor, getRoleName } from '../utils/mapping';
+import { ResponsiveTable } from '../components/ResponsiveTable';
+import type { ResponsiveColumn, ActionItem } from '../components/ResponsiveTable';
 import type { User } from '../types';
 
 const { Title } = Typography;
@@ -75,7 +76,7 @@ const UserManagement: React.FC = () => {
         form.setFieldsValue({
             name: user.name,
             email: user.email,
-            roles: user.roles && user.roles.length > 0 ? user.roles[0] : 'user'
+            roles: user.roles && user.roles.length > 0 ? user.roles : ['user']
         });
     };
 
@@ -102,7 +103,7 @@ const UserManagement: React.FC = () => {
                 const response = await userApi.updateUser(editingUser.uid, {
                     name: values.name,
                     email: values.email,
-                    role: values.roles
+                    roles: values.roles
                 });
                 
                 if (response.data.code === 200) {
@@ -146,20 +147,24 @@ const UserManagement: React.FC = () => {
         setEditingUser(null);
     };
 
-    const columns = [
+    // 表格列配置
+    const columns: ResponsiveColumn<User>[] = [
         {
             title: 'UID',
             dataIndex: 'uid',
             key: 'uid',
             width: 80,
+            priority: 'low',
         },
         {
             title: '昵称',
             dataIndex: 'name',
             key: 'name',
+            width: 150,
+            priority: 'low',
             render: (text: string) => (
                 <Space>
-                    <UserOutlined />
+                    <Avatar size="small" icon={<UserOutlined />} />
                     {text}
                 </Space>
             ),
@@ -168,11 +173,15 @@ const UserManagement: React.FC = () => {
             title: '邮箱',
             dataIndex: 'email',
             key: 'email',
+            width: 200,
+            priority: 'low',
         },
         {
             title: '角色',
             dataIndex: 'roles',
             key: 'roles',
+            width: 150,
+            priority: 'high',
             render: (roles: string[]) => (
                 <Space>
                     {roles && roles.map((role, index) => (
@@ -187,38 +196,66 @@ const UserManagement: React.FC = () => {
             title: '创建时间',
             dataIndex: 'createdAt',
             key: 'createdAt',
+            width: 160,
+            priority: 'medium',
             render: (timestamp: number) => formatTimestamp(timestamp),
         },
         {
-            title: '操作',
-            key: 'action',
-            render: (_record: unknown, record: User) => (
-                <Space size="middle">
-                    <Button
-                        type="link"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEditUser(record)}
-                    >
-                        编辑
-                    </Button>
-                    <Popconfirm
-                        title="确定删除这个用户吗？"
-                        onConfirm={() => handleDeleteUser(record.uid)}
-                        okText="确定"
-                        cancelText="取消"
-                    >
-                        <Button type="link" danger icon={<DeleteOutlined />}>
-                            删除
-                        </Button>
-                    </Popconfirm>
-                </Space>
-            ),
+            title: '最后登录',
+            dataIndex: 'lastLogin',
+            key: 'lastLogin',
+            width: 160,
+            priority: 'medium',
+            render: (timestamp: number) => timestamp ? formatTimestamp(timestamp) : '-',
+        },
+        {
+            title: '登录IP',
+            dataIndex: 'lastip',
+            key: 'lastip',
+            width: 140,
+            priority: 'medium',
         },
     ];
 
+    // 操作按钮配置
+    const getActions = (record: User): ActionItem[] => [
+        {
+            key: 'edit',
+            text: '编辑',
+            icon: <EditOutlined />,
+            onClick: () => handleEditUser(record),
+        },
+        {
+            key: 'delete',
+            text: '删除',
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => {
+                Modal.confirm({
+                    title: '确定删除这个用户吗？',
+                    content: '删除后无法恢复',
+                    okText: '确定',
+                    cancelText: '取消',
+                    onOk: () => handleDeleteUser(record.uid),
+                });
+            },
+        },
+    ];
+
+    // 卡片标题
+    const getCardTitle = (record: User) => (
+        <Space>
+            <Avatar icon={<UserOutlined />} />
+            {record.name}
+        </Space>
+    );
+
+    // 卡片副标题
+    const getCardSubtitle = (record: User) => record.email;
+
     return (
         <div>
-            <Title level={2} style={{ marginBottom: 24 }}>
+            <Title level={4} style={{ marginBottom: 16 }}>
                 <UserOutlined /> 用户管理
             </Title>
             
@@ -236,11 +273,14 @@ const UserManagement: React.FC = () => {
                     </Button>
                 </div>
                 
-                <Table
+                <ResponsiveTable
                     columns={columns}
                     dataSource={filteredUsers}
                     rowKey="uid"
                     loading={loading}
+                    actions={getActions}
+                    cardTitle={getCardTitle}
+                    cardSubtitle={getCardSubtitle}
                     pagination={{
                         showSizeChanger: true,
                         showQuickJumper: true,
@@ -299,7 +339,11 @@ const UserManagement: React.FC = () => {
                         name="roles"
                         rules={[{ required: true, message: '请选择用户角色' }]}
                     >
-                        <Select placeholder="请选择用户角色">
+                        <Select
+                            mode="multiple"
+                            placeholder="请选择用户角色"
+                            allowClear
+                        >
                             <Option value="user">普通用户</Option>
                             <Option value="editor">编辑</Option>
                             <Option value="admin">管理员</Option>

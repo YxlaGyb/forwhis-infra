@@ -258,12 +258,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
                 </Header>
                 
                 <Content style={{
-                    margin: '24px',
-                    marginTop: 88,
-                    padding: 24,
+                    margin: mobile ? '12px' : '24px',
+                    marginTop: mobile ? 76 : 88,
+                    padding: mobile ? '12px' : '24px',
                     background: colorBgContainer,
-                    borderRadius: borderRadiusLG,
-                    minHeight: 280
+                    borderRadius: mobile ? 12 : borderRadiusLG,
+                    minHeight: 280,
+                    maxWidth: '100%',
+                    overflow: 'hidden'
                 }}>
                     <Outlet />
                 </Content>

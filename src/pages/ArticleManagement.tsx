@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Table,
     Card,
     Input,
     Button,
@@ -11,7 +10,6 @@ import {
     Form,
     Select,
     message,
-    Popconfirm,
     Descriptions
 } from 'antd';
 import {
@@ -20,12 +18,15 @@ import {
     EditOutlined,
     DeleteOutlined,
     EyeOutlined,
-    FileTextOutlined
+    FileTextOutlined,
+    SendOutlined
 } from '@ant-design/icons';
 import { contentApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 import { formatTimestamp } from '../utils/format';
-import { getStatusColor, getStatusName, getTypeName } from '../utils/mapping';
+import { getStatusColor, getStatusName } from '../utils/mapping';
+import { ResponsiveTable } from '../components/ResponsiveTable';
+import type { ResponsiveColumn, ActionItem } from '../components/ResponsiveTable';
 import type { Content } from '../types';
 
 const { Title } = Typography;
@@ -41,11 +42,10 @@ const ArticleManagement: React.FC = () => {
     const [viewingArticle, setViewingArticle] = useState<Content | null>(null);
     const [form] = Form.useForm();
     const [statusFilter, setStatusFilter] = useState<string>('');
-    const [typeFilter, setTypeFilter] = useState<string>('');
 
     const { filteredData: filteredArticles, handleSearch } = useSearchFilter<Content>({
         data: articles,
-        searchKeys: ['title', 'slug']
+        searchKeys: ['title']
     });
 
     useEffect(() => {
@@ -58,7 +58,14 @@ const ArticleManagement: React.FC = () => {
             const response = await contentApi.getContents({ limit: 100 });
 
             if (response.data.code === 200 && response.data.data) {
-                const items = response.data.data.items || response.data.data;
+                const rawItems = response.data.data.items || response.data.data;
+                const items = rawItems.map((item: Record<string, unknown>) => ({
+                    ...item,
+                    commentsNum: item.commentsNum ?? item.comments_num ?? 0,
+                    author: typeof item.author === 'object' && item.author !== null 
+                        ? (item.author as { name: string }).name 
+                        : item.author
+                }));
                 setArticles(items);
             } else {
                 message.error(response.data.msg || '获取文章列表失败');
@@ -163,45 +170,33 @@ const ArticleManagement: React.FC = () => {
         setViewingArticle(null);
     };
 
-    const filteredByStatusAndType = filteredArticles.filter(article => {
-        const statusMatch = !statusFilter || article.status === statusFilter;
-        const typeMatch = !typeFilter || article.type === typeFilter;
-        return statusMatch && typeMatch;
+    const filteredByStatus = filteredArticles.filter(article => {
+        return !statusFilter || article.status === statusFilter;
     });
 
-    const columns = [
+    // 表格列配置
+    const columns: ResponsiveColumn<Content>[] = [
         {
             title: 'ID',
             dataIndex: 'cid',
             key: 'cid',
             width: 80,
+            priority: 'low',
         },
         {
             title: '标题',
             dataIndex: 'title',
             key: 'title',
-            width: 80,
+            width: 200,
             ellipsis: true,
-        },
-        {
-            title: '别名',
-            dataIndex: 'slug',
-            key: 'slug',
-            width: 80,
-            ellipsis: true,
-        },
-        {
-            title: '类型',
-            dataIndex: 'type',
-            key: 'type',
-            width: 80,
-            render: (type: string) => getTypeName(type),
+            priority: 'low',
         },
         {
             title: '状态',
             dataIndex: 'status',
             key: 'status',
-            width: 80,
+            width: 100,
+            priority: 'high',
             render: (status: string) => (
                 <Tag color={getStatusColor(status)}>
                     {getStatusName(status)}
@@ -209,74 +204,74 @@ const ArticleManagement: React.FC = () => {
             ),
         },
         {
-            title: '作者',
-            dataIndex: 'author',
-            key: 'author',
-            width: 80,
-        },
-        {
-            title: '评论数',
-            dataIndex: 'commentsNum',
-            key: 'commentsNum',
-            width: 100,
-        },
-        {
             title: '创建时间',
             dataIndex: 'created',
             key: 'created',
-            width: 120,
+            width: 160,
+            priority: 'high',
             render: (created: number) => formatTimestamp(created),
         },
         {
-            title: '操作',
-            key: 'action',
-            width: 80,
-            render: (_: unknown, record: Content) => (
-                <Space size="small">
-                    <Button
-                        type="text"
-                        size="small"
-                        icon={<EyeOutlined />}
-                        onClick={() => handleView(record)}
-                    >
-                        查看
-                    </Button>
-                    <Button
-                        type="text"
-                        size="small"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(record)}
-                    >
-                        编辑
-                    </Button>
-                    {record.status !== 'publish' && (
-                        <Button
-                            type="text"
-                            size="small"
-                            onClick={() => handlePublish(record.cid)}
-                        >
-                            发布
-                        </Button>
-                    )}
-                    <Popconfirm
-                        title="确定要删除这篇文章吗？"
-                        onConfirm={() => handleDelete(record.cid)}
-                        okText="确定"
-                        cancelText="取消"
-                    >
-                        <Button
-                            type="text"
-                            danger
-                            size="small"
-                            icon={<DeleteOutlined />}
-                        >
-                            删除
-                        </Button>
-                    </Popconfirm>
-                </Space>
-            ),
+            title: '作者',
+            dataIndex: 'author',
+            key: 'author',
+            width: 120,
+            priority: 'low',
+            render: (author: string | { uid: number; name: string }) => {
+                if (typeof author === 'string') return author;
+                return author?.name || '-';
+            },
         },
     ];
+
+    // 操作按钮配置
+    const getActions = (record: Content): ActionItem[] => [
+        {
+            key: 'view',
+            text: '查看',
+            icon: <EyeOutlined />,
+            onClick: () => handleView(record),
+        },
+        {
+            key: 'edit',
+            text: '编辑',
+            icon: <EditOutlined />,
+            onClick: () => handleEdit(record),
+        },
+        {
+            key: 'publish',
+            text: '发布',
+            icon: <SendOutlined />,
+            hidden: record.status === 'publish',
+            onClick: () => handlePublish(record.cid),
+        },
+        {
+            key: 'delete',
+            text: '删除',
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => {
+                Modal.confirm({
+                    title: '确定要删除这篇文章吗？',
+                    content: '删除后无法恢复',
+                    okText: '确定',
+                    cancelText: '取消',
+                    onOk: () => handleDelete(record.cid),
+                });
+            },
+        },
+    ];
+
+    // 卡片标题
+    const getCardTitle = (record: Content) => record.title;
+
+    // 卡片副标题
+    const getCardSubtitle = (record: Content) => {
+        const authorName = typeof record.author === 'string' 
+            ? record.author 
+            : record.author?.name || '-';
+        return `${authorName} · ${formatTimestamp(record.created)}`;
+    };
 
     return (
         <div>
@@ -297,7 +292,7 @@ const ArticleManagement: React.FC = () => {
 
                 <Space style={{ marginBottom: 16 }} wrap>
                     <Input
-                        placeholder="搜索标题或别名"
+                        placeholder="搜索标题"
                         prefix={<SearchOutlined />}
                         onChange={(e) => handleSearch(e.target.value)}
                         style={{ width: 250 }}
@@ -315,23 +310,16 @@ const ArticleManagement: React.FC = () => {
                         <Option value="private">私密</Option>
                         <Option value="trash">回收站</Option>
                     </Select>
-                    <Select
-                        placeholder="筛选类型"
-                        value={typeFilter || undefined}
-                        onChange={(value) => setTypeFilter(value)}
-                        style={{ width: 120 }}
-                        allowClear
-                    >
-                        <Option value="post">文章</Option>
-                        <Option value="page">页面</Option>
-                    </Select>
                 </Space>
 
-                <Table
+                <ResponsiveTable
                     columns={columns}
-                    dataSource={filteredByStatusAndType}
+                    dataSource={filteredByStatus}
                     rowKey="cid"
                     loading={loading}
+                    actions={getActions}
+                    cardTitle={getCardTitle}
+                    cardSubtitle={getCardSubtitle}
                     pagination={{
                         pageSize: 10,
                         showSizeChanger: true,
@@ -420,15 +408,16 @@ const ArticleManagement: React.FC = () => {
                     <Descriptions bordered column={1}>
                         <Descriptions.Item label="ID">{viewingArticle.cid}</Descriptions.Item>
                         <Descriptions.Item label="标题">{viewingArticle.title}</Descriptions.Item>
-                        <Descriptions.Item label="别名">{viewingArticle.slug}</Descriptions.Item>
-                        <Descriptions.Item label="类型">{getTypeName(viewingArticle.type)}</Descriptions.Item>
                         <Descriptions.Item label="状态">
                             <Tag color={getStatusColor(viewingArticle.status)}>
                                 {getStatusName(viewingArticle.status)}
                             </Tag>
                         </Descriptions.Item>
-                        <Descriptions.Item label="作者">{viewingArticle.author}</Descriptions.Item>
-                        <Descriptions.Item label="评论数">{viewingArticle.commentsNum}</Descriptions.Item>
+                        <Descriptions.Item label="作者">
+                            {typeof viewingArticle.author === 'string' 
+                                ? viewingArticle.author 
+                                : viewingArticle.author?.name || '-'}
+                        </Descriptions.Item>
                         <Descriptions.Item label="创建时间">{formatTimestamp(viewingArticle.created)}</Descriptions.Item>
                         <Descriptions.Item label="修改时间">{formatTimestamp(viewingArticle.modified)}</Descriptions.Item>
                         <Descriptions.Item label="内容">

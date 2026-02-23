@@ -9,16 +9,18 @@ export interface LoginProps {
 export interface Content {
     cid: number;
     title: string;
-    slug: string;
+    slug?: string;
     text: string;
     content?: string;
     status: string;
     type: string;
-    author: string;
-    authorId?: number;
+    author: string | { uid: number; name: string };
+    author_id?: number;
     commentsNum: number;
+    comments_num?: number;
     created: number;
     modified: number;
+    views?: number;
     categories?: number[];
     tags?: number[];
 }

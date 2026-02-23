@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Table,
     Card,
     Input,
     Button,
@@ -11,8 +10,8 @@ import {
     Form,
     Select,
     message,
-    Popconfirm,
-    Descriptions
+    Descriptions,
+    Avatar
 } from 'antd';
 import {
     SearchOutlined,
@@ -21,12 +20,15 @@ import {
     CommentOutlined,
     CheckOutlined,
     CloseOutlined,
-    EditOutlined
+    EditOutlined,
+    UserOutlined
 } from '@ant-design/icons';
 import { commentApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 import { formatTimestamp } from '../utils/format';
 import { getStatusColor, getStatusName } from '../utils/mapping';
+import { ResponsiveTable } from '../components/ResponsiveTable';
+import type { ResponsiveColumn, ActionItem } from '../components/ResponsiveTable';
 import type { Comment } from '../types';
 
 const { Title } = Typography;
@@ -165,18 +167,22 @@ const CommentManagement: React.FC = () => {
         return !statusFilter || comment.status === statusFilter;
     });
 
-    const columns = [
+    // 表格列配置
+    const columns: ResponsiveColumn<Comment>[] = [
         {
             title: 'ID',
             dataIndex: 'coid',
             key: 'coid',
             width: 80,
+            priority: 'low',
         },
         {
             title: '评论内容',
             dataIndex: 'text',
             key: 'text',
+            width: 250,
             ellipsis: true,
+            priority: 'high',
             render: (text: string) => (
                 <span style={{ maxWidth: 300, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {text}
@@ -188,6 +194,7 @@ const CommentManagement: React.FC = () => {
             dataIndex: 'author',
             key: 'author',
             width: 120,
+            priority: 'low',
         },
         {
             title: '邮箱',
@@ -195,12 +202,14 @@ const CommentManagement: React.FC = () => {
             key: 'mail',
             ellipsis: true,
             width: 180,
+            priority: 'low',
         },
         {
             title: '状态',
             dataIndex: 'status',
             key: 'status',
             width: 100,
+            priority: 'high',
             render: (status: string) => (
                 <Tag color={getStatusColor(status)}>
                     {getStatusName(status)}
@@ -212,73 +221,73 @@ const CommentManagement: React.FC = () => {
             dataIndex: 'cid',
             key: 'cid',
             width: 80,
+            priority: 'low',
         },
         {
             title: '发布时间',
             dataIndex: 'created',
             key: 'created',
             width: 160,
+            priority: 'medium',
             render: (created: number) => formatTimestamp(created),
         },
+    ];
+
+    // 操作按钮配置
+    const getActions = (record: Comment): ActionItem[] => [
         {
-            title: '操作',
-            key: 'action',
-            width: 280,
-            render: (_: unknown, record: Comment) => (
-                <Space size="small">
-                    <Button
-                        type="text"
-                        size="small"
-                        icon={<EyeOutlined />}
-                        onClick={() => handleView(record)}
-                    >
-                        查看
-                    </Button>
-                    <Button
-                        type="text"
-                        size="small"
-                        icon={<CheckOutlined />}
-                        onClick={() => handleApprove(record.coid)}
-                        disabled={record.status === 'approved'}
-                    >
-                        通过
-                    </Button>
-                    <Button
-                        type="text"
-                        size="small"
-                        icon={<CloseOutlined />}
-                        onClick={() => handleUpdateStatus(record.coid, 'spam')}
-                        disabled={record.status === 'spam'}
-                    >
-                        标为垃圾
-                    </Button>
-                    <Button
-                        type="text"
-                        size="small"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(record)}
-                    >
-                        编辑
-                    </Button>
-                    <Popconfirm
-                        title="确定要删除这条评论吗？"
-                        onConfirm={() => handleDelete(record.coid)}
-                        okText="确定"
-                        cancelText="取消"
-                    >
-                        <Button
-                            type="text"
-                            danger
-                            size="small"
-                            icon={<DeleteOutlined />}
-                        >
-                            删除
-                        </Button>
-                    </Popconfirm>
-                </Space>
-            ),
+            key: 'view',
+            text: '查看',
+            icon: <EyeOutlined />,
+            onClick: () => handleView(record),
+        },
+        {
+            key: 'approve',
+            text: '通过',
+            icon: <CheckOutlined />,
+            hidden: record.status === 'approved',
+            onClick: () => handleApprove(record.coid),
+        },
+        {
+            key: 'spam',
+            text: '标为垃圾',
+            icon: <CloseOutlined />,
+            hidden: record.status === 'spam',
+            onClick: () => handleUpdateStatus(record.coid, 'spam'),
+        },
+        {
+            key: 'edit',
+            text: '编辑',
+            icon: <EditOutlined />,
+            onClick: () => handleEdit(record),
+        },
+        {
+            key: 'delete',
+            text: '删除',
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => {
+                Modal.confirm({
+                    title: '确定要删除这条评论吗？',
+                    content: '删除后无法恢复',
+                    okText: '确定',
+                    cancelText: '取消',
+                    onOk: () => handleDelete(record.coid),
+                });
+            },
         },
     ];
+
+    // 卡片标题
+    const getCardTitle = (record: Comment) => (
+        <Space>
+            <Avatar size="small" icon={<UserOutlined />} />
+            {record.author}
+        </Space>
+    );
+
+    // 卡片副标题
+    const getCardSubtitle = (record: Comment) => record.mail;
 
     return (
         <div>
@@ -312,11 +321,14 @@ const CommentManagement: React.FC = () => {
                     </Select>
                 </Space>
 
-                <Table
+                <ResponsiveTable
                     columns={columns}
                     dataSource={filteredByStatus}
                     rowKey="coid"
                     loading={loading}
+                    actions={getActions}
+                    cardTitle={getCardTitle}
+                    cardSubtitle={getCardSubtitle}
                     pagination={{
                         pageSize: 10,
                         showSizeChanger: true,

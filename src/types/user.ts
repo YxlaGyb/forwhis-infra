@@ -4,4 +4,11 @@ export interface User {
     email: string;
     roles: string[];
     createdAt: number;
+    lastLogin?: number;
+    lastip?: string;
+    bio?: string;
+    birthday?: string;
+    gender?: string;
+    isActive?: number;
+    canAccessAdmin?: boolean;
 }

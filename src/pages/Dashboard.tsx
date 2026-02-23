@@ -13,7 +13,18 @@ const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [trendLoading, setTrendLoading] = useState(false);
     const [days, setDays] = useState(7);
+    const [sliderValue, setSliderValue] = useState(7);
     const [hiddenLines, setHiddenLines] = useState<Set<string>>(new Set());
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         fetchDashboardData();
@@ -199,7 +210,7 @@ const Dashboard: React.FC = () => {
             <div style={{ marginTop: 24, marginBottom: 8, fontSize: 16, fontWeight: 600, color: '#333' }}>
                 增量数据
                 <Text type="secondary" style={{ fontWeight: 400, marginLeft: 8, fontSize: 14 }}>
-                    调整时间范围
+                    最近 {sliderValue} 天
                 </Text>
             </div>
             <Paragraph type="secondary" style={{ marginBottom: 16 }}>
@@ -208,8 +219,9 @@ const Dashboard: React.FC = () => {
             <Slider
                 min={1}
                 max={30}
-                value={days}
-                onChange={setDays}
+                value={sliderValue}
+                onChange={setSliderValue}
+                onAfterChange={setDays}
                 style={{ marginBottom: 16 }}
                 tooltip={{ formatter: null }}
             />
@@ -242,39 +254,49 @@ const Dashboard: React.FC = () => {
 
             <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
                 <Col span={24}>
+                    <div style={{ marginBottom: 8, fontSize: 16, fontWeight: 600, color: '#333' }}>趋势图</div>
                     <Paragraph type="secondary" style={{ marginBottom: 16 }}>
                         如果要用一张可视化的图表来表示网站的增量数据状态, 那就是下面这张图
                     </Paragraph>
-                    <Card 
-                        title="趋势图"
-                        style={{ minHeight: 400, position: 'relative' }}
+                    <Card
+                        style={{ minHeight: isMobile ? 320 : 360, position: 'relative' }}
                     >
-                        <div style={{ position: 'absolute', top: 16, right: 24, display: 'flex', gap: 16, zIndex: 10 }}>
+                        <div style={{
+                            position: 'absolute',
+                            top: isMobile ? 8 : 16,
+                            right: isMobile ? 8 : 24,
+                            left: isMobile ? 8 : 'auto',
+                            display: 'flex',
+                            gap: isMobile ? 8 : 16,
+                            zIndex: 10,
+                            flexWrap: 'wrap',
+                            justifyContent: isMobile ? 'flex-start' : 'flex-end'
+                        }}>
                             {[
                                 { key: 'user', name: '用户', color: '#3f8600' },
                                 { key: 'content', name: '文章', color: '#1890ff' },
                                 { key: 'comment', name: '评论', color: '#cf1322' },
                                 { key: 'views', name: '访问', color: '#722ed1' }
                             ].map(item => (
-                                <div 
+                                <div
                                     key={item.key}
                                     onClick={() => toggleLine(item.key)}
-                                    style={{ 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: 6, 
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: isMobile ? 4 : 6,
                                         cursor: 'pointer',
                                         opacity: hiddenLines.has(item.key) ? 0.4 : 1,
                                         transition: 'opacity 0.2s'
                                     }}
                                 >
-                                    <div style={{ 
-                                        width: 10, 
-                                        height: 10, 
-                                        borderRadius: '50%', 
-                                        background: item.color 
+                                    <div style={{
+                                        width: isMobile ? 8 : 10,
+                                        height: isMobile ? 8 : 10,
+                                        borderRadius: '50%',
+                                        background: item.color
                                     }} />
-                                    <span style={{ fontSize: 13, color: '#666' }}>{item.name}</span>
+                                    <span style={{ fontSize: isMobile ? 11 : 13, color: '#666' }}>{item.name}</span>
                                 </div>
                             ))}
                         </div>
@@ -283,8 +305,8 @@ const Dashboard: React.FC = () => {
                                 <Spin size="large" />
                             </div>
                         ) : trendData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={320}>
-                                <AreaChart data={trendData} margin={{ top: 40, right: 30, left: 10, bottom: 10 }}>
+                            <ResponsiveContainer width="100%" height={isMobile ? 280 : 320}>
+                                <AreaChart data={trendData} margin={{ top: isMobile ? 50 : 40, right: isMobile ? 10 : 30, left: isMobile ? -20 : 10, bottom: isMobile ? 5 : 10 }}>
                                     <defs>
                                         <linearGradient id="colorUser" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#3f8600" stopOpacity={0.3}/>
@@ -304,21 +326,23 @@ const Dashboard: React.FC = () => {
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" vertical={false} />
-                                    <XAxis 
-                                        dataKey="date" 
+                                    <XAxis
+                                        dataKey="date"
                                         tickFormatter={formatDate}
                                         stroke="#d9d9d9"
-                                        tick={{ fill: '#999', fontSize: 11 }}
+                                        tick={{ fill: '#999', fontSize: isMobile ? 9 : 11 }}
                                         axisLine={{ stroke: '#e8e8e8' }}
                                         tickLine={false}
-                                        dy={10}
+                                        dy={isMobile ? 5 : 10}
+                                        interval={isMobile ? 'preserveStartEnd' : 0}
                                     />
-                                    <YAxis 
+                                    <YAxis
                                         stroke="#d9d9d9"
-                                        tick={{ fill: '#999', fontSize: 11 }}
+                                        tick={{ fill: '#999', fontSize: isMobile ? 9 : 11 }}
                                         axisLine={false}
                                         tickLine={false}
-                                        dx={-5}
+                                        dx={isMobile ? -15 : -5}
+                                        width={isMobile ? 30 : 60}
                                     />
                                     <Tooltip content={<CustomTooltip />} />
                                     {!hiddenLines.has('user') && (

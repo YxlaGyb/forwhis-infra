@@ -85,8 +85,8 @@ export const userApi = {
     createUser: (data: { name: string; email: string; password: string; role?: string; status?: string }) =>
         api.post('/api/v1/user/users', data),
     
-    updateUser: (uid: number, data: { name?: string; email?: string; role?: string; status?: string }) =>
-        api.post(`/api/v1/user/users/${uid}/update`, data),
+    updateUser: (uid: number, data: { name?: string; email?: string; roles?: string[]; status?: string }) =>
+        api.post(`/api/v1/admin/user/${uid}/update`, data),
     
     deleteUser: (uid: number) =>
         api.post(`/api/v1/user/users/del`, { uid })
