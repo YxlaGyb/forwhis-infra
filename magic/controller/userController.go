@@ -7,6 +7,7 @@ import (
 
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/models"
+	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 	"forestwhisperGo/magic/utils"
@@ -18,10 +19,7 @@ import (
 const codeExpirationTime = 300
 
 func Login(c *gin.Context) {
-	var req struct {
-		Email  string `json:"email"`
-		Passwd string `json:"passwd"`
-	}
+	var req types.LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
@@ -74,12 +72,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Email    string `json:"email"`
-		Username string `json:"username"`
-		Passwd   string `json:"passwd"`
-		Code     string `json:"code"`
-	}
+	var req types.RegisterRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
@@ -139,9 +132,7 @@ func SendEmailCodeRegister(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Email string `json:"email"`
-	}
+	var req types.SendEmailCodeRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
@@ -196,9 +187,7 @@ func GetUserByUsername(c *gin.Context) {
 }
 
 func DeleteUserByUid(c *gin.Context) {
-	var req struct {
-		Uid int `json:"uid"`
-	}
+	var req types.DeleteUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
@@ -238,10 +227,7 @@ func DeleteUserByUid(c *gin.Context) {
 }
 
 func ChangePassword(c *gin.Context) {
-	var req struct {
-		OldPassword string `json:"oldPassword"`
-		NewPassword string `json:"newPassword"`
-	}
+	var req types.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return

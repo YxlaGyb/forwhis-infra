@@ -6,6 +6,7 @@ import (
 
 	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 
@@ -39,13 +40,7 @@ func GetMyComments(c *gin.Context) {
 }
 
 func CreateComment(c *gin.Context) {
-	var req struct {
-		Cid    int    `json:"cid"`
-		Text   string `json:"text"`
-		Url    string `json:"url"`
-		Type   string `json:"type"`
-		Parent int    `json:"parent"`
-	}
+	var req types.CreateCommentRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)

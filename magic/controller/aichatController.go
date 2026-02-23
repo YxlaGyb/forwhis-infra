@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	"forestwhisperGo/magic/utils"
 	"forestwhisperGo/magic/utils/db"
@@ -114,10 +115,7 @@ func ChatStream(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		ConversationID string `json:"conversationId"`
-		Message        string `json:"message"`
-	}
+	var req types.ChatRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
@@ -235,9 +233,7 @@ func DeleteConversation(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		ConversationID string `json:"conversationId"`
-	}
+	var req types.DeleteConversationRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)

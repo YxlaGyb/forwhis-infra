@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 
 	"github.com/gin-gonic/gin"
@@ -16,10 +17,7 @@ func ToggleLike(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		TargetType string `json:"target_type" binding:"required,oneof=content comment"`
-		TargetID   int    `json:"target_id" binding:"required,min=1"`
-	}
+	var req types.ToggleLikeRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求参数无效喵", nil)

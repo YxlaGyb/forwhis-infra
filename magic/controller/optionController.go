@@ -5,6 +5,7 @@ import (
 
 	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 
@@ -73,10 +74,7 @@ func SetOption(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Key   string `json:"key"`
-		Value string `json:"value"`
-	}
+	var req types.SetOptionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空", nil)
 		return

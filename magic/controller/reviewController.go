@@ -5,6 +5,7 @@ import (
 
 	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 
@@ -64,9 +65,7 @@ func RejectReviewItem(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Reason string `json:"reason"`
-	}
+	var req types.RejectReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请填写拒绝原因喵", nil)
 		return

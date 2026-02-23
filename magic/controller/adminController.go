@@ -6,6 +6,7 @@ import (
 
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/models"
+	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	"forestwhisperGo/magic/utils/db"
 
@@ -35,9 +36,7 @@ func ApproveReview(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		NewValue string `json:"newValue"`
-	}
+	var req types.ApproveReviewRequest
 	c.ShouldBindJSON(&req)
 
 	var review models.Review
@@ -83,9 +82,7 @@ func RejectReview(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Reason string `json:"reason"`
-	}
+	var req types.RejectReviewRequest
 	c.ShouldBindJSON(&req)
 
 	review.Status = models.ReviewStatusRejected

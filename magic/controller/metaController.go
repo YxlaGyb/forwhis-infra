@@ -6,6 +6,7 @@ import (
 
 	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 
@@ -31,13 +32,7 @@ func CreateMeta(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Name        string `json:"name"`
-		Type        string `json:"type"`
-		Slug        string `json:"slug"`
-		Description string `json:"description"`
-		Parent      int    `json:"parent"`
-	}
+	var req types.CreateMetaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
