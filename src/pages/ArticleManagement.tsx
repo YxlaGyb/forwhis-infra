@@ -11,7 +11,6 @@ import {
     Form,
     Select,
     message,
-    Descriptions
 } from 'antd';
 import {
     SearchOutlined,
@@ -20,8 +19,14 @@ import {
     DeleteOutlined,
     EyeOutlined,
     FileTextOutlined,
-    SendOutlined
+    SendOutlined,
+    UserOutlined,
+    ClockCircleOutlined,
+    FolderOutlined,
+    InfoCircleOutlined
 } from '@ant-design/icons';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { contentApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 import { formatTimestamp } from '../utils/format';
@@ -386,38 +391,160 @@ const ArticleManagement: React.FC = () => {
             </Modal>
 
             <Modal
-                title="文章详情"
+                title={null}
                 open={isViewModalVisible}
                 onCancel={handleViewModalCancel}
-                footer={[
-                    <Button key="close" onClick={handleViewModalCancel}>
-                        关闭
-                    </Button>
-                ]}
-                width={700}
+                footer={null}
+                width={600}
+                bodyStyle={{ padding: 0 }}
+                centered
             >
                 {viewingArticle && (
-                    <Descriptions bordered column={1}>
-                        <Descriptions.Item label="ID">{viewingArticle.cid}</Descriptions.Item>
-                        <Descriptions.Item label="标题">{viewingArticle.title}</Descriptions.Item>
-                        <Descriptions.Item label="状态">
-                            <Tag color={getStatusColor(viewingArticle.status)}>
-                                {getStatusName(viewingArticle.status)}
-                            </Tag>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="作者">
-                            {typeof viewingArticle.author === 'string' 
-                                ? viewingArticle.author 
-                                : viewingArticle.author?.name || '-'}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="创建时间">{formatTimestamp(viewingArticle.created)}</Descriptions.Item>
-                        <Descriptions.Item label="修改时间">{formatTimestamp(viewingArticle.modified)}</Descriptions.Item>
-                        <Descriptions.Item label="内容">
-                            <div style={{ maxHeight: 300, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
-                                {viewingArticle.text}
+                    <div style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        maxHeight: '80vh',
+                        background: '#fff',
+                        borderRadius: 12,
+                        overflow: 'hidden'
+                    }}>
+                        {/* 头部区域 - 标题和状态 */}
+                        <div style={{
+                            padding: '20px 24px 16px',
+                            background: '#fff',
+                            borderBottom: '1px solid #f0f0f0'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                                <Title 
+                                    level={4} 
+                                    style={{ 
+                                        margin: 0, 
+                                        fontWeight: 600, 
+                                        lineHeight: 1.4,
+                                        color: '#1f1f1f',
+                                        fontSize: 18,
+                                        flex: 1
+                                    }}
+                                >
+                                    {viewingArticle.title}
+                                </Title>
+                                <Tag 
+                                    color={getStatusColor(viewingArticle.status)} 
+                                    style={{ fontSize: 11, padding: '1px 8px', borderRadius: 4 }}
+                                >
+                                    {getStatusName(viewingArticle.status)}
+                                </Tag>
                             </div>
-                        </Descriptions.Item>
-                    </Descriptions>
+                        </div>
+
+                        {/* 元信息区域 - 紧凑网格布局 */}
+                        <div style={{
+                            padding: '12px 24px',
+                            background: '#fafafa',
+                            borderBottom: '1px solid #f0f0f0'
+                        }}>
+                            <div style={{ 
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(2, 1fr)',
+                                gap: '8px 16px'
+                            }}>
+                                {/* 作者 */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <UserOutlined style={{ fontSize: 14, color: '#1890ff' }} />
+                                    <span style={{ fontSize: 12, color: '#8c8c8c' }}>作者:</span>
+                                    <span style={{ fontSize: 13, color: '#262626' }}>
+                                        {typeof viewingArticle.author === 'string'
+                                            ? viewingArticle.author
+                                            : viewingArticle.author?.name || '-'}
+                                    </span>
+                                </div>
+
+                                {/* 分类 */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <FolderOutlined style={{ fontSize: 14, color: '#faad14' }} />
+                                    <span style={{ fontSize: 12, color: '#8c8c8c' }}>分类:</span>
+                                    <span style={{ fontSize: 13, color: '#262626' }}>
+                                        {viewingArticle.type === 'post' ? '文章' : '页面'}
+                                    </span>
+                                </div>
+
+                                {/* 创建时间 */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <ClockCircleOutlined style={{ fontSize: 14, color: '#52c41a' }} />
+                                    <span style={{ fontSize: 12, color: '#8c8c8c' }}>创建:</span>
+                                    <span style={{ fontSize: 13, color: '#262626' }}>
+                                        {formatTimestamp(viewingArticle.created)}
+                                    </span>
+                                </div>
+
+                                {/* ID */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <InfoCircleOutlined style={{ fontSize: 14, color: '#722ed1' }} />
+                                    <span style={{ fontSize: 12, color: '#8c8c8c' }}>ID:</span>
+                                    <span style={{ fontSize: 13, color: '#262626' }}>
+                                        {viewingArticle.cid}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Markdown 内容区域 */}
+                        <div style={{
+                            flex: 1,
+                            overflow: 'auto',
+                            padding: '16px 24px',
+                            background: '#fff'
+                        }}>
+                            <div className="markdown-body" style={{
+                                fontSize: 14,
+                                lineHeight: 1.7,
+                                color: '#262626',
+                                wordBreak: 'break-word'
+                            }}>
+                                <style>{`
+                                    .markdown-body img {
+                                        max-width: 100%;
+                                        height: auto;
+                                        border-radius: 4px;
+                                    }
+                                    .markdown-body p {
+                                        margin: 0 0 12px 0;
+                                    }
+                                    .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+                                        margin: 16px 0 8px 0;
+                                    }
+                                `}</style>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {viewingArticle.text || '*暂无内容*'}
+                                </ReactMarkdown>
+                            </div>
+                        </div>
+
+                        {/* 底部操作栏 */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: 10,
+                            padding: '12px 24px',
+                            borderTop: '1px solid #f0f0f0',
+                            background: '#fafafa'
+                        }}>
+                            <Button size="small" onClick={handleViewModalCancel}>
+                                关闭
+                            </Button>
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<EditOutlined />}
+                                onClick={() => {
+                                    handleViewModalCancel();
+                                    handleEdit(viewingArticle);
+                                }}
+                            >
+                                编辑
+                            </Button>
+                        </div>
+                    </div>
                 )}
             </Modal>
         </div>

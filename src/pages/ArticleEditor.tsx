@@ -519,21 +519,28 @@ const ArticleEditor: React.FC = () => {
 
     // 桌面端布局
     return (
-        <div>
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+            background: '#f5f5f5'
+        }}>
+            {/* 顶部工具栏 */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: 24,
-                flexWrap: 'wrap',
-                gap: 16
+                padding: '12px 24px',
+                background: '#fff',
+                borderBottom: '1px solid #e8e8e8',
+                flexShrink: 0
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <Button
                         icon={<CloseOutlined />}
                         onClick={() => navigate('/articles')}
                     />
-                    <Text strong style={{ fontSize: 18 }}>
+                    <Text strong style={{ fontSize: 16 }}>
                         {isEditMode ? '编辑文章' : '新建文章'}
                     </Text>
                     {isDirty && <Tag color="orange">未保存</Tag>}
@@ -587,72 +594,101 @@ const ArticleEditor: React.FC = () => {
                 </div>
             </div>
 
+            {/* Markdown 工具栏 */}
             <div style={{
+                display: 'flex',
+                padding: '8px 24px',
                 background: '#fff',
-                borderRadius: 8,
-                border: '1px solid #f0f0f0',
-                overflow: 'hidden'
+                borderBottom: '1px solid #e8e8e8',
+                gap: 4,
+                flexShrink: 0
             }}>
-                <div style={{ padding: '24px 24px 0' }}>
-                    <Input
-                        placeholder="请输入文章标题..."
-                        value={formData.title}
-                        onChange={handleTitleChange}
-                        style={{
-                            fontSize: 28,
-                            fontWeight: 600,
-                            border: 'none',
-                            padding: 0,
-                            boxShadow: 'none',
-                            marginBottom: 16
-                        }}
-                    />
-                </div>
-
-                <Divider style={{ margin: 0 }} />
-
-                <div style={{
-                    display: 'flex',
-                    padding: '8px 16px',
-                    background: '#fafafa',
-                    borderBottom: '1px solid #f0f0f0',
-                    gap: 4
-                }}>
-                    {toolbarItems.map((item, index) => (
-                        <Tooltip key={index} title={item.title}>
-                            <Button
-                                type="text"
-                                size="small"
-                                icon={item.icon}
-                                onClick={item.action}
-                            />
-                        </Tooltip>
-                    ))}
-                </div>
-
-                <TextArea
-                    ref={textAreaRef}
-                    value={formData.text}
-                    onChange={handleContentChange}
-                    placeholder="开始写作..."
-                    style={{
-                        minHeight: 400,
-                        border: 'none',
-                        resize: 'none',
-                        fontSize: 15,
-                        lineHeight: 1.8,
-                        padding: 24
-                    }}
-                />
+                {toolbarItems.map((item, index) => (
+                    <Tooltip key={index} title={item.title}>
+                        <Button
+                            type="text"
+                            size="small"
+                            icon={item.icon}
+                            onClick={item.action}
+                        />
+                    </Tooltip>
+                ))}
             </div>
 
-            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                    支持 Markdown 语法
-                </Text>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                    快捷键: Ctrl+S 保存
-                </Text>
+            {/* 编辑区域 */}
+            <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '24px',
+                overflow: 'auto'
+            }}>
+                <div style={{
+                    maxWidth: 900,
+                    width: '100%',
+                    margin: '0 auto',
+                    background: '#fff',
+                    borderRadius: 8,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0
+                }}>
+                    {/* 标题输入 */}
+                    <div style={{ padding: '32px 40px 16px' }}>
+                        <Input
+                            placeholder="请输入文章标题..."
+                            value={formData.title}
+                            onChange={handleTitleChange}
+                            style={{
+                                fontSize: 32,
+                                fontWeight: 600,
+                                border: 'none',
+                                padding: 0,
+                                boxShadow: 'none'
+                            }}
+                        />
+                    </div>
+
+                    <Divider style={{ margin: 0 }} />
+
+                    {/* 正文输入 */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                        <TextArea
+                            ref={textAreaRef}
+                            value={formData.text}
+                            onChange={handleContentChange}
+                            placeholder="开始写作..."
+                            style={{
+                                flex: 1,
+                                border: 'none',
+                                resize: 'none',
+                                fontSize: 16,
+                                lineHeight: 1.8,
+                                padding: '24px 40px',
+                                minHeight: 400
+                            }}
+                        />
+                    </div>
+
+                    {/* 底部信息栏 */}
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 40px',
+                        borderTop: '1px solid #f0f0f0',
+                        background: '#fafafa',
+                        borderRadius: '0 0 8px 8px'
+                    }}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                            支持 Markdown 语法
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                            快捷键: Ctrl+S 保存 | {contentCount} 字
+                        </Text>
+                    </div>
+                </div>
             </div>
         </div>
     );
