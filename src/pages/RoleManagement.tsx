@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     Card,
     Button,
     Space,
-    Typography,
     Tag,
     Modal,
     Form,
     Input,
     Checkbox,
     message,
-    Popconfirm,
     Segmented,
     Avatar
 } from 'antd';
@@ -25,14 +23,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ResponsiveTable } from '../components/ResponsiveTable';
 import type { ResponsiveColumn, ActionItem } from '../components/ResponsiveTable';
 
-const { Title } = Typography;
 const { TextArea } = Input;
-
-interface Permission {
-    key: string;
-    name: string;
-    category: string;
-}
 
 interface Role {
     id: number;
@@ -94,7 +85,7 @@ const RoleManagement: React.FC = () => {
         { id: 3, name: 'editor', description: '编辑，可以管理文章', permissions: ROLE_PERMISSIONS.editor, userCount: 0 },
         { id: 4, name: 'user', description: '普通用户', permissions: ROLE_PERMISSIONS.user, userCount: 1 },
     ]);
-    const [loading, setLoading] = useState(false);
+    const [loading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingRole, setEditingRole] = useState<Role | null>(null);
     const [form] = Form.useForm();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Space, Typography, theme, message, Drawer } from 'antd';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet, useMatch } from 'react-router-dom';
 import {
     DashboardOutlined,
     UserOutlined,
@@ -27,6 +27,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
     const [drawerVisible, setDrawerVisible] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const isEditorPage = useMatch('/editor/*') !== null;
     const {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
@@ -214,55 +215,57 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
             )}
             
             <Layout style={{ marginLeft: mobile ? 0 : siderWidth }}>
-                <Header style={{
-                    padding: '0 24px',
-                    background: colorBgContainer,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                    position: 'fixed',
-                    top: 0,
-                    right: 0,
-                    left: mobile ? 0 : siderWidth,
-                    zIndex: 99
-                }}>
-                    <div>
-                        {mobile ? (
-                            <MenuOutlined 
-                                onClick={() => setDrawerVisible(true)}
-                                style={{ fontSize: 18, cursor: 'pointer' }}
-                            />
-                        ) : (
-                            React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
-                                className: 'trigger',
-                                onClick: () => setCollapsed(!collapsed),
-                                style: { fontSize: 18, cursor: 'pointer' }
-                            })
-                        )}
-                    </div>
-                    
-                    <Space size="middle">
-                        <BellOutlined style={{ fontSize: 18, cursor: 'pointer' }} />
-                        <Dropdown 
-                            menu={{ items: userMenuItems }}
-                            placement="bottomRight"
-                            arrow
-                        >
-                            <Space style={{ cursor: 'pointer' }}>
-                                <Avatar size="small" icon={<UserOutlined />} />
-                                <Text>{adminInfo.name}</Text>
-                            </Space>
-                        </Dropdown>
-                    </Space>
-                </Header>
+                {!isEditorPage && (
+                    <Header style={{
+                        padding: '0 24px',
+                        background: colorBgContainer,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                        position: 'fixed',
+                        top: 0,
+                        right: 0,
+                        left: mobile ? 0 : siderWidth,
+                        zIndex: 99
+                    }}>
+                        <div>
+                            {mobile ? (
+                                <MenuOutlined 
+                                    onClick={() => setDrawerVisible(true)}
+                                    style={{ fontSize: 18, cursor: 'pointer' }}
+                                />
+                            ) : (
+                                React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
+                                    className: 'trigger',
+                                    onClick: () => setCollapsed(!collapsed),
+                                    style: { fontSize: 18, cursor: 'pointer' }
+                                })
+                            )}
+                        </div>
+                        
+                        <Space size="middle">
+                            <BellOutlined style={{ fontSize: 18, cursor: 'pointer' }} />
+                            <Dropdown 
+                                menu={{ items: userMenuItems }}
+                                placement="bottomRight"
+                                arrow
+                            >
+                                <Space style={{ cursor: 'pointer' }}>
+                                    <Avatar size="small" icon={<UserOutlined />} />
+                                    <Text>{adminInfo.name}</Text>
+                                </Space>
+                            </Dropdown>
+                        </Space>
+                    </Header>
+                )}
                 
                 <Content style={{
-                    margin: mobile ? '12px' : '24px',
-                    marginTop: mobile ? 76 : 88,
-                    padding: mobile ? '12px' : '24px',
-                    background: colorBgContainer,
-                    borderRadius: mobile ? 12 : borderRadiusLG,
+                    margin: isEditorPage ? 0 : (mobile ? '12px' : '24px'),
+                    marginTop: isEditorPage ? 0 : (mobile ? 76 : 88),
+                    padding: isEditorPage ? 0 : (mobile ? '12px' : '24px'),
+                    background: isEditorPage ? 'transparent' : colorBgContainer,
+                    borderRadius: isEditorPage ? 0 : (mobile ? 12 : borderRadiusLG),
                     minHeight: 280,
                     maxWidth: '100%',
                     overflow: 'hidden'

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Row, Col, Card, Statistic, Typography, Spin, message, Slider } from 'antd';
-import { UserOutlined, FileTextOutlined, MessageOutlined, EyeOutlined } from '@ant-design/icons';
+import { UserOutlined, FileTextOutlined, MessageOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { statsApi } from '../api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { DashboardData, TrendData, TooltipProps } from '../types';
@@ -8,6 +9,7 @@ import type { DashboardData, TrendData, TooltipProps } from '../types';
 const { Title, Paragraph, Text } = Typography;
 
 const Dashboard: React.FC = () => {
+    const navigate = useNavigate();
     const [dashboardData, setDashboardData] = useState<DashboardData>({});
     const [trendData, setTrendData] = useState<TrendData[]>([]);
     const [loading, setLoading] = useState(true);
@@ -165,9 +167,18 @@ const Dashboard: React.FC = () => {
                 </Col>
 
                 <Col xs={24} sm={12} lg={8}>
-                    <Card>
+                    <Card
+                        hoverable
+                        onClick={() => navigate('/articles')}
+                        bodyStyle={{ padding: 24, cursor: 'pointer' }}
+                    >
                         <Statistic
-                            title="文章总数"
+                            title={
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    文章总数
+                                    <EditOutlined style={{ fontSize: 12, opacity: 0.5 }} />
+                                </span>
+                            }
                             value={dashboardData.contents?.posts || 0}
                             prefix={<FileTextOutlined />}
                             valueStyle={{ color: '#1890ff' }}

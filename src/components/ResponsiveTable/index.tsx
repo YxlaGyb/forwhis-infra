@@ -31,6 +31,7 @@ export interface ActionItem {
     text: string;
     icon?: React.ReactNode;
     danger?: boolean;
+    disabled?: boolean;
     onClick: () => void;
     hidden?: boolean;
 }
@@ -125,6 +126,7 @@ export function ResponsiveTable<T extends Record<string, any>>({
                                 type={item.danger ? 'default' : 'primary'}
                                 size="small"
                                 danger={item.danger}
+                                disabled={item.disabled}
                                 icon={item.icon}
                                 onClick={item.onClick}
                                 className="card-action-btn"
@@ -138,12 +140,13 @@ export function ResponsiveTable<T extends Record<string, any>>({
                                     items: actionItems.slice(3).map(item => ({
                                         key: item.key,
                                         label: (
-                                            <span style={{ color: item.danger ? '#ff4d4f' : undefined }}>
+                                            <span style={{ color: item.danger ? '#ff4d4f' : undefined, opacity: item.disabled ? 0.5 : 1 }}>
                                                 {item.icon && <span style={{ marginRight: 8 }}>{item.icon}</span>}
                                                 {item.text}
                                             </span>
                                         ),
-                                        onClick: item.onClick,
+                                        onClick: item.disabled ? undefined : item.onClick,
+                                        disabled: item.disabled,
                                     }))
                                 }}
                                 placement="topRight"

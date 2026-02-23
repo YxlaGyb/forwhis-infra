@@ -4,7 +4,6 @@ import {
     Input,
     Button,
     Space,
-    Typography,
     Tag,
     Modal,
     Form,
@@ -30,7 +29,6 @@ import { ResponsiveTable } from '../components/ResponsiveTable';
 import type { ResponsiveColumn, ActionItem } from '../components/ResponsiveTable';
 import type { User } from '../types';
 
-const { Title } = Typography;
 const { Option } = Select;
 
 const UserManagement: React.FC = () => {

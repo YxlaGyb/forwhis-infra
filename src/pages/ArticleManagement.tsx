@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Card,
     Input,
@@ -34,11 +35,12 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const ArticleManagement: React.FC = () => {
+    const navigate = useNavigate();
     const [articles, setArticles] = useState<Content[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isViewModalVisible, setIsViewModalVisible] = useState(false);
-    const [editingArticle, setEditingArticle] = useState<Content | null>(null);
+    const [editingArticle] = useState<Content | null>(null);
     const [viewingArticle, setViewingArticle] = useState<Content | null>(null);
     const [form] = Form.useForm();
     const [statusFilter, setStatusFilter] = useState<string>('');
@@ -79,21 +81,11 @@ const ArticleManagement: React.FC = () => {
     };
 
     const handleCreate = () => {
-        setEditingArticle(null);
-        form.resetFields();
-        setIsModalVisible(true);
+        navigate('/editor');
     };
 
     const handleEdit = (record: Content) => {
-        setEditingArticle(record);
-        form.setFieldsValue({
-            title: record.title,
-            slug: record.slug,
-            text: record.text,
-            status: record.status,
-            type: record.type
-        });
-        setIsModalVisible(true);
+        navigate(`/editor/${record.cid}`);
     };
 
     const handleView = (record: Content) => {

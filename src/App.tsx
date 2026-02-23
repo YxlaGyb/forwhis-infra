@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
 import RoleManagement from './pages/RoleManagement';
 import ArticleManagement from './pages/ArticleManagement';
+import ArticleEditor from './pages/ArticleEditor';
 import CommentManagement from './pages/CommentManagement';
 import Settings from './pages/Settings';
 import { authApi } from './api';
@@ -110,6 +111,8 @@ const App = () => {
                         <Route path="users" element={<UserManagement />} />
                         <Route path="roles" element={<RoleManagement />} />
                         <Route path="articles" element={<ArticleManagement />} />
+                        <Route path="editor" element={<ArticleEditor />} />
+                        <Route path="editor/:id" element={<ArticleEditor />} />
                         <Route path="comments" element={<CommentManagement />} />
                         <Route path="settings" element={<Settings />} />
                     </Route>
