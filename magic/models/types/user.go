@@ -31,3 +31,11 @@ type UpdateProfileRequest struct {
 	Bio      string `json:"bio,omitempty"`
 	Name     string `json:"name,omitempty"`
 }
+
+type AdminUpdateUserRequest struct {
+	Uid      int      `json:"uid"`
+	Name     string   `json:"name,omitempty"`
+	Email    string   `json:"email,omitempty"`
+	Roles    []string `json:"roles,omitempty"`
+	IsActive *int     `json:"isActive,omitempty"`
+}

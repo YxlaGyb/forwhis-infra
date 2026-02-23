@@ -116,7 +116,7 @@ func GetUsersList() []map[string]interface{} {
 			roleNames = []string{}
 		}
 		result = append(result, map[string]interface{}{
-			"uid": u.Uid, "name": u.Name, "email": u.Mail, "roles": roleNames, "createdAt": u.CreatedAt,
+			"uid": u.Uid, "name": u.Name, "email": u.Mail, "roles": roleNames, "createdAt": u.CreatedAt, "lastLogin": u.LastLogin, "lastip": u.LastIp,
 		})
 	}
 	return result
@@ -210,6 +210,43 @@ func UpdateUser(uid int, data map[string]interface{}) bool {
 		updates["password"] = v
 	}
 	db.GetDB().Model(user).Updates(updates)
+	return true
+}
+
+func AdminUpdateUser(uid int, name, email string, roles []string, isActive *int) bool {
+	user := &models.User{}
+	if db.GetDB().First(user, uid).Error != nil {
+		return false
+	}
+
+	updates := map[string]interface{}{}
+	if name != "" {
+		updates["name"] = name
+	}
+	if email != "" {
+		updates["mail"] = email
+	}
+	if isActive != nil {
+		updates["is_active"] = *isActive
+	}
+
+	if len(updates) > 0 {
+		db.GetDB().Model(user).Updates(updates)
+	}
+
+	if len(roles) > 0 {
+		var existingRoles []rbac.UserRole
+		db.GetDB().Where("user_id = ?", uid).Preload("Role").Find(&existingRoles)
+		for _, r := range existingRoles {
+			if r.Role.Name != "" {
+				rbacSvc.RemoveRoleFromUser(uid, r.Role.Name)
+			}
+		}
+		for _, role := range roles {
+			rbacSvc.AssignRoleToUser(uid, role, 0)
+		}
+	}
+
 	return true
 }
 

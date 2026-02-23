@@ -14,6 +14,7 @@ func init() {
 		v1 := r.Group("/api/v1/admin")
 		{
 			v1.GET("/users", middleware.RequirePerm(constants.PermUserRead)(controller.GetAllUsers))
+			v1.POST("/user/:uid/update", middleware.RequirePerm(constants.PermUserEdit)(controller.AdminUpdateUser))
 			v1.GET("/reviews", middleware.RequireAuth(controller.GetReviews))
 			v1.POST("/reviews/:id/approve", middleware.RequireAuth(controller.ApproveReviewItem))
 			v1.POST("/reviews/:id/reject", middleware.RequireAuth(controller.RejectReviewItem))
