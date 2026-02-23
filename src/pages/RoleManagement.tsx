@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
     Card,
-    Table,
     Button,
     Space,
     Typography,
@@ -12,7 +11,8 @@ import {
     Checkbox,
     message,
     Popconfirm,
-    Segmented
+    Segmented,
+    Avatar
 } from 'antd';
 import {
     PlusOutlined,
@@ -22,7 +22,8 @@ import {
     UserOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
-import type { ColumnsType } from 'antd/es/table';
+import { ResponsiveTable } from '../components/ResponsiveTable';
+import type { ResponsiveColumn, ActionItem } from '../components/ResponsiveTable';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -99,11 +100,12 @@ const RoleManagement: React.FC = () => {
     const [form] = Form.useForm();
     const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
 
-    const columns: ColumnsType<Role> = [
+    const columns: ResponsiveColumn<Role>[] = [
         {
             title: '角色名称',
             dataIndex: 'name',
             key: 'name',
+            width: 120,
             render: (name: string) => {
                 const colorMap: Record<string, string> = {
                     superadmin: 'red',
@@ -124,53 +126,70 @@ const RoleManagement: React.FC = () => {
             title: '描述',
             dataIndex: 'description',
             key: 'description',
+            width: 200,
+            priority: 'medium',
         },
         {
             title: '权限数量',
             dataIndex: 'permissions',
             key: 'permissions',
+            width: 100,
+            priority: 'low',
             render: (permissions: string[]) => `${permissions.length} 个权限`,
         },
         {
             title: '用户数量',
             dataIndex: 'userCount',
             key: 'userCount',
-        },
-        {
-            title: '操作',
-            key: 'action',
-            render: (_, record) => (
-                <Space size="small">
-                    <Button
-                        type="primary"
-                        icon={<EditOutlined />}
-                        size="small"
-                        onClick={() => handleEdit(record)}
-                        disabled={record.name === 'superadmin'}
-                    >
-                        编辑
-                    </Button>
-                    <Popconfirm
-                        title="确定删除这个角色吗？"
-                        description="删除后无法恢复"
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="确定"
-                        cancelText="取消"
-                        disabled={record.name === 'superadmin' || record.userCount > 0}
-                    >
-                        <Button
-                            danger
-                            icon={<DeleteOutlined />}
-                            size="small"
-                            disabled={record.name === 'superadmin' || record.userCount > 0}
-                        >
-                            删除
-                        </Button>
-                    </Popconfirm>
-                </Space>
-            ),
+            width: 100,
+            priority: 'low',
         },
     ];
+
+    const getActions = (record: Role): ActionItem[] => [
+        {
+            key: 'edit',
+            text: '编辑',
+            icon: <EditOutlined />,
+            onClick: () => handleEdit(record),
+            disabled: record.name === 'superadmin',
+        },
+        {
+            key: 'delete',
+            text: '删除',
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => {
+                if (record.name !== 'superadmin' && record.userCount === 0) {
+                    handleDelete(record.id);
+                }
+            },
+            disabled: record.name === 'superadmin' || record.userCount > 0,
+        },
+    ];
+
+    const getCardTitle = (record: Role) => {
+        const colorMap: Record<string, string> = {
+            superadmin: 'red',
+            admin: 'orange',
+            editor: 'blue',
+            user: 'green',
+        };
+        const nameMap: Record<string, string> = {
+            superadmin: '超级管理员',
+            admin: '管理员',
+            editor: '编辑',
+            user: '普通用户',
+        };
+        return (
+            <Space>
+                <Avatar size="small" icon={<SafetyOutlined />} />
+                <Tag color={colorMap[record.name] || 'default'}>{nameMap[record.name] || record.name}</Tag>
+            </Space>
+        );
+    };
+
+    const getCardSubtitle = (record: Role) => record.description;
 
     const handleAdd = () => {
         setEditingRole(null);
@@ -257,11 +276,14 @@ const RoleManagement: React.FC = () => {
                     </Button>
                 </div>
                 
-                <Table
+                <ResponsiveTable
                     columns={columns}
                     dataSource={roles}
                     rowKey="id"
                     loading={loading}
+                    actions={getActions}
+                    cardTitle={getCardTitle}
+                    cardSubtitle={getCardSubtitle}
                     pagination={false}
                 />
             </Card>
