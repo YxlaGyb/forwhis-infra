@@ -1,9 +1,15 @@
 /// <reference types="@rsbuild/core/types" />
 
-/**
- * Imports the SVG file as a React component.
- * @requires [@rsbuild/plugin-svgr](https://npmjs.com/package/@rsbuild/plugin-svgr)
- */
+interface ImportMetaEnv {
+    readonly VITE_API_BASE_URL: string;
+    readonly VITE_LOGIN_BG_URL?: string;
+    readonly VITE_SITE_URL?: string;
+}
+
+interface ImportMeta {
+    readonly env: ImportMetaEnv;
+}
+
 declare module '*.svg?react' {
     import type React from 'react';
     const ReactComponent: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
