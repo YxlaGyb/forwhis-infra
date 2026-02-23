@@ -39,7 +39,6 @@ interface Category {
 
 const CategoryManagement: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [form] = Form.useForm();
@@ -55,7 +54,6 @@ const CategoryManagement: React.FC = () => {
     }, []);
 
     const fetchCategories = async () => {
-        setLoading(true);
         try {
             const response = await metaApi.getMetas({ type: 'category' });
             if (response.data.code === 200 && response.data.data) {
@@ -69,8 +67,6 @@ const CategoryManagement: React.FC = () => {
         } catch (error) {
             console.error('获取分类列表失败:', error);
             message.error('获取分类列表失败');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -94,20 +90,6 @@ const CategoryManagement: React.FC = () => {
         });
 
         return roots;
-    };
-
-    const flattenTree = (items: Category[]): Category[] => {
-        const result: Category[] = [];
-        const traverse = (nodes: Category[]) => {
-            nodes.forEach(node => {
-                result.push(node);
-                if (node.children && node.children.length > 0) {
-                    traverse(node.children);
-                }
-            });
-        };
-        traverse(items);
-        return result;
     };
 
     const handleAdd = () => {
@@ -234,8 +216,6 @@ const CategoryManagement: React.FC = () => {
             children: item.children ? convertToTreeData(item.children) : undefined
         }));
     };
-
-    const allCategories = flattenTree(categories);
 
     return (
         <div>

@@ -11,6 +11,7 @@ import ArticleManagement from './pages/ArticleManagement';
 import ArticleEditor from './pages/ArticleEditor';
 import CategoryManagement from './pages/CategoryManagement';
 import CommentManagement from './pages/CommentManagement';
+import ReviewManagement from './pages/ReviewManagement';
 import Settings from './pages/Settings';
 import { authApi } from './api';
 import { storage } from './utils/storage';
@@ -118,6 +119,7 @@ const App = () => {
                         <Route path="editor/:id" element={<ArticleEditor />} />
                         <Route path="categories" element={<CategoryManagement />} />
                         <Route path="comments" element={<CommentManagement />} />
+                        <Route path="reviews" element={<ReviewManagement />} />
                         <Route path="settings" element={<Settings />} />
                     </Route>
                 </Routes>

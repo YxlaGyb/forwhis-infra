@@ -12,7 +12,8 @@ import {
     MenuOutlined,
     FileTextOutlined,
     CommentOutlined,
-    FolderOutlined
+    FolderOutlined,
+    SafetyOutlined
 } from '@ant-design/icons';
 import { authApi } from '../api';
 import { storage } from '../utils/storage';
@@ -121,6 +122,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
             key: '/comments',
             icon: <CommentOutlined />,
             label: '评论管理',
+        },
+        {
+            key: '/reviews',
+            icon: <SafetyOutlined />,
+            label: '审核管理',
         },
         {
             key: '/settings',
