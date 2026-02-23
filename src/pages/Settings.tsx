@@ -14,7 +14,8 @@ import {
     Badge,
     Tooltip,
     Divider,
-    Alert
+    Alert,
+    Drawer
 } from 'antd';
 import {
     SettingOutlined,
@@ -22,9 +23,11 @@ import {
     GlobalOutlined,
     FileSearchOutlined,
     ReloadOutlined,
-    ExclamationCircleOutlined
+    ExclamationCircleOutlined,
+    MenuOutlined
 } from '@ant-design/icons';
 import { settingsApi } from '../api';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import type {
     AllSettings,
     SettingsSection,
@@ -90,6 +93,8 @@ const Settings: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const [originalValues, setOriginalValues] = useState<AllSettings>(defaultSettings);
+    const [drawerVisible, setDrawerVisible] = useState(false);
+    const isMobile = useMediaQuery('(max-width: 768px)');
 
     const fetchSettings = useCallback(async () => {
         setLoading(true);
@@ -155,12 +160,13 @@ const Settings: React.FC = () => {
     };
 
     const renderSiteSection = () => (
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Alert
                 message="站点信息设置"
                 description="配置网站的基本信息，这些信息将显示在网站标题、搜索引擎结果和社交媒体分享中。"
                 type="info"
                 showIcon
+                style={{ padding: '12px 16px' }}
             />
             <Row gutter={[24, 16]}>
                 <Col xs={24} md={12}>
@@ -219,12 +225,13 @@ const Settings: React.FC = () => {
     );
 
     const renderFeatureSection = () => (
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Alert
                 message="功能开关"
                 description="控制网站的各项功能模块的开启和关闭。"
                 type="info"
                 showIcon
+                style={{ padding: '12px 16px' }}
             />
             <Card size="small" title="用户功能">
                 <Space direction="vertical" style={{ width: '100%' }}>
@@ -286,12 +293,13 @@ const Settings: React.FC = () => {
     );
 
     const renderSeoSection = () => (
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Alert
                 message="SEO设置"
                 description="优化搜索引擎收录和展示效果。"
                 type="info"
                 showIcon
+                style={{ padding: '12px 16px' }}
             />
             <Row gutter={[24, 16]}>
                 <Col xs={24} md={12}>
@@ -382,138 +390,208 @@ Sitemap: https://example.com/sitemap.xml`}
         }
     };
 
-    return (
-        <div style={{ height: 'calc(100vh - 112px)', display: 'flex', gap: 24 }}>
-            {/* 左侧导航 */}
+    const handleSectionChange = (key: SettingsSection) => {
+        setActiveSection(key);
+        if (isMobile) {
+            setDrawerVisible(false);
+        }
+    };
+
+    const renderNavMenu = () => (
+        <Menu
+            mode="inline"
+            selectedKeys={[activeSection]}
+            onClick={({ key }) => handleSectionChange(key as SettingsSection)}
+            style={{ border: 'none', padding: '8px 0' }}
+            theme="light"
+            items={sectionConfigs.map(config => ({
+                key: config.key,
+                icon: (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 18,
+                        color: activeSection === config.key ? '#1890ff' : '#595959'
+                    }}>
+                        {iconMap[config.icon]}
+                    </div>
+                ),
+                label: (
+                    <div style={{
+                        padding: '4px 0',
+                        lineHeight: '1.4'
+                    }}>
+                        <div style={{
+                            fontWeight: activeSection === config.key ? 600 : 500,
+                            fontSize: 14,
+                            marginBottom: 4,
+                            color: activeSection === config.key ? '#1890ff' : '#262626'
+                        }}>
+                            {config.title}
+                        </div>
+                        <div style={{
+                            fontSize: 12,
+                            color: activeSection === config.key ? '#69c0ff' : '#8c8c8c',
+                            lineHeight: '1.3'
+                        }}>
+                            {config.description}
+                        </div>
+                    </div>
+                ),
+                style: {
+                    height: 'auto',
+                    padding: '12px 16px',
+                    margin: '4px 0',
+                    borderRadius: 0
+                }
+            }))}
+        />
+    );
+
+    const renderContentArea = () => (
+        <Form
+            form={form}
+            layout="vertical"
+            onValuesChange={handleValuesChange}
+            disabled={loading}
+            style={{ maxWidth: isMobile ? '100%' : 800 }}
+        >
             <Card
-                style={{
-                    width: 260,
-                    flexShrink: 0
-                }}
-                bodyStyle={{ padding: 0 }}
+                title={
+                    <Space>
+                        {iconMap[currentConfig.icon]}
+                        <span>{currentConfig.title}</span>
+                        {hasChanges && (
+                            <Badge dot color="red">
+                                <span style={{ fontSize: 12, color: '#999' }}>有未保存的更改</span>
+                            </Badge>
+                        )}
+                    </Space>
+                }
+                extra={
+                    <Space size="small" wrap>
+                        <Tooltip title="重置为上次保存的设置">
+                            <Button
+                                icon={<ReloadOutlined />}
+                                onClick={handleReset}
+                                disabled={!hasChanges || saving}
+                                size={isMobile ? 'small' : 'middle'}
+                            >
+                                {!isMobile && '重置'}
+                            </Button>
+                        </Tooltip>
+                        <Button
+                            type="primary"
+                            icon={<SaveOutlined />}
+                            onClick={handleSave}
+                            loading={saving}
+                            disabled={!hasChanges}
+                            size={isMobile ? 'small' : 'middle'}
+                        >
+                            {!isMobile && '保存'}
+                        </Button>
+                    </Space>
+                }
+                loading={loading}
             >
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0' }}>
-                    <Title level={5} style={{ margin: 0 }}>
-                        <SettingOutlined style={{ marginRight: 8 }} />
-                        系统设置
-                    </Title>
-                </div>
-                <Menu
-                    mode="inline"
-                    selectedKeys={[activeSection]}
-                    onClick={({ key }) => setActiveSection(key as SettingsSection)}
-                    style={{ border: 'none', padding: '8px 0' }}
-                    theme="light"
-                    items={sectionConfigs.map(config => ({
-                        key: config.key,
-                        icon: (
-                            <div style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                fontSize: 18,
-                                color: activeSection === config.key ? '#1890ff' : '#595959'
-                            }}>
-                                {iconMap[config.icon]}
-                            </div>
-                        ),
-                        label: (
-                            <div style={{ 
-                                padding: '4px 0',
-                                lineHeight: '1.4'
-                            }}>
-                                <div style={{ 
-                                    fontWeight: activeSection === config.key ? 600 : 500, 
-                                    fontSize: 14, 
-                                    marginBottom: 4,
-                                    color: activeSection === config.key ? '#1890ff' : '#262626'
-                                }}>
-                                    {config.title}
-                                </div>
-                                <div style={{ 
-                                    fontSize: 12, 
-                                    color: activeSection === config.key ? '#69c0ff' : '#8c8c8c', 
-                                    lineHeight: '1.3'
-                                }}>
-                                    {config.description}
-                                </div>
-                            </div>
-                        ),
-                        style: {
-                            height: 'auto',
-                            padding: '12px 16px',
-                            margin: '4px 0',
-                            borderRadius: 0
-                        }
-                    }))}
-                />
+                {renderContent()}
             </Card>
 
-            {/* 右侧内容 */}
-            <div style={{ flex: 1, overflow: 'auto' }}>
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onValuesChange={handleValuesChange}
-                    disabled={loading}
-                    style={{ maxWidth: 800 }}
-                >
-                    <Card
-                        title={
-                            <Space>
-                                {iconMap[currentConfig.icon]}
-                                <span>{currentConfig.title}</span>
-                                {hasChanges && (
-                                    <Badge dot color="red">
-                                        <span style={{ fontSize: 12, color: '#999' }}>有未保存的更改</span>
-                                    </Badge>
-                                )}
-                            </Space>
-                        }
-                        extra={
-                            <Space>
-                                <Tooltip title="重置为上次保存的设置">
-                                    <Button
-                                        icon={<ReloadOutlined />}
-                                        onClick={handleReset}
-                                        disabled={!hasChanges || saving}
-                                    >
-                                        重置
-                                    </Button>
-                                </Tooltip>
-                                <Button
-                                    type="primary"
-                                    icon={<SaveOutlined />}
-                                    onClick={handleSave}
-                                    loading={saving}
-                                    disabled={!hasChanges}
-                                >
-                                    保存
-                                </Button>
-                            </Space>
-                        }
-                        loading={loading}
+            <Divider />
+
+            <Card size="small" title="危险操作" style={{ borderColor: '#ff4d4f' }}>
+                <Space wrap>
+                    <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+                    <Text type="secondary">重置所有设置为默认值</Text>
+                    <Button
+                        danger
+                        size="small"
+                        onClick={handleResetToDefault}
                     >
-                        {renderContent()}
-                    </Card>
+                        重置为默认
+                    </Button>
+                </Space>
+            </Card>
+        </Form>
+    );
 
-                    <Divider />
-
-                    <Card size="small" title="危险操作" style={{ borderColor: '#ff4d4f' }}>
-                        <Space>
-                            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
-                            <Text type="secondary">重置所有设置为默认值</Text>
+    return (
+        <div style={{
+            height: isMobile ? 'calc(100vh - 140px)' : 'calc(100vh - 112px)',
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? 12 : 24,
+            overflow: 'hidden'
+        }}>
+            {isMobile ? (
+                <>
+                    {/* 手机端：顶部导航按钮 + 抽屉菜单 */}
+                    <Card size="small" style={{ marginBottom: 0 }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                        }}>
+                            <Title level={5} style={{ margin: 0 }}>
+                                <SettingOutlined style={{ marginRight: 8 }} />
+                                系统设置
+                            </Title>
                             <Button
-                                danger
-                                size="small"
-                                onClick={handleResetToDefault}
+                                icon={<MenuOutlined />}
+                                onClick={() => setDrawerVisible(true)}
                             >
-                                重置为默认
+                                {currentConfig.title}
                             </Button>
-                        </Space>
+                        </div>
                     </Card>
-                </Form>
-            </div>
+
+                    <Drawer
+                        title={
+                            <Title level={5} style={{ margin: 0 }}>
+                                <SettingOutlined style={{ marginRight: 8 }} />
+                                系统设置
+                            </Title>
+                        }
+                        placement="left"
+                        onClose={() => setDrawerVisible(false)}
+                        open={drawerVisible}
+                        width={280}
+                        bodyStyle={{ padding: 0 }}
+                    >
+                        {renderNavMenu()}
+                    </Drawer>
+
+                    {/* 手机端内容区域 */}
+                    <div style={{ flex: 1, overflow: 'auto', padding: '0 4px' }}>
+                        {renderContentArea()}
+                    </div>
+                </>
+            ) : (
+                <>
+                    {/* 桌面端：左侧导航 */}
+                    <Card
+                        style={{
+                            width: 260,
+                            flexShrink: 0
+                        }}
+                        bodyStyle={{ padding: 0 }}
+                    >
+                        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0' }}>
+                            <Title level={5} style={{ margin: 0 }}>
+                                <SettingOutlined style={{ marginRight: 8 }} />
+                                系统设置
+                            </Title>
+                        </div>
+                        {renderNavMenu()}
+                    </Card>
+
+                    {/* 桌面端：右侧内容 */}
+                    <div style={{ flex: 1, overflow: 'auto' }}>
+                        {renderContentArea()}
+                    </div>
+                </>
+            )}
         </div>
     );
 };

@@ -11,7 +11,8 @@ import {
     MenuUnfoldOutlined,
     MenuOutlined,
     FileTextOutlined,
-    CommentOutlined
+    CommentOutlined,
+    FolderOutlined
 } from '@ant-design/icons';
 import { authApi } from '../api';
 import { storage } from '../utils/storage';
@@ -110,6 +111,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
             key: '/articles',
             icon: <FileTextOutlined />,
             label: '文章管理',
+        },
+        {
+            key: '/categories',
+            icon: <FolderOutlined />,
+            label: '分类管理',
         },
         {
             key: '/comments',
@@ -261,11 +267,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
                 )}
                 
                 <Content style={{
-                    margin: isEditorPage ? 0 : (mobile ? '12px' : '24px'),
+                    margin: isEditorPage ? 0 : (mobile ? '76px 0px 0px' : '24px'),
                     marginTop: isEditorPage ? 0 : (mobile ? 76 : 88),
                     padding: isEditorPage ? 0 : (mobile ? '12px' : '24px'),
                     background: isEditorPage ? 'transparent' : colorBgContainer,
-                    borderRadius: isEditorPage ? 0 : (mobile ? 12 : borderRadiusLG),
+                    borderRadius: isEditorPage ? 0 : (mobile ? 0 : borderRadiusLG),
                     minHeight: 280,
                     maxWidth: '100%',
                     overflow: 'hidden'

@@ -386,28 +386,28 @@ const CommentManagement: React.FC = () => {
                         关闭
                     </Button>
                 ]}
-                width={600}
+                width={500}
             >
                 {viewingComment && (
-                    <Descriptions bordered column={1}>
+                    <Descriptions bordered column={2} size="small">
                         <Descriptions.Item label="ID">{viewingComment.coid}</Descriptions.Item>
-                        <Descriptions.Item label="评论内容">
-                            <div style={{ maxHeight: 200, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
-                                {viewingComment.text}
-                            </div>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="评论者">{viewingComment.author}</Descriptions.Item>
-                        <Descriptions.Item label="邮箱">{viewingComment.mail}</Descriptions.Item>
-                        <Descriptions.Item label="网站">{viewingComment.url || '-'}</Descriptions.Item>
-                        <Descriptions.Item label="IP地址">{viewingComment.ip || '-'}</Descriptions.Item>
                         <Descriptions.Item label="状态">
                             <Tag color={getStatusColor(viewingComment.status)}>
                                 {getStatusName(viewingComment.status)}
                             </Tag>
                         </Descriptions.Item>
+                        <Descriptions.Item label="评论者">{viewingComment.author}</Descriptions.Item>
+                        <Descriptions.Item label="邮箱">{viewingComment.mail}</Descriptions.Item>
+                        <Descriptions.Item label="网站" span={2}>{viewingComment.url || '-'}</Descriptions.Item>
                         <Descriptions.Item label="文章ID">{viewingComment.cid}</Descriptions.Item>
                         <Descriptions.Item label="父评论ID">{viewingComment.parent || '-'}</Descriptions.Item>
-                        <Descriptions.Item label="发布时间">{formatTimestamp(viewingComment.created)}</Descriptions.Item>
+                        <Descriptions.Item label="IP地址" span={2}>{viewingComment.ip || '-'}</Descriptions.Item>
+                        <Descriptions.Item label="发布时间" span={2}>{formatTimestamp(viewingComment.created)}</Descriptions.Item>
+                        <Descriptions.Item label="评论内容" span={2}>
+                            <div style={{ maxHeight: 150, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
+                                {viewingComment.text}
+                            </div>
+                        </Descriptions.Item>
                     </Descriptions>
                 )}
             </Modal>
