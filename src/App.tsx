@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import AdminLayout from './layouts/AdminLayout';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
+import RoleManagement from './pages/RoleManagement';
 import ArticleManagement from './pages/ArticleManagement';
 import CommentManagement from './pages/CommentManagement';
 import Settings from './pages/Settings';
@@ -107,6 +108,7 @@ const App = () => {
                     }>
                         <Route index element={<Dashboard />} />
                         <Route path="users" element={<UserManagement />} />
+                        <Route path="roles" element={<RoleManagement />} />
                         <Route path="articles" element={<ArticleManagement />} />
                         <Route path="comments" element={<CommentManagement />} />
                         <Route path="settings" element={<Settings />} />

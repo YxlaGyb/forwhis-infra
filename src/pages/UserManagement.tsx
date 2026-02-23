@@ -10,15 +10,18 @@ import {
     Form,
     Select,
     message,
-    Avatar
+    Avatar,
+    Segmented
 } from 'antd';
 import {
     SearchOutlined,
     PlusOutlined,
     EditOutlined,
     DeleteOutlined,
-    UserOutlined
+    UserOutlined,
+    SafetyOutlined
 } from '@ant-design/icons';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { userApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 import { formatTimestamp } from '../utils/format';
@@ -31,6 +34,8 @@ const { Title } = Typography;
 const { Option } = Select;
 
 const UserManagement: React.FC = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -255,10 +260,17 @@ const UserManagement: React.FC = () => {
 
     return (
         <div>
-            <Title level={4} style={{ marginBottom: 16 }}>
-                <UserOutlined /> 用户管理
-            </Title>
-            
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Segmented
+                    value={location.pathname === '/roles' ? 'roles' : 'users'}
+                    onChange={(value) => navigate(value === 'roles' ? '/roles' : '/users')}
+                    options={[
+                        { label: <><UserOutlined /> 用户管理</>, value: 'users' },
+                        { label: <><SafetyOutlined /> 角色管理 Bata</>, value: 'roles' },
+                    ]}
+                />
+            </div>
+
             <Card>
                 <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
                     <Input
