@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Card,
     Input,
@@ -163,9 +163,11 @@ const CommentManagement: React.FC = () => {
         setViewingComment(null);
     };
 
-    const filteredByStatus = filteredComments.filter(comment => {
-        return !statusFilter || comment.status === statusFilter;
-    });
+    const filteredByStatus = useMemo(() => {
+        return filteredComments.filter(comment => {
+            return !statusFilter || comment.status === statusFilter;
+        });
+    }, [filteredComments, statusFilter]);
 
     // 表格列配置
     const columns: ResponsiveColumn<Comment>[] = [

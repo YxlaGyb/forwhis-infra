@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, message } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
@@ -13,6 +13,7 @@ import CommentManagement from './pages/CommentManagement';
 import Settings from './pages/Settings';
 import { authApi } from './api';
 import { storage } from './utils/storage';
+import { APP_CONFIG } from './constants';
 import './App.css';
 
 const App = () => {
@@ -54,6 +55,7 @@ const App = () => {
         } catch (error) {
             console.error('检查登录状态失败:', error);
             storage.removeUserInfo();
+            message.error('登录状态验证失败，请重新登录');
         } finally {
             setLoading(false);
         }
@@ -70,7 +72,7 @@ const App = () => {
             console.error('登出API调用失败:', error);
         } finally {
             storage.removeUserInfo();
-            document.cookie = 'forestwhisper=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = `${APP_CONFIG.cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
             setIsLoggedIn(false);
             setCanAccessAdmin(false);
         }

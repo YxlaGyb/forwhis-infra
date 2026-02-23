@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Card,
@@ -167,9 +167,11 @@ const ArticleManagement: React.FC = () => {
         setViewingArticle(null);
     };
 
-    const filteredByStatus = filteredArticles.filter(article => {
-        return !statusFilter || article.status === statusFilter;
-    });
+    const filteredByStatus = useMemo(() => {
+        return filteredArticles.filter(article => {
+            return !statusFilter || article.status === statusFilter;
+        });
+    }, [filteredArticles, statusFilter]);
 
     // 表格列配置
     const columns: ResponsiveColumn<Content>[] = [

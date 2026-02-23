@@ -4,7 +4,8 @@ import { UserOutlined, FileTextOutlined, MessageOutlined, EyeOutlined, EditOutli
 import { useNavigate } from 'react-router-dom';
 import { statsApi } from '../api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import type { DashboardData, TrendData, TooltipProps } from '../types';
+import type { DashboardData, TrendData } from '../types';
+import CustomTooltip from '../components/CustomTooltip';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -102,35 +103,6 @@ const Dashboard: React.FC = () => {
         }
         setHiddenLines(newHidden);
     }, [hiddenLines]);
-
-    const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
-        if (active && payload && payload.length) {
-            return (
-                <div style={{ 
-                    background: 'rgba(255, 255, 255, 0.95)', 
-                    padding: '12px 16px', 
-                    borderRadius: 12, 
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                    border: '1px solid rgba(0,0,0,0.05)'
-                }}>
-                    <div style={{ fontWeight: 600, marginBottom: 8, color: '#333' }}>{label}</div>
-                    {payload.map((entry, index) => (
-                        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <div style={{ 
-                                width: 8, 
-                                height: 8, 
-                                borderRadius: '50%', 
-                                background: entry.color 
-                            }} />
-                            <span style={{ color: '#666', fontSize: 13 }}>{entry.name}:</span>
-                            <span style={{ fontWeight: 600, color: entry.color }}>{entry.value}</span>
-                        </div>
-                    ))}
-                </div>
-            );
-        }
-        return null;
-    };
 
     if (loading) {
         return (

@@ -1,4 +1,4 @@
-const STORAGE_PREFIX = 'fw_';
+import { APP_CONFIG } from '../constants';
 
 export interface UserInfo {
     uid: number;
@@ -22,20 +22,20 @@ export const safeJsonParse = <T>(json: string | null, defaultValue: T): T => {
 
 export const storage = {
     getUserInfo: (): UserInfo | null => {
-        const data = localStorage.getItem(`${STORAGE_PREFIX}userInfo`);
+        const data = localStorage.getItem(`${APP_CONFIG.storagePrefix}userInfo`);
         return safeJsonParse<UserInfo | null>(data, null);
     },
 
     setUserInfo: (info: UserInfo): void => {
-        localStorage.setItem(`${STORAGE_PREFIX}userInfo`, JSON.stringify(info));
+        localStorage.setItem(`${APP_CONFIG.storagePrefix}userInfo`, JSON.stringify(info));
     },
 
     removeUserInfo: (): void => {
-        localStorage.removeItem(`${STORAGE_PREFIX}userInfo`);
+        localStorage.removeItem(`${APP_CONFIG.storagePrefix}userInfo`);
     },
 
     clear: (): void => {
-        localStorage.removeItem(`${STORAGE_PREFIX}userInfo`);
+        localStorage.removeItem(`${APP_CONFIG.storagePrefix}userInfo`);
     }
 };
 

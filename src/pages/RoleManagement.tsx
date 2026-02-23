@@ -22,6 +22,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ResponsiveTable } from '../components/ResponsiveTable';
 import type { ResponsiveColumn, ActionItem } from '../components/ResponsiveTable';
+import { getRoleColor, getRoleName } from '../utils/mapping';
 
 const { TextArea } = Input;
 
@@ -97,21 +98,9 @@ const RoleManagement: React.FC = () => {
             dataIndex: 'name',
             key: 'name',
             width: 120,
-            render: (name: string) => {
-                const colorMap: Record<string, string> = {
-                    superadmin: 'red',
-                    admin: 'orange',
-                    editor: 'blue',
-                    user: 'green',
-                };
-                const nameMap: Record<string, string> = {
-                    superadmin: '超级管理员',
-                    admin: '管理员',
-                    editor: '编辑',
-                    user: '普通用户',
-                };
-                return <Tag color={colorMap[name] || 'default'}>{nameMap[name] || name}</Tag>;
-            },
+            render: (name: string) => (
+                <Tag color={getRoleColor(name)}>{getRoleName(name)}</Tag>
+            ),
         },
         {
             title: '描述',
@@ -159,26 +148,12 @@ const RoleManagement: React.FC = () => {
         },
     ];
 
-    const getCardTitle = (record: Role) => {
-        const colorMap: Record<string, string> = {
-            superadmin: 'red',
-            admin: 'orange',
-            editor: 'blue',
-            user: 'green',
-        };
-        const nameMap: Record<string, string> = {
-            superadmin: '超级管理员',
-            admin: '管理员',
-            editor: '编辑',
-            user: '普通用户',
-        };
-        return (
-            <Space>
-                <Avatar size="small" icon={<SafetyOutlined />} />
-                <Tag color={colorMap[record.name] || 'default'}>{nameMap[record.name] || record.name}</Tag>
-            </Space>
-        );
-    };
+    const getCardTitle = (record: Role) => (
+        <Space>
+            <Avatar size="small" icon={<SafetyOutlined />} />
+            <Tag color={getRoleColor(record.name)}>{getRoleName(record.name)}</Tag>
+        </Space>
+    );
 
     const getCardSubtitle = (record: Role) => record.description;
 
