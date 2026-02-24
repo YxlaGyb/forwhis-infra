@@ -85,7 +85,7 @@ func CreateComment(c *gin.Context) {
 		service.CreateUserinfo(authorID, "createComment", "发表了评论喵")
 	}
 
-	middleware.JSONSuccess(c, "评论已提交，等待审核喵", map[string]interface{}{
+	middleware.JSONSuccess(c, "评论已提交, 等待审核喵", map[string]interface{}{
 		"coid":    comment.Coid,
 		"created": comment.Created,
 	})

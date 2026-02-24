@@ -34,7 +34,7 @@ func Login(c *gin.Context) {
 
 	cdKey := db.FormatKey("login:cd", req.Email)
 	if exists, _ := db.Exists(cdKey); exists > 0 {
-		middleware.JSONError(c, "操作过于频繁，请稍后再试喵", nil)
+		middleware.JSONError(c, "操作过于频繁, 请稍后再试喵", nil)
 		return
 	}
 	db.SetEX(cdKey, "1", 60)
@@ -79,7 +79,7 @@ func Register(c *gin.Context) {
 		return
 	}
 	if !utils.IsValidEmail(req.Email) || !utils.IsValidName(req.Username) || !utils.IsValidPassword(req.Passwd) {
-		middleware.JSONError(c, "邮箱、用户名或密码格式不正确喵（密码需8-72位，包含大小写字母和数字）", nil)
+		middleware.JSONError(c, "邮箱、用户名或密码格式不正确喵（密码需8-16位, 包含字母和数字）", nil)
 		return
 	}
 	if len(req.Code) != 6 {
@@ -157,7 +157,7 @@ func SendEmailCodeRegister(c *gin.Context) {
 		<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
 			<h2 style="color: #333;">✨ 注册验证码待查收</h2>
 			<p>您的验证码是 <b style="font-size: 24px; color: #007bff;">` + code + `</b></p>
-			<p style="color: #666;">请在 5 分钟内完成验证，请勿泄露喵~</p>
+			<p style="color: #666;">请在 5 分钟内完成验证, 请勿泄露喵~</p>
 			<hr style="border: none; border-top: 1px solid #eee;">
 			<footer style="font-size: 12px; color: #999;">来自：数数洞洞平台</footer>
 		</div>
@@ -238,7 +238,7 @@ func ChangePassword(c *gin.Context) {
 		return
 	}
 	if !utils.IsValidPassword(req.NewPassword) {
-		middleware.JSONError(c, "新密码需8-72位，包含大小写字母和数字喵", nil)
+		middleware.JSONError(c, "新密码需8-16位, 包含字母和数字喵", nil)
 		return
 	}
 

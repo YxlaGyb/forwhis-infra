@@ -8,7 +8,7 @@ import (
 
 func CheckTablesHandler(c *gin.Context) {
 	if !CheckFixToolAllowed() {
-		middleware.JSONError(c, "修复工具未启用，请检查数据库连接", nil)
+		middleware.JSONError(c, "修复工具未启用, 请检查数据库连接", nil)
 		return
 	}
 
@@ -20,7 +20,7 @@ func CheckTablesHandler(c *gin.Context) {
 
 func FixTablesHandler(c *gin.Context) {
 	if !CheckFixToolAllowed() {
-		middleware.JSONError(c, "修复工具未启用，请检查数据库连接", nil)
+		middleware.JSONError(c, "修复工具未启用, 请检查数据库连接", nil)
 		return
 	}
 
@@ -33,7 +33,7 @@ func FixTablesHandler(c *gin.Context) {
 
 func FixSingleTableHandler(c *gin.Context) {
 	if !CheckFixToolAllowed() {
-		middleware.JSONError(c, "修复工具未启用，请检查数据库连接", nil)
+		middleware.JSONError(c, "修复工具未启用, 请检查数据库连接", nil)
 		return
 	}
 
@@ -58,7 +58,7 @@ func FixSingleTableHandler(c *gin.Context) {
 
 func GetTableInfoHandler(c *gin.Context) {
 	if !CheckFixToolAllowed() {
-		middleware.JSONError(c, "修复工具未启用，请检查数据库连接", nil)
+		middleware.JSONError(c, "修复工具未启用, 请检查数据库连接", nil)
 		return
 	}
 
@@ -79,7 +79,7 @@ func GetTableInfoHandler(c *gin.Context) {
 
 func CreateIndexesHandler(c *gin.Context) {
 	if !CheckFixToolAllowed() {
-		middleware.JSONError(c, "修复工具未启用，请检查数据库连接", nil)
+		middleware.JSONError(c, "修复工具未启用, 请检查数据库连接", nil)
 		return
 	}
 

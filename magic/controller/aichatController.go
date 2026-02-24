@@ -111,7 +111,7 @@ func ChatStream(c *gin.Context) {
 		return
 	}
 	if !allowed {
-		middleware.JSONError(c, "请求太频繁了，请稍后再试喵", nil)
+		middleware.JSONError(c, "请求太频繁了, 请稍后再试喵", nil)
 		return
 	}
 

@@ -151,7 +151,7 @@ func CreateUser(name, email, password, ip, role string, autoGenerateName bool) (
 func createDefaultUsermetaTx(tx *gorm.DB, uid int) error {
 	now := int(time.Now().Unix())
 	defaults := []struct{ key, val string }{
-		{"gender", "0"}, {"birthday", ""}, {"bio", "系统默认签名，送给每一位小可爱~"},
+		{"gender", "0"}, {"birthday", ""}, {"bio", "系统默认签名, 送给每一位小可爱~"},
 	}
 	for _, d := range defaults {
 		if err := tx.Create(&models.Usermeta{UserId: uid, MetaKey: d.key, MetaValue: d.val, CreatedAt: now, UpdatedAt: now}).Error; err != nil {

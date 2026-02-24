@@ -93,7 +93,7 @@ func FixTables() (int, []string) {
 	}
 
 	if fixedCount == 0 {
-		results = append(results, "所有表都正常，无需修复")
+		results = append(results, "所有表都正常, 无需修复")
 	}
 
 	return fixedCount, results
@@ -210,7 +210,7 @@ func CreateMissingIndexes() (int, []string) {
 	}
 
 	if createdCount == 0 {
-		results = append(results, "所有索引都正常，无需创建")
+		results = append(results, "所有索引都正常, 无需创建")
 	}
 
 	return createdCount, results

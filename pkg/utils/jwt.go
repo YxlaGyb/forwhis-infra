@@ -231,7 +231,7 @@ func (m *JWTManager) cleanupOldKeys(ctx context.Context, newID string) {
 	// 按时间升序排序（旧的在前）
 	sort.Slice(keys, func(i, j int) bool { return keys[i].t.Before(keys[j].t) })
 
-	// 删除最旧的 Key，保留 maxActiveKeys 个
+	// 删除最旧的 Key, 保留 maxActiveKeys 个
 	for i := 0; i < len(keys)-maxActiveKeys; i++ {
 		if keys[i].id != newID {
 			client.HDel(ctx, keyHashKey, keys[i].id)
@@ -425,7 +425,7 @@ func GetPayload(c *gin.Context) *types.Payload {
 	return nil
 }
 
-// 随机抖动，避免缓存同时失效
+// 随机抖动, 避免缓存同时失效
 func jitter() time.Duration {
 	n, _ := rand.Int(rand.Reader, big.NewInt(5000)) // 0-5s
 	return time.Duration(n.Int64()) * time.Millisecond

@@ -66,7 +66,7 @@ func pingAndReconnect() bool {
 		return DB != nil
 	}
 	if err := sqlDB.Ping(); err != nil {
-		log.Printf("数据库连接失效，尝试重连: %v", err)
+		log.Printf("数据库连接失效, 尝试重连: %v", err)
 		initDB()
 		return DB != nil
 	}

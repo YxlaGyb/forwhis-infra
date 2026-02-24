@@ -39,3 +39,10 @@ type AdminUpdateUserRequest struct {
 	Roles    []string `json:"roles,omitempty"`
 	IsActive *int     `json:"isActive,omitempty"`
 }
+
+type AdminCreateUserRequest struct {
+	Name     string   `json:"name"`
+	Email    string   `json:"email"`
+	Password string   `json:"password"`
+	Roles    []string `json:"roles,omitempty"`
+}

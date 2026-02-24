@@ -77,9 +77,9 @@ var RolePermissions = map[Role][]Permission{
 }
 
 var RoleDescriptions = map[Role]string{
-	RoleSuperadmin: "超级管理员，拥有系统所有权限",
-	RoleAdmin:      "管理员，负责系统日常管理",
-	RoleEditor:     "编辑者，负责内容创作和编辑",
-	RoleUser:       "普通用户，可阅读内容和发表评论",
-	RoleVisitor:    "访客，仅可浏览公开内容",
+	RoleSuperadmin: "超级管理员, 拥有系统所有权限",
+	RoleAdmin:      "管理员, 负责系统日常管理",
+	RoleEditor:     "编辑者, 负责内容创作和编辑",
+	RoleUser:       "普通用户, 可阅读内容和发表评论",
+	RoleVisitor:    "访客, 仅可浏览公开内容",
 }

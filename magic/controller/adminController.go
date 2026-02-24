@@ -104,6 +104,79 @@ func RejectReview(c *gin.Context) {
 	middleware.JSONSuccess(c, "审核已拒绝喵", nil)
 }
 
+func AdminCreateUser(c *gin.Context) {
+	var req types.AdminCreateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		middleware.JSONError(c, "请求数据不能为空喵", nil)
+		return
+	}
+
+	if !utils.IsValidName(req.Name) {
+		middleware.JSONError(c, "昵称格式不正确喵", nil)
+		return
+	}
+
+	if !utils.IsValidEmail(req.Email) {
+		middleware.JSONError(c, "邮箱格式不正确喵", nil)
+		return
+	}
+
+	if !utils.IsValidPassword(req.Password) {
+		middleware.JSONError(c, "密码需8-16位, 包含字母和数字喵", nil)
+		return
+	}
+
+	if service.GetUserByEmail(req.Email) != nil {
+		middleware.JSONError(c, "该邮箱已被使用喵", nil)
+		return
+	}
+
+	currentUser := middleware.GetCurrentUserFromContext(c)
+	isCurrentSuperadmin := rbacSvc.IsSuperadmin(currentUser)
+
+	if len(req.Roles) > 0 {
+		hasSuperadminRole := false
+		for _, r := range req.Roles {
+			if r == "superadmin" {
+				hasSuperadminRole = true
+				break
+			}
+		}
+		if hasSuperadminRole && !isCurrentSuperadmin {
+			middleware.JSONError(c, "只有超级管理员可以授予超级管理员权限喵", nil)
+			return
+		}
+	}
+
+	hashedPwd, err := utils.HashPassword(req.Password)
+	if err != nil {
+		middleware.JSONSystemError(c, "密码加密失败喵", nil)
+		return
+	}
+
+	role := "user"
+	if len(req.Roles) > 0 {
+		role = req.Roles[0]
+	}
+
+	clientIP := c.ClientIP()
+	user, err := service.CreateUser(req.Name, req.Email, hashedPwd, clientIP, role, false)
+	if err != nil {
+		middleware.JSONSystemError(c, "创建用户失败喵", nil)
+		return
+	}
+
+	if len(req.Roles) > 1 {
+		for _, r := range req.Roles[1:] {
+			rbacSvc.AssignRoleToUser(user.Uid, r, currentUser.Uid)
+		}
+	}
+
+	rbacSvc.InvalidateUserCache(user.Uid)
+	service.CreateUserinfo(currentUser.Uid, "createUser", "创建了用户: "+req.Email+"喵")
+	middleware.JSONSuccess(c, "用户创建成功喵", gin.H{"uid": user.Uid})
+}
+
 func AdminUpdateUser(c *gin.Context) {
 	uid, err := strconv.Atoi(c.Param("uid"))
 	if err != nil {
