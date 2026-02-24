@@ -1,12 +1,12 @@
 package middleware
 
 import (
-	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/models"
 	"forestwhisperGo/magic/models/rbac"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
-	"forestwhisperGo/magic/utils"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/constants"
+	"forestwhisperGo/pkg/db"
+	"forestwhisperGo/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )

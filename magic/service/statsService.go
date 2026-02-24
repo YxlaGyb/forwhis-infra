@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"forestwhisperGo/magic/models"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
 )
 
 func GetUserStats() map[string]int {

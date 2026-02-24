@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"forestwhisperGo/magic/models/types"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

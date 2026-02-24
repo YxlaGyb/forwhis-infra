@@ -9,8 +9,8 @@ import (
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
-	"forestwhisperGo/magic/utils"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
+	"forestwhisperGo/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )

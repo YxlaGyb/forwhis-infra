@@ -5,7 +5,7 @@ import (
 
 	"forestwhisperGo/magic/models"
 	"forestwhisperGo/magic/models/rbac"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
 )
 
 type TableStatus struct {

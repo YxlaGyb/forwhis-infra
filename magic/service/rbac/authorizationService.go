@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"time"
 
-	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/models"
 	"forestwhisperGo/magic/models/rbac"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/constants"
+	"forestwhisperGo/pkg/db"
 )
 
 const (
-	permCachePrefix  = "rbac:perms:"
-	roleCachePrefix  = "rbac:roles:"
-	superadminCache  = "rbac:superadmin:"
-	cacheTTL         = 5 * time.Minute
+	permCachePrefix = "rbac:perms:"
+	roleCachePrefix = "rbac:roles:"
+	superadminCache = "rbac:superadmin:"
+	cacheTTL        = 5 * time.Minute
 )
 
 func IsSuperadmin(user *models.User) bool {

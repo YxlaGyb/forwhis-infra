@@ -10,8 +10,8 @@ import (
 	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
-	"forestwhisperGo/magic/utils"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
+	"forestwhisperGo/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )

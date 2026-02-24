@@ -1,7 +1,7 @@
 package fix
 
 import (
-	"forestwhisperGo/magic/utils"
+	"forestwhisperGo/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )

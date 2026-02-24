@@ -1,7 +1,7 @@
 package rbac
 
 import (
-	"forestwhisperGo/magic/constants"
+	"forestwhisperGo/pkg/constants"
 )
 
 func InitDefaultRbac() {

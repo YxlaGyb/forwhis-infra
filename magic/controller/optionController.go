@@ -3,11 +3,11 @@ package controller
 import (
 	"strings"
 
-	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
+	"forestwhisperGo/pkg/constants"
 
 	"github.com/gin-gonic/gin"
 )

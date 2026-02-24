@@ -3,7 +3,7 @@ package service
 import (
 	"encoding/json"
 	"forestwhisperGo/magic/models"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
 	"time"
 )
 

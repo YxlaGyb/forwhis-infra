@@ -7,9 +7,9 @@ import (
 	"forestwhisperGo/magic/models/rbac"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
-	"forestwhisperGo/magic/utils"
-	"forestwhisperGo/magic/utils/configutil"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
+	"forestwhisperGo/pkg/utils"
+	"forestwhisperGo/pkg/utils/configutil"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -62,6 +62,9 @@ func SaveConfig(siteName, siteUrl, dbType string, dbConfig map[string]interface{
 }
 
 func InitDatabase() error {
+	if err := db.ReloadDB(); err != nil {
+		return fmt.Errorf("数据库连接失败: %v", err)
+	}
 	database := db.GetDB()
 	if database == nil {
 		return fmt.Errorf("数据库未连接")

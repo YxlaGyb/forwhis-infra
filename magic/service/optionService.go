@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"forestwhisperGo/magic/models"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
 )
 
 var (

@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	"forestwhisperGo/magic/utils/configutil"
+	"forestwhisperGo/pkg/utils/configutil"
 
 	"github.com/pelletier/go-toml/v2"
 	"gorm.io/driver/postgres"
@@ -104,4 +104,29 @@ func CloseDB() {
 		sqlDB.Close()
 		DB = nil
 	}
+}
+
+func ReloadDB() error {
+	mu.Lock()
+	if DB != nil {
+		sqlDB, _ := DB.DB()
+		sqlDB.Close()
+		DB = nil
+	}
+	tried = false
+	mu.Unlock()
+
+	cfgOnce = sync.Once{}
+	cfg = nil
+
+	cfgOnce.Do(loadConfig)
+	if cfg == nil {
+		return fmt.Errorf("配置加载失败")
+	}
+
+	initDB()
+	if DB == nil {
+		return fmt.Errorf("数据库连接失败")
+	}
+	return nil
 }

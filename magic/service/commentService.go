@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"forestwhisperGo/magic/models"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
 )
 
 func GetCommentsList(cid int, status string, authorID, page, limit int) map[string]interface{} {

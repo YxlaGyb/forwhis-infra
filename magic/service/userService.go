@@ -7,8 +7,8 @@ import (
 	"forestwhisperGo/magic/models"
 	"forestwhisperGo/magic/models/rbac"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
-	"forestwhisperGo/magic/utils"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
+	"forestwhisperGo/pkg/utils"
 
 	"gorm.io/gorm"
 )

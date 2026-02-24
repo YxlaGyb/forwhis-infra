@@ -14,18 +14,20 @@ import (
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/routes"
 	_ "forestwhisperGo/magic/routes/modules"
-	"forestwhisperGo/magic/utils"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
+	pkg "forestwhisperGo/pkg/logger"
+	"forestwhisperGo/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
-	router.Use(utils.Logger())
+	router.Use(pkg.Logger())
 	router.Use(middleware.RecoveryMiddleware())
+	router.Use(middleware.ProxyFix())
 	router.Use(middleware.Cors())
-	router.SetTrustedProxies([]string{"127.0.0.1"})
 
 	if !utils.ConfigExists() {
 		install.SetupInstallRoutes(router)

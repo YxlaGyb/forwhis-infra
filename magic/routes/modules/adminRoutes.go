@@ -1,10 +1,10 @@
 package modules
 
 import (
-	"forestwhisperGo/magic/constants"
 	"forestwhisperGo/magic/controller"
 	"forestwhisperGo/magic/middleware"
 	"forestwhisperGo/magic/routes"
+	"forestwhisperGo/pkg/constants"
 
 	"github.com/gin-gonic/gin"
 )

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"forestwhisperGo/magic/models"
-	"forestwhisperGo/magic/utils"
-	"forestwhisperGo/magic/utils/db"
+	"forestwhisperGo/pkg/db"
+	"forestwhisperGo/pkg/utils"
 )
 
 var (

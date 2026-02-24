@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"forestwhisperGo/magic/utils/configutil"
+	"forestwhisperGo/pkg/utils/configutil"
 
 	"github.com/pelletier/go-toml/v2"
 )

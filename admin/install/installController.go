@@ -1,23 +1,20 @@
 package install
 
 import (
+	_ "embed"
 	"net/http"
-	"os"
 
 	"forestwhisperGo/magic/middleware"
-	"forestwhisperGo/magic/utils"
+	"forestwhisperGo/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
+//go:embed install.html
+var installHtml []byte
+
 func GetInstallHtml(c *gin.Context) {
-	htmlPath := "admin/install/install.html"
-	content, err := os.ReadFile(htmlPath)
-	if err != nil {
-		c.Data(http.StatusNotFound, "text/plain", []byte("安装页面不存在"))
-		return
-	}
-	c.Data(http.StatusOK, "text/html; charset=utf-8", content)
+	c.Data(http.StatusOK, "text/html; charset=utf-8", installHtml)
 }
 
 func InstallPage(c *gin.Context) {
