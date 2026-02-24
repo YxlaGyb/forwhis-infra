@@ -1,4 +1,4 @@
-package types
+package request
 
 type ChatRequest struct {
 	ConversationID string `json:"conversationId"`

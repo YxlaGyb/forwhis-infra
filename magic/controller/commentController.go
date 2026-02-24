@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"forestwhisperGo/magic/interfaces/http/middleware"
-	"forestwhisperGo/magic/models/types"
+	"forestwhisperGo/magic/interfaces/dto/request"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 	"forestwhisperGo/pkg/constants"
@@ -40,7 +40,7 @@ func GetMyComments(c *gin.Context) {
 }
 
 func CreateComment(c *gin.Context) {
-	var req types.CreateCommentRequest
+	var req request.CreateCommentRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)

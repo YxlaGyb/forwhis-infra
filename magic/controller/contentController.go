@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"forestwhisperGo/magic/interfaces/http/middleware"
-	"forestwhisperGo/magic/models/types"
+	"forestwhisperGo/magic/interfaces/dto/request"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 	"forestwhisperGo/pkg/constants"
@@ -33,7 +33,7 @@ func GetContents(c *gin.Context) {
 }
 
 func CreateContent(c *gin.Context) {
-	var req types.CreateContentRequest
+	var req request.CreateContentRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
@@ -107,7 +107,7 @@ func GetContent(c *gin.Context) {
 		user := middleware.GetCurrentUser(c)
 		isOwner := user != nil && user.Uid == content.AuthorID
 		if !isOwner {
-			var req types.ContentPasswordRequest
+			var req request.ContentPasswordRequest
 			if err := c.ShouldBindJSON(&req); err != nil || req.Password != content.Password {
 				middleware.JSONError(c, "该文章需要密码访问喵", map[string]interface{}{
 					"needPassword": true,

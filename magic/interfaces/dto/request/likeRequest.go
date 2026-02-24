@@ -1,4 +1,4 @@
-package types
+package request
 
 type ToggleLikeRequest struct {
 	TargetType string `json:"target_type" binding:"required,oneof=content comment"`

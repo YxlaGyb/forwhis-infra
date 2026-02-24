@@ -1,4 +1,4 @@
-package types
+package request
 
 type CreateCommentRequest struct {
 	Cid    int    `json:"cid"`

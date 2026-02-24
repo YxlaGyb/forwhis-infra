@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	"forestwhisperGo/magic/models/types"
+	"forestwhisperGo/magic/interfaces/dto/response"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Success(msg string, data interface{}) types.Response {
-	return types.Response{Code: 200, Msg: msg, Data: data}
+func Success(msg string, data interface{}) response.Response {
+	return response.Response{Code: 200, Msg: msg, Data: data}
 }
 
-func Error(msg string, data interface{}) types.Response {
-	return types.Response{Code: 233, Msg: msg, Data: data}
+func Error(msg string, data interface{}) response.Response {
+	return response.Response{Code: 233, Msg: msg, Data: data}
 }
 
-func SystemError(msg string, data interface{}) types.Response {
-	return types.Response{Code: 500, Msg: msg, Data: data}
+func SystemError(msg string, data interface{}) response.Response {
+	return response.Response{Code: 500, Msg: msg, Data: data}
 }
 
 func JSONSuccess(c *gin.Context, msg string, data interface{}) {

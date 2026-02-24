@@ -1,4 +1,4 @@
-package types
+package request
 
 type RejectReviewRequest struct {
 	Reason string `json:"reason"`

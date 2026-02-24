@@ -3,8 +3,8 @@ package controller
 import (
 	"strings"
 
+	"forestwhisperGo/magic/interfaces/dto/request"
 	"forestwhisperGo/magic/interfaces/http/middleware"
-	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 	"forestwhisperGo/pkg/constants"
@@ -74,7 +74,7 @@ func SetOption(c *gin.Context) {
 		return
 	}
 
-	var req types.SetOptionRequest
+	var req request.SetOptionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空", nil)
 		return

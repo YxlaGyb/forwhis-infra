@@ -1,4 +1,4 @@
-package types
+package request
 
 type CreateMetaRequest struct {
 	Name        string `json:"name"`

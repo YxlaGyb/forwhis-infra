@@ -1,4 +1,4 @@
-package types
+package request
 
 type CreateContentRequest struct {
 	Title       string `json:"title"`

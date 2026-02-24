@@ -8,7 +8,7 @@ import (
 
 	"forestwhisperGo/magic/interfaces/http/middleware"
 	"forestwhisperGo/magic/models"
-	"forestwhisperGo/magic/models/types"
+	"forestwhisperGo/magic/interfaces/dto/request"
 	"forestwhisperGo/magic/service"
 	"forestwhisperGo/pkg/db"
 	"forestwhisperGo/pkg/utils"
@@ -39,7 +39,7 @@ func ApproveReview(c *gin.Context) {
 		return
 	}
 
-	var req types.ApproveReviewRequest
+	var req request.ApproveReviewRequest
 	c.ShouldBindJSON(&req)
 
 	var review models.Review
@@ -85,7 +85,7 @@ func RejectReview(c *gin.Context) {
 		return
 	}
 
-	var req types.RejectReviewRequest
+	var req request.RejectReviewRequest
 	c.ShouldBindJSON(&req)
 
 	review.Status = models.ReviewStatusRejected
@@ -105,7 +105,7 @@ func RejectReview(c *gin.Context) {
 }
 
 func AdminCreateUser(c *gin.Context) {
-	var req types.AdminCreateUserRequest
+	var req request.AdminCreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
@@ -184,7 +184,7 @@ func AdminUpdateUser(c *gin.Context) {
 		return
 	}
 
-	var req types.AdminUpdateUserRequest
+	var req request.AdminUpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		middleware.JSONError(c, "请求数据不能为空喵", nil)
 		return
