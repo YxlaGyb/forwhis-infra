@@ -6,7 +6,7 @@ import (
 
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 
-	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/interfaces/http/middleware"
 	"forestwhisperGo/magic/models"
 	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"

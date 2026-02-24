@@ -2,7 +2,7 @@ package modules
 
 import (
 	"forestwhisperGo/magic/controller"
-	"forestwhisperGo/magic/routes"
+	"forestwhisperGo/magic/interfaces/http/routes"
 
 	"github.com/gin-gonic/gin"
 )

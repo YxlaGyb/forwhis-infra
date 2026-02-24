@@ -11,9 +11,9 @@ import (
 
 	"forestwhisperGo/admin/fix"
 	"forestwhisperGo/admin/install"
-	"forestwhisperGo/magic/middleware"
-	"forestwhisperGo/magic/routes"
-	_ "forestwhisperGo/magic/routes/modules"
+	"forestwhisperGo/magic/interfaces/http/middleware"
+	"forestwhisperGo/magic/interfaces/http/routes"
+	_ "forestwhisperGo/magic/interfaces/http/routes/modules"
 	"forestwhisperGo/pkg/db"
 	pkg "forestwhisperGo/pkg/logger"
 	"forestwhisperGo/pkg/utils"

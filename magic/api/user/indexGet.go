@@ -3,7 +3,7 @@ package user
 import (
 	"net/http"
 
-	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/interfaces/http/middleware"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 

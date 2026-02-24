@@ -1,7 +1,7 @@
 package fix
 
 import (
-	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/interfaces/http/middleware"
 
 	"github.com/gin-gonic/gin"
 )

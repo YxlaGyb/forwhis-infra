@@ -3,8 +3,8 @@ package modules
 import (
 	"forestwhisperGo/magic/api/user"
 	"forestwhisperGo/magic/controller"
-	"forestwhisperGo/magic/middleware"
-	"forestwhisperGo/magic/routes"
+	"forestwhisperGo/magic/interfaces/http/middleware"
+	"forestwhisperGo/magic/interfaces/http/routes"
 
 	"github.com/gin-gonic/gin"
 )

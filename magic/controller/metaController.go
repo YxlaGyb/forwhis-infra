@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/interfaces/http/middleware"
 	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	rbacSvc "forestwhisperGo/magic/service/rbac"

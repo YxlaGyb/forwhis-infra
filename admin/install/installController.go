@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"net/http"
 
-	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/interfaces/http/middleware"
 	"forestwhisperGo/pkg/utils"
 
 	"github.com/gin-gonic/gin"

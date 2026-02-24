@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"forestwhisperGo/magic/middleware"
+	"forestwhisperGo/magic/interfaces/http/middleware"
 	"forestwhisperGo/magic/models/types"
 	"forestwhisperGo/magic/service"
 	"forestwhisperGo/pkg/db"
