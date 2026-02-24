@@ -81,9 +81,9 @@ const RoleManagement: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [roles, setRoles] = useState<Role[]>([
-        { id: 1, name: 'superadmin', description: '超级管理员，拥有所有权限', permissions: ROLE_PERMISSIONS.superadmin, userCount: 1 },
-        { id: 2, name: 'admin', description: '管理员，可以管理用户和内容', permissions: ROLE_PERMISSIONS.admin, userCount: 0 },
-        { id: 3, name: 'editor', description: '编辑，可以管理文章', permissions: ROLE_PERMISSIONS.editor, userCount: 0 },
+        { id: 1, name: 'superadmin', description: '超级管理员, 拥有所有权限', permissions: ROLE_PERMISSIONS.superadmin, userCount: 1 },
+        { id: 2, name: 'admin', description: '管理员, 可以管理用户和内容', permissions: ROLE_PERMISSIONS.admin, userCount: 0 },
+        { id: 3, name: 'editor', description: '编辑, 可以管理文章', permissions: ROLE_PERMISSIONS.editor, userCount: 0 },
         { id: 4, name: 'user', description: '普通用户', permissions: ROLE_PERMISSIONS.user, userCount: 1 },
     ]);
     const [loading] = useState(false);
@@ -274,7 +274,7 @@ const RoleManagement: React.FC = () => {
                         ]}
                     >
                         <Input 
-                            placeholder="请输入角色名称，如：editor" 
+                            placeholder="请输入角色名称, 如：editor" 
                             disabled={isSystemRole || !!editingRole}
                         />
                     </Form.Item>
@@ -296,7 +296,7 @@ const RoleManagement: React.FC = () => {
                         required
                     >
                         {isSystemRole ? (
-                            <Tag color="red">超级管理员拥有所有权限，不可修改</Tag>
+                            <Tag color="red">超级管理员拥有所有权限, 不可修改</Tag>
                         ) : (
                             <Space direction="vertical" style={{ width: '100%' }}>
                                 {PERMISSION_CATEGORIES.map(cat => (

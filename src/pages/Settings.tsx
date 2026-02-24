@@ -110,7 +110,7 @@ const Settings: React.FC = () => {
             }
         } catch (error) {
             console.error('获取设置失败:', error);
-            message.warning('无法连接到服务器，使用本地默认配置');
+            message.warning('无法连接到服务器, 使用本地默认配置');
             form.setFieldsValue(defaultSettings);
             setOriginalValues(defaultSettings);
         } finally {
@@ -163,7 +163,7 @@ const Settings: React.FC = () => {
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Alert
                 message="站点信息设置"
-                description="配置网站的基本信息，这些信息将显示在网站标题、搜索引擎结果和社交媒体分享中。"
+                description="配置网站的基本信息, 这些信息将显示在网站标题、搜索引擎结果和社交媒体分享中。"
                 type="info"
                 showIcon
                 style={{ padding: '12px 16px' }}
@@ -196,7 +196,7 @@ const Settings: React.FC = () => {
             >
                 <TextArea
                     rows={3}
-                    placeholder="简要描述您的网站，不超过200字"
+                    placeholder="简要描述您的网站, 不超过200字"
                     maxLength={200}
                     showCount
                 />
@@ -244,7 +244,7 @@ const Settings: React.FC = () => {
                         <Switch checkedChildren="开启" unCheckedChildren="关闭" />
                     </Form.Item>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                        关闭后新用户将无法注册，仅允许现有用户登录
+                        关闭后新用户将无法注册, 仅允许现有用户登录
                     </Text>
                 </Space>
             </Card>
@@ -352,7 +352,7 @@ Sitemap: https://example.com/sitemap.xml`}
 
     const currentConfig = sectionConfigs.find(c => c.key === activeSection)!;
 
-    // 渲染内容区域，带错误处理
+    // 渲染内容区域, 带错误处理
     const renderContent = () => {
         try {
             const renderer = sectionRenderers[activeSection];
@@ -360,7 +360,7 @@ Sitemap: https://example.com/sitemap.xml`}
                 return (
                     <Alert
                         message="页面加载失败"
-                        description="无法加载当前设置页面，请尝试刷新或切换其他选项"
+                        description="无法加载当前设置页面, 请尝试刷新或切换其他选项"
                         type="error"
                         showIcon
                         action={
@@ -377,7 +377,7 @@ Sitemap: https://example.com/sitemap.xml`}
             return (
                 <Alert
                     message="页面渲染出错"
-                    description="设置页面加载时发生错误，已自动切换到默认视图"
+                    description="设置页面加载时发生错误, 已自动切换到默认视图"
                     type="warning"
                     showIcon
                     action={

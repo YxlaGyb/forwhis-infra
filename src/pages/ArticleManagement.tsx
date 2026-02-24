@@ -353,7 +353,7 @@ const ArticleManagement: React.FC = () => {
                         label="别名"
                         rules={[{ required: true, message: '请输入文章别名' }]}
                     >
-                        <Input placeholder="请输入文章别名，用于URL" />
+                        <Input placeholder="请输入文章别名, 用于URL" />
                     </Form.Item>
 
                     <Form.Item
@@ -363,7 +363,7 @@ const ArticleManagement: React.FC = () => {
                     >
                         <TextArea
                             rows={10}
-                            placeholder="请输入文章内容，支持Markdown格式"
+                            placeholder="请输入文章内容, 支持Markdown格式"
                         />
                     </Form.Item>
 

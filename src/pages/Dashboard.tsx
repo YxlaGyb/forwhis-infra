@@ -45,7 +45,7 @@ const Dashboard: React.FC = () => {
             if (response.data.code === 200 && response.data.data) {
                 setDashboardData(response.data.data);
             } else {
-                message.warning('获取数据失败，使用默认展示');
+                message.warning('获取数据失败, 使用默认展示');
             }
         } catch (error: unknown) {
             console.error('获取仪表盘数据失败:', error);

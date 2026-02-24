@@ -69,7 +69,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
                 const isSuperadmin = userRoles.includes('superadmin');
                 
                 if (!isAdmin) {
-                    message.error('权限不足，仅管理员可访问此页面');
+                    message.error('权限不足, 仅管理员可访问此页面');
                     storage.removeUserInfo();
                     window.location.reload();
                     return;

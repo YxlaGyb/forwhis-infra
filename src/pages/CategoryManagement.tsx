@@ -194,7 +194,7 @@ const CategoryManagement: React.FC = () => {
                         </Tooltip>
                         <Popconfirm
                             title="确定要删除这个分类吗？"
-                            description="删除后无法恢复，相关文章将失去分类"
+                            description="删除后无法恢复, 相关文章将失去分类"
                             onConfirm={(e) => {
                                 e?.stopPropagation();
                                 handleDelete(item.mid);
@@ -298,7 +298,7 @@ const CategoryManagement: React.FC = () => {
                         name="parent"
                     >
                         <Input.Search
-                            placeholder="输入分类ID，留空为顶级分类"
+                            placeholder="输入分类ID, 留空为顶级分类"
                             allowClear
                             disabled
                         />

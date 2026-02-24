@@ -36,9 +36,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             if (err.response?.data?.message) {
                 message.error(err.response.data.message);
             } else if (err.code === 'NETWORK_ERROR') {
-                message.error('网络错误，请检查网络连接');
+                message.error('网络错误, 请检查网络连接');
             } else {
-                message.error('登录失败，请检查网络连接');
+                message.error('登录失败, 请检查网络连接');
             }
         } finally {
             setLoading(false);

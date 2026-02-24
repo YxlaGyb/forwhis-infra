@@ -15,7 +15,8 @@ export const ARTICLE_LIMITS = {
 
 export const USER_LIMITS = {
     passwordMinLength: 8,
-    passwordPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+    passwordMaxLength: 16,
+    passwordPattern: /^(?=.*[a-zA-Z])(?=.*\d)/,
     nameMaxLength: 50,
     emailMaxLength: 100
 } as const;

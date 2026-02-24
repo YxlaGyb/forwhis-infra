@@ -57,7 +57,7 @@ const App = () => {
         } catch (error) {
             console.error('检查登录状态失败:', error);
             storage.removeUserInfo();
-            message.error('登录状态验证失败，请重新登录');
+            message.error('登录状态验证失败, 请重新登录');
         } finally {
             setLoading(false);
         }

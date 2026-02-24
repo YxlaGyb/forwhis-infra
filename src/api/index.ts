@@ -83,7 +83,7 @@ export const userApi = {
         api.get('/api/v1/user/users', { params: { name: username } }),
     
     createUser: (data: { name: string; email: string; password: string; role?: string; status?: string }) =>
-        api.post('/api/v1/user/users', data),
+        api.post('/api/v1/admin/user/create', data),
     
     updateUser: (uid: number, data: { name?: string; email?: string; roles?: string[]; status?: string }) =>
         api.post(`/api/v1/admin/user/${uid}/update`, data),

@@ -337,10 +337,11 @@ const UserManagement: React.FC = () => {
                             rules={[
                                 { required: true, message: '请输入密码' },
                                 { min: 8, message: '密码至少8个字符' },
-                                { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: '密码需包含大小写字母和数字' }
+                                { max: 16, message: '密码最多16个字符' },
+                                { pattern: /^(?=.*[a-zA-Z])(?=.*\d)/, message: '密码需包含字母和数字' }
                             ]}
                         >
-                            <Input.Password placeholder="请输入密码（至少8位，包含大小写字母和数字）" />
+                            <Input.Password placeholder="请输入密码（8-16位，包含字母和数字）" />
                         </Form.Item>
                     )}
 
