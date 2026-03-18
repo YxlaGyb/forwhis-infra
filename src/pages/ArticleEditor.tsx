@@ -27,12 +27,20 @@ import {
     SmileOutlined,
     PlusOutlined,
     SettingOutlined,
-    TagOutlined
+    TagOutlined,
+    FolderOutlined
 } from '@ant-design/icons';
-import { contentApi } from '../api';
+import { contentApi, metaApi } from '../api';
 
 const { Text } = Typography;
 const { TextArea } = Input;
+
+interface Category {
+    mid: number;
+    name: string;
+    slug: string;
+    parent?: number;
+}
 
 interface EditorState {
     title: string;
@@ -40,6 +48,7 @@ interface EditorState {
     status: 'draft' | 'publish' | 'private';
     type: 'post' | 'page';
     slug: string;
+    categoryMid: number;
 }
 
 const ArticleEditor: React.FC = () => {
@@ -56,13 +65,15 @@ const ArticleEditor: React.FC = () => {
     const [isDirty, setIsDirty] = useState(false);
     const [showToolbar, setShowToolbar] = useState(true);
     const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
+    const [categories, setCategories] = useState<Category[]>([]);
 
     const [formData, setFormData] = useState<EditorState>({
         title: '',
         text: '',
         status: 'draft',
         type: 'post',
-        slug: ''
+        slug: '',
+        categoryMid: 0
     });
 
     useEffect(() => {
@@ -73,6 +84,21 @@ const ArticleEditor: React.FC = () => {
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    const fetchCategories = async () => {
+        try {
+            const response = await metaApi.getMetas({ type: 'category' });
+            if (response.data.code === 200 && response.data.data) {
+                setCategories(response.data.data || []);
+            }
+        } catch (error) {
+            console.error('获取分类失败:', error);
+        }
+    };
 
     useEffect(() => {
         if (isEditMode && id) {
@@ -106,7 +132,8 @@ const ArticleEditor: React.FC = () => {
                     text: data.text || '',
                     status: data.status || 'draft',
                     type: data.type || 'post',
-                    slug: data.slug || ''
+                    slug: data.slug || '',
+                    categoryMid: data.categoryMid || data.category?.mid || 0
                 });
             } else {
                 message.error('获取文章失败');
@@ -175,6 +202,10 @@ const ArticleEditor: React.FC = () => {
             message.error('请输入文章内容');
             return false;
         }
+        if (!formData.categoryMid || formData.categoryMid === 0) {
+            message.error('请选择文章分类');
+            return false;
+        }
         return true;
     };
 
@@ -186,9 +217,12 @@ const ArticleEditor: React.FC = () => {
 
         try {
             const payload = {
-                ...formData,
+                title: formData.title,
+                text: formData.text,
                 content: formData.text,
-                status: publish ? 'publish' : formData.status
+                status: publish ? 'publish' : formData.status,
+                type: formData.type,
+                categoryMid: formData.categoryMid
             };
 
             let response;
@@ -452,6 +486,29 @@ const ArticleEditor: React.FC = () => {
                     height="50%"
                 >
                     <div style={{ marginBottom: 24 }}>
+                        <Text type="secondary">文章分类</Text>
+                        <div style={{ marginTop: 8, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                            {categories.length === 0 ? (
+                                <Text type="secondary">暂无分类，请先创建分类</Text>
+                            ) : (
+                                categories.map(cat => (
+                                    <Tag
+                                        key={cat.mid}
+                                        color={formData.categoryMid === cat.mid ? 'blue' : undefined}
+                                        onClick={() => {
+                                            setFormData(prev => ({ ...prev, categoryMid: cat.mid }));
+                                            setIsDirty(true);
+                                        }}
+                                        style={{ cursor: 'pointer', padding: '4px 12px' }}
+                                    >
+                                        <FolderOutlined style={{ marginRight: 4 }} />
+                                        {cat.name}
+                                    </Tag>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                    <div style={{ marginBottom: 24 }}>
                         <Text type="secondary">文章类型</Text>
                         <div style={{ marginTop: 8, display: 'flex', gap: 12 }}>
                             <Tag
@@ -619,14 +676,13 @@ const ArticleEditor: React.FC = () => {
             <div style={{
                 flex: 1,
                 display: 'flex',
-                flexDirection: 'column',
                 padding: '24px',
-                overflow: 'auto'
+                overflow: 'auto',
+                gap: 24
             }}>
                 <div style={{
+                    flex: 1,
                     maxWidth: 900,
-                    width: '100%',
-                    margin: '0 auto',
                     background: '#fff',
                     borderRadius: 8,
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
@@ -687,6 +743,112 @@ const ArticleEditor: React.FC = () => {
                         <Text type="secondary" style={{ fontSize: 12 }}>
                             快捷键: Ctrl+S 保存 | {contentCount} 字
                         </Text>
+                    </div>
+                </div>
+
+                {/* 右侧设置面板 */}
+                <div style={{
+                    width: 280,
+                    flexShrink: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 16
+                }}>
+                    {/* 分类选择 */}
+                    <div style={{
+                        background: '#fff',
+                        borderRadius: 8,
+                        padding: 16,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
+                    }}>
+                        <Text strong style={{ display: 'block', marginBottom: 12 }}>
+                            <FolderOutlined style={{ marginRight: 8 }} />
+                            文章分类
+                        </Text>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                            {categories.length === 0 ? (
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    暂无分类，请先创建
+                                </Text>
+                            ) : (
+                                categories.map(cat => (
+                                    <Tag
+                                        key={cat.mid}
+                                        color={formData.categoryMid === cat.mid ? 'blue' : undefined}
+                                        onClick={() => {
+                                            setFormData(prev => ({ ...prev, categoryMid: cat.mid }));
+                                            setIsDirty(true);
+                                        }}
+                                        style={{ cursor: 'pointer', padding: '4px 12px' }}
+                                    >
+                                        {cat.name}
+                                    </Tag>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 文章类型 */}
+                    <div style={{
+                        background: '#fff',
+                        borderRadius: 8,
+                        padding: 16,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
+                    }}>
+                        <Text strong style={{ display: 'block', marginBottom: 12 }}>
+                            文章类型
+                        </Text>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <Tag
+                                color={formData.type === 'post' ? 'blue' : undefined}
+                                onClick={() => setFormData(prev => ({ ...prev, type: 'post' }))}
+                                style={{ cursor: 'pointer', padding: '4px 12px' }}
+                            >
+                                文章
+                            </Tag>
+                            <Tag
+                                color={formData.type === 'page' ? 'blue' : undefined}
+                                onClick={() => setFormData(prev => ({ ...prev, type: 'page' }))}
+                                style={{ cursor: 'pointer', padding: '4px 12px' }}
+                            >
+                                页面
+                            </Tag>
+                        </div>
+                    </div>
+
+                    {/* 发布状态 */}
+                    <div style={{
+                        background: '#fff',
+                        borderRadius: 8,
+                        padding: 16,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
+                    }}>
+                        <Text strong style={{ display: 'block', marginBottom: 12 }}>
+                            发布状态
+                        </Text>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                            <Tag
+                                color={formData.status === 'draft' ? 'orange' : undefined}
+                                onClick={() => setFormData(prev => ({ ...prev, status: 'draft' }))}
+                                style={{ cursor: 'pointer', padding: '4px 12px' }}
+                            >
+                                草稿
+                            </Tag>
+                            <Tag
+                                color={formData.status === 'publish' ? 'green' : undefined}
+                                onClick={() => setFormData(prev => ({ ...prev, status: 'publish' }))}
+                                style={{ cursor: 'pointer', padding: '4px 12px' }}
+                            >
+                                发布
+                            </Tag>
+                            <Tag
+                                color={formData.status === 'private' ? 'purple' : undefined}
+                                onClick={() => setFormData(prev => ({ ...prev, status: 'private' }))}
+                                style={{ cursor: 'pointer', padding: '4px 12px' }}
+                            >
+                                私密
+                            </Tag>
+                        </div>
                     </div>
                 </div>
             </div>
