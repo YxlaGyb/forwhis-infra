@@ -132,7 +132,7 @@ func GetContent(c *gin.Context) {
 		"type":         content.Type,
 		"status":       content.Status,
 		"author_id":    content.AuthorID,
-		"password":     content.Password,
+		"hasPassword":  content.Password != "",
 		"views":        content.Views + 1,
 		"comments_num": content.CommentsNum,
 	}

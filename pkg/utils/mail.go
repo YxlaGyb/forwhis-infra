@@ -3,10 +3,12 @@ package utils
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/smtp"
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"forestwhisperGo/pkg/utils/configutil"
 
@@ -18,18 +20,22 @@ var (
 	mailCfgOnce sync.Once
 )
 
-func mailVal(key string) interface{} {
+func loadMailConfig() {
 	mailCfgOnce.Do(func() {
-		data, _ := os.ReadFile("config.toml")
-		toml.Unmarshal(data, &mailCfg)
+		data, err := os.ReadFile("config.toml")
+		if err != nil {
+			mailCfg = make(map[string]map[string]interface{})
+			return
+		}
+		if err := toml.Unmarshal(data, &mailCfg); err != nil {
+			mailCfg = make(map[string]map[string]interface{})
+			return
+		}
 	})
-	if s, ok := mailCfg["smtp"]; ok {
-		return s[key]
-	}
-	return nil
 }
 
 func mailStr(key string) string {
+	loadMailConfig()
 	if s, ok := mailCfg["smtp"]; ok {
 		return configutil.GetString(s, key)
 	}
@@ -37,6 +43,7 @@ func mailStr(key string) string {
 }
 
 func mailInt(key string) int {
+	loadMailConfig()
 	if s, ok := mailCfg["smtp"]; ok {
 		return configutil.GetInt(s, key)
 	}
@@ -44,6 +51,7 @@ func mailInt(key string) int {
 }
 
 func mailBool(key string) bool {
+	loadMailConfig()
 	if s, ok := mailCfg["smtp"]; ok {
 		return configutil.GetBool(s, key)
 	}
@@ -58,6 +66,10 @@ func SendMail(subject string, receivers []string, html string) bool {
 		name = "ForestWhisper"
 	}
 
+	if host == "" || port == 0 || user == "" || pass == "" {
+		return false
+	}
+
 	from := fmt.Sprintf("%s <%s>", name, user)
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n%s",
 		from, strings.Join(receivers, ","), subject, html)
@@ -66,60 +78,56 @@ func SendMail(subject string, receivers []string, html string) bool {
 
 	addr := fmt.Sprintf("%s:%d", host, port)
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: mailBool("MAIL_SKIP_TLS_VERIFY"),
+		InsecureSkipVerify: true,
 		ServerName:         host,
 	}
 
-	conn, err := tls.Dial("tcp", addr, tlsConfig)
+	dialer := &net.Dialer{
+		Timeout: 10 * time.Second,
+	}
+
+	fmt.Printf("[邮件] 正在连接 %s ...\n", addr)
+	conn, err := tls.DialWithDialer(dialer, "tcp", addr, tlsConfig)
 	if err != nil {
-		fmt.Printf("邮件连接失败: %v\n", err)
 		return false
 	}
 	defer conn.Close()
 
 	client, err := smtp.NewClient(conn, host)
 	if err != nil {
-		fmt.Printf("创建SMTP客户端失败: %v\n", err)
 		return false
 	}
 	defer client.Close()
 
 	if err = client.Auth(auth); err != nil {
-		fmt.Printf("SMTP认证失败: %v\n", err)
 		return false
 	}
 
 	if err = client.Mail(user); err != nil {
-		fmt.Printf("设置发件人失败: %v\n", err)
 		return false
 	}
 
 	for _, r := range receivers {
 		if err = client.Rcpt(r); err != nil {
-			fmt.Printf("设置收件人失败: %v\n", err)
 			return false
 		}
 	}
 
 	w, err := client.Data()
 	if err != nil {
-		fmt.Printf("准备邮件数据失败: %v\n", err)
 		return false
 	}
 
 	_, err = w.Write([]byte(msg))
 	if err != nil {
-		fmt.Printf("写入邮件内容失败: %v\n", err)
 		return false
 	}
 
 	if err = w.Close(); err != nil {
-		fmt.Printf("关闭邮件写入失败: %v\n", err)
 		return false
 	}
 
 	if err = client.Quit(); err != nil {
-		fmt.Printf("退出SMTP连接失败: %v\n", err)
 		return false
 	}
 

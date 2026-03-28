@@ -44,10 +44,14 @@ func initDB() {
 	var err error
 	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Printf("数据库连接失败: %v", err)
+		log.Printf("[FATAL] 数据库连接失败: %v", err)
 		return
 	}
-	sqlDB, _ := conn.DB()
+	sqlDB, err := conn.DB()
+	if err != nil {
+		log.Printf("[FATAL] 获取SQL连接失败: %v", err)
+		return
+	}
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(20)
 	log.Println("数据库连接成功")
@@ -96,14 +100,20 @@ func GetDB() *gorm.DB {
 	return DB
 }
 
-func CloseDB() {
+func CloseDB() error {
 	mu.Lock()
 	defer mu.Unlock()
 	if DB != nil {
-		sqlDB, _ := DB.DB()
-		sqlDB.Close()
+		sqlDB, err := DB.DB()
+		if err != nil {
+			return err
+		}
+		if err := sqlDB.Close(); err != nil {
+			return err
+		}
 		DB = nil
 	}
+	return nil
 }
 
 func ReloadDB() error {

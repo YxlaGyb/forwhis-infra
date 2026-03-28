@@ -303,6 +303,7 @@ func UpdateUsermeta(uid int, metaKey, metaValue string) (bool, string) {
 }
 
 func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
 	s = strings.ReplaceAll(s, "%", "\\%")
 	s = strings.ReplaceAll(s, "_", "\\_")
 	return s

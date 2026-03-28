@@ -103,8 +103,8 @@ func Register(c *gin.Context) {
 		middleware.JSONSystemError(c, "密码加密失败喵喵", nil)
 		return
 	}
-	_, err = service.CreateUser(
-		req.Username,
+	user, err := service.CreateUser(
+		"",
 		req.Email,
 		hashedPwd,
 		clientIP, "user",
@@ -113,6 +113,10 @@ func Register(c *gin.Context) {
 	if err != nil {
 		middleware.JSONSystemError(c, "注册失败喵喵", nil)
 		return
+	}
+
+	if req.Username != "" {
+		service.CreateUserMetaReview(user.Uid, map[string]string{"name": req.Username})
 	}
 
 	result, errCode := service.LoginUser(req.Email, req.Passwd, clientIP)

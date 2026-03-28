@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"forestwhisperGo/magic/models"
-	"forestwhisperGo/magic/models/rbac"
 	rbacSvc "forestwhisperGo/magic/service/rbac"
 	"forestwhisperGo/pkg/constants"
 	"forestwhisperGo/pkg/db"
@@ -181,7 +180,5 @@ func GetUserWithRoles(c *gin.Context) *models.User {
 	if user == nil {
 		return nil
 	}
-	var roles []rbac.UserRole
-	db.GetDB().Where("user_id = ?", user.Uid).Preload("Role").Find(&roles)
 	return user
 }
