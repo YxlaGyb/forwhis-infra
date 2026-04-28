@@ -68,5 +68,5 @@ func main() {
 }
 
 func index(c *gin.Context) {
-	middleware.JSONSuccess(c, "ok", map[string]string{"Status": "Ok"})
+	middleware.JSONSuccess(c, "ok", map[string]string{"status": "ok"})
 }

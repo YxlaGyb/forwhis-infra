@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"forestwhisperGo/magic/interfaces/http/middleware"
 	"forestwhisperGo/magic/interfaces/dto/request"
+	"forestwhisperGo/magic/interfaces/http/middleware"
 	"forestwhisperGo/magic/service"
 	"forestwhisperGo/pkg/db"
 	"forestwhisperGo/pkg/utils"
@@ -22,14 +22,18 @@ const (
 	RateLimitKeyPrefix = "ai_chat_rate:"
 )
 
-func checkRateLimit(uid int) (bool, error) {
-	key := fmt.Sprintf("%s%d", RateLimitKeyPrefix, uid)
-	count, err := db.Incr(key)
+func getClientIP(c *gin.Context) string {
+	return c.ClientIP()
+}
+
+func checkRateLimit(key string) (bool, error) {
+	redisKey := fmt.Sprintf("%s%s", RateLimitKeyPrefix, key)
+	count, err := db.Incr(redisKey)
 	if err != nil {
 		return false, err
 	}
 	if count == 1 {
-		db.Expire(context.Background(), key, RateLimitWindow)
+		db.Expire(context.Background(), redisKey, RateLimitWindow)
 	}
 	return count <= RateLimitMax, nil
 }
@@ -37,7 +41,7 @@ func checkRateLimit(uid int) (bool, error) {
 func GetConversations(c *gin.Context) {
 	user := middleware.GetCurrentUser(c)
 	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵", nil)
+		middleware.JSONSuccess(c, "ok", []gin.H{})
 		return
 	}
 
@@ -51,10 +55,6 @@ func GetConversations(c *gin.Context) {
 
 func GetMessages(c *gin.Context) {
 	user := middleware.GetCurrentUser(c)
-	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵", nil)
-		return
-	}
 
 	conversationID := c.Query("conversationId")
 	if conversationID == "" {
@@ -62,10 +62,12 @@ func GetMessages(c *gin.Context) {
 		return
 	}
 
-	conv := service.GetConversationByID(user.Uid, conversationID)
-	if conv == nil {
-		middleware.JSONError(c, "会话不存在喵", nil)
-		return
+	if user != nil {
+		conv := service.GetConversationByID(user.Uid, conversationID)
+		if conv == nil {
+			middleware.JSONError(c, "会话不存在喵", nil)
+			return
+		}
 	}
 
 	limit := 50
@@ -100,12 +102,15 @@ func GetMessages(c *gin.Context) {
 
 func ChatStream(c *gin.Context) {
 	user := middleware.GetCurrentUser(c)
-	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵", nil)
-		return
+
+	var rateLimitKey string
+	if user != nil {
+		rateLimitKey = fmt.Sprintf("%d", user.Uid)
+	} else {
+		rateLimitKey = getClientIP(c)
 	}
 
-	allowed, err := checkRateLimit(user.Uid)
+	allowed, err := checkRateLimit(rateLimitKey)
 	if err != nil {
 		middleware.JSONError(c, "服务暂时不可用喵", nil)
 		return
@@ -129,7 +134,7 @@ func ChatStream(c *gin.Context) {
 		middleware.JSONError(c, fmt.Sprintf("消息长度不能超过%d字符喵", MaxMessageLength), nil)
 		return
 	}
-	if req.ConversationID != "" {
+	if req.ConversationID != "" && user != nil {
 		conv := service.GetConversationByID(user.Uid, req.ConversationID)
 		if conv == nil {
 			middleware.JSONError(c, "会话不存在喵", nil)
@@ -147,7 +152,12 @@ func ChatStream(c *gin.Context) {
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 
-	userID := fmt.Sprintf("user_%d", user.Uid)
+	var userID string
+	if user != nil {
+		userID = fmt.Sprintf("user_%d", user.Uid)
+	} else {
+		userID = fmt.Sprintf("guest_%s", getClientIP(c))
+	}
 	isNewConversation := req.ConversationID == ""
 	savedConversationID := req.ConversationID
 
@@ -214,6 +224,11 @@ func ChatStream(c *gin.Context) {
 		}
 		return
 	}
+
+	if user == nil {
+		return
+	}
+
 	if isNewConversation && savedConversationID != "" {
 		title := service.GenerateTitle(req.Message)
 		if err := service.CreateConversation(user.Uid, savedConversationID, title); err != nil {
@@ -229,7 +244,7 @@ func ChatStream(c *gin.Context) {
 func DeleteConversation(c *gin.Context) {
 	user := middleware.GetCurrentUser(c)
 	if user == nil {
-		middleware.JSONError(c, "未登录或登录已过期喵", nil)
+		middleware.JSONError(c, "请先登录喵", nil)
 		return
 	}
 

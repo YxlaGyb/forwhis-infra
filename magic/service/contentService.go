@@ -7,13 +7,17 @@ import (
 	"forestwhisperGo/pkg/db"
 )
 
-func GetContentsList(page, limit int, status string, authorID int) map[string]interface{} {
+func GetContentsList(page, limit int, status string, authorID, categoryMid int) map[string]interface{} {
 	query := db.GetDB().Model(&models.Content{})
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
 	if authorID > 0 {
 		query = query.Where("author_id = ?", authorID)
+	}
+	if categoryMid > 0 {
+		query = query.Joins("JOIN relationship ON content.cid = relationship.cid").
+			Where("relationship.mid = ?", categoryMid)
 	}
 	var total int64
 	query.Count(&total)

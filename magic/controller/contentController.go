@@ -17,6 +17,7 @@ func GetContents(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	status := c.Query("status")
+	categoryMid, _ := strconv.Atoi(c.DefaultQuery("categoryMid", "0"))
 
 	if page < 1 {
 		page = 1
@@ -28,7 +29,7 @@ func GetContents(c *gin.Context) {
 		limit = 100
 	}
 
-	result := service.GetContentsList(page, limit, status, 0)
+	result := service.GetContentsList(page, limit, status, 0, categoryMid)
 	middleware.JSONSuccess(c, "获取成功喵", result)
 }
 

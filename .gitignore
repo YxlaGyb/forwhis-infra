@@ -6,7 +6,10 @@ dist/
 weSTS/
 
 config.toml
+.vscode/
 *.tar
 *.zip
 *.7z
 *.exe
+
+*.log
