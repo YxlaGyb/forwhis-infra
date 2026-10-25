@@ -6,6 +6,7 @@ dist/
 weSTS/
 
 config.toml
+docker/api.toml
 .vscode/
 *.tar
 *.zip

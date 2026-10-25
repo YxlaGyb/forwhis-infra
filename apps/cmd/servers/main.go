@@ -28,7 +28,7 @@ func main() {
 	app.Use(pkg.Logger())
 	app.Use(middleware.Cors())
 
-	if !utils.ConfigExists() {
+	if !utils.IsInstalled() {
 		install.SetupInstallRoutes(app)
 	} else {
 		app.Get("/", index)

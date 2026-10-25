@@ -5,11 +5,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"forestwhisperGo/apps/internal/middleware"
 	"forestwhisperGo/apps/internal/routes"
 	pkg "forestwhisperGo/apps/pkg/logger"
+	"forestwhisperGo/apps/pkg/utils"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -58,5 +60,36 @@ func TestHealthAndCORS(t *testing.T) {
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusNoContent {
 		t.Fatalf("OPTIONS / status = %d, want %d", res.StatusCode, http.StatusNoContent)
+	}
+}
+
+func TestInstallerSelectionFromTOML(t *testing.T) {
+	originalDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Errorf("restore working directory: %v", err)
+		}
+	})
+
+	for _, test := range []struct {
+		config string
+		want   bool
+	}{
+		{config: "false", want: false},
+		{config: "true", want: true},
+	} {
+		config := "[server]\ninstall = " + test.config + "\n"
+		if err := os.WriteFile("config.toml", []byte(config), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if got := utils.IsInstalled(); got != test.want {
+			t.Errorf("IsInstalled() = %t, want %t", got, test.want)
+		}
 	}
 }

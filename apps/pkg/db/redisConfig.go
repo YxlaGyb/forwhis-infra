@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"time"
+
+	"forestwhisperGo/apps/pkg/utils/configutil"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -17,8 +18,9 @@ var (
 )
 
 func init() {
-	host := os.Getenv("REDIS_HOST")
-	port, _ := strconv.Atoi(os.Getenv("REDIS_PORT"))
+	loadConfig()
+	host := configutil.GetSectionString(cfg, "redis", "REDIS_HOST")
+	port := configutil.GetSectionInt(cfg, "redis", "REDIS_PORT")
 	if host == "" {
 		host = "127.0.0.1"
 	}

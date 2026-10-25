@@ -1,37 +1,51 @@
-version: '1.0'
+name: forwhis
 
 services:
-  app:
+  forwhis-api:
+    build:
+      context: .
+      dockerfile: docker/go.Dockerfile
     image: forestwhispergo:latest
     container_name: forestwhispergo
-    ports:
-      - "2324:2324"
+    ports: ["2324:2324"]
     volumes:
-      - ./config.toml:/app/config.toml:ro
+      - ./docker/api.toml:/app/config.toml
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
-    networks:
-      - forestwhisper-net
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: forestwhisper
+      POSTGRES_USER: forestwhisper
+      POSTGRES_PASSWORD: forestwhisper-dev
+    ports: ["127.0.0.1:5433:5432"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    container_name: forestwhisper-redis
-    ports:
-      - "6380:6380"
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["127.0.0.1:6380:6379"]
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
-    networks:
-      - forestwhisper-net
 
 volumes:
   postgres_data:
   redis_data:
-
-networks:
-  forestwhisper-net:
-  driver: bridge
