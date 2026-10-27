@@ -1,4 +1,4 @@
-package controller
+package handler
 
 import (
 	"strconv"
@@ -69,8 +69,8 @@ func CreateContent(c fiber.Ctx) error {
 		contentType,
 		status,
 		req.Password,
-		req.Template,
 		req.CategoryMid,
+		req.TagIds,
 	)
 
 	if content == nil {
@@ -128,7 +128,8 @@ func GetContent(c fiber.Ctx) error {
 		"author_id":    content.AuthorID,
 		"hasPassword":  content.Password != "",
 		"views":        content.Views + 1,
-		"comments_num": content.CommentsNum,
+		"comments_num": service.GetCommentCount(cid),
+		"tags":         service.GetContentTags(cid),
 	}
 	if category != nil {
 		result["category"] = map[string]interface{}{

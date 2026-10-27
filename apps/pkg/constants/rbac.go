@@ -83,3 +83,8 @@ var RoleDescriptions = map[Role]string{
 	RoleUser:       "普通用户, 可阅读内容和发表评论",
 	RoleVisitor:    "访客, 仅可浏览公开内容",
 }
+
+func IsValidRole(name string) bool {
+	_, ok := RoleDescriptions[Role(name)]
+	return ok
+}

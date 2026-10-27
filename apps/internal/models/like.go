@@ -2,9 +2,9 @@ package models
 
 type Like struct {
 	ID         int    `gorm:"primaryKey;autoIncrement"`
-	UserID     int    `gorm:"not null;index"`
-	TargetType string `gorm:"size:16;not null;index"` // 'content' 或 'comment'
-	TargetID   int    `gorm:"not null;index"`
+	UserID     int    `gorm:"not null;index;uniqueIndex:uix_like_user_target"`
+	TargetType string `gorm:"size:16;not null;index;uniqueIndex:uix_like_user_target"`
+	TargetID   int    `gorm:"not null;index;uniqueIndex:uix_like_user_target"`
 	Created    int    `gorm:"default:0"`
 }
 

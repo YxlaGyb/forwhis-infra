@@ -1,0 +1,1 @@
+Limit the amount of comments you put in the code to a strict minimum. You should almost never add comments.

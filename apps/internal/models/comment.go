@@ -6,22 +6,12 @@ type Comment struct {
 	Created  int    `gorm:"default:0"`
 	Author   string `gorm:"size:150;default:''"`
 	AuthorID int    `gorm:"index"`
-	OwnerID  int    `gorm:"index"`
 	Mail     string `gorm:"size:150;default:''"`
 	Url      string `gorm:"size:255;default:''"`
-	Ip       string `gorm:"size:64;default:''"`
-	Agent    string `gorm:"size:511;default:''"`
 	Text     string `gorm:"type:text"`
-	Type     string `gorm:"size:16;default:'comment'"`
 	Status   string `gorm:"size:16;default:'pending'"`
 	Parent   int    `gorm:"default:0"`
 }
-
-const (
-	CommentTypeComment   = "comment"
-	CommentTypePing      = "ping"
-	CommentTypeTrackback = "trackback"
-)
 
 const (
 	CommentStatusPending  = "pending"
@@ -29,4 +19,4 @@ const (
 	CommentStatusSpam     = "spam"
 )
 
-func (Comment) TableName() string { return "comment" }
+func (Comment) TableName() string { return "comments" }

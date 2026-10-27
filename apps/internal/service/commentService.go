@@ -38,10 +38,10 @@ func GetCommentByCoid(coid int) *models.Comment {
 	return &comment
 }
 
-func CreateComment(cid int, text string, authorID int, author, mail, url, commentType string, parent int) *models.Comment {
+func CreateComment(cid int, text string, authorID int, author, mail, url string, parent int) *models.Comment {
 	comment := models.Comment{
 		Cid: cid, Text: text, AuthorID: authorID, Author: author,
-		Mail: mail, Url: url, Type: commentType, Parent: parent,
+		Mail: mail, Url: url, Parent: parent,
 		Created: int(time.Now().Unix()), Status: models.CommentStatusPending,
 	}
 	db.GetDB().Create(&comment)
@@ -117,7 +117,7 @@ func commentToDict(c *models.Comment) map[string]interface{} {
 	return map[string]interface{}{
 		"coid": c.Coid, "cid": c.Cid, "created": c.Created,
 		"author": c.Author, "authorId": c.AuthorID, "text": c.Text,
-		"type": c.Type, "status": c.Status, "parent": c.Parent,
+		"status": c.Status, "parent": c.Parent,
 		"mail": c.Mail, "url": c.Url,
 	}
 }

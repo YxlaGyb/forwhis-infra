@@ -1,7 +1,7 @@
 package modules
 
 import (
-	"forestwhisperGo/apps/internal/controller"
+	"forestwhisperGo/apps/internal/handler"
 	"forestwhisperGo/apps/internal/middleware"
 	"forestwhisperGo/apps/internal/routes"
 
@@ -11,13 +11,13 @@ import (
 func init() {
 	routes.Register(func(r *fiber.App) {
 		v1 := r.Group("/api/v1/comment")
-		v1.Get("", controller.GetComments)
-		v1.Get("/my", middleware.RequireAuth(controller.GetMyComments))
-		v1.Get("/content/:cid", controller.GetContentComments)
-		v1.Get("/:coid", controller.GetComment)
-		v1.Post("", controller.CreateComment)
-		v1.Post("/:coid", middleware.RequireAuth(controller.UpdateComment))
-		v1.Post("/:coid/approve", middleware.RequireAuth(controller.ApproveComment))
-		v1.Post("/:coid/del", middleware.RequireAuth(controller.DeleteComment))
+		v1.Get("", handler.GetComments)
+		v1.Get("/my", middleware.RequireAuth(handler.GetMyComments))
+		v1.Get("/content/:cid", handler.GetContentComments)
+		v1.Get("/:coid", handler.GetComment)
+		v1.Post("", handler.CreateComment)
+		v1.Post("/:coid", middleware.RequireAuth(handler.UpdateComment))
+		v1.Post("/:coid/approve", middleware.RequireAuth(handler.ApproveComment))
+		v1.Post("/:coid/del", middleware.RequireAuth(handler.DeleteComment))
 	})
 }

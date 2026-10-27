@@ -2,24 +2,12 @@ package service
 
 import (
 	"encoding/json"
+	"strconv"
+	"time"
+
 	"forestwhisperGo/apps/internal/models"
 	"forestwhisperGo/apps/pkg/db"
-	"time"
 )
-
-func CreateReview(targetType string, targetId int, reviewerId int, status int) *models.Review {
-	now := int(time.Now().Unix())
-	review := models.Review{
-		TargetType: targetType,
-		TargetId:   targetId,
-		ReviewerId: reviewerId,
-		Status:     status,
-		CreatedAt:  now,
-		UpdatedAt:  now,
-	}
-	db.GetDB().Create(&review)
-	return &review
-}
 
 func GetReviewByTarget(targetType string, targetId int) *models.Review {
 	var review models.Review
@@ -163,16 +151,17 @@ func ApplyUserProfileReview(userId int) {
 	if name, ok := pendingData["name"]; ok && name != "" {
 		user.Name = name
 	}
+	if bio, ok := pendingData[models.ProfileBio]; ok {
+		user.Bio = bio
+	}
+	if gender, ok := pendingData[models.ProfileGender]; ok {
+		if value, err := strconv.Atoi(gender); err == nil {
+			user.Gender = value
+		}
+	}
+	if birthday, ok := pendingData[models.ProfileBirthday]; ok {
+		user.Birthday = birthday
+	}
 
 	db.GetDB().Save(&user)
-
-	if bio, ok := pendingData["bio"]; ok {
-		UpdateUsermeta(userId, models.MetaBio, bio)
-	}
-	if gender, ok := pendingData["gender"]; ok {
-		UpdateUsermeta(userId, models.MetaGender, gender)
-	}
-	if birthday, ok := pendingData["birthday"]; ok {
-		UpdateUsermeta(userId, models.MetaBirthday, birthday)
-	}
 }

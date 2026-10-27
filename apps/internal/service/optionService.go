@@ -13,7 +13,6 @@ import (
 var (
 	optionsCache     = make(map[string]string)
 	optionsCacheLock sync.RWMutex
-	optionsLoaded    bool
 )
 
 func GetOption(key string, defaultValue string) string {
@@ -72,7 +71,6 @@ func SetOption(key, value string) error {
 		option = models.Option{
 			OptionKey:   key,
 			OptionValue: value,
-			Autoload:    models.AutoloadNo,
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		}
@@ -126,22 +124,6 @@ func DeleteOption(key string) bool {
 	return result.RowsAffected > 0
 }
 
-func LoadAutoloadOptions() error {
-	var options []models.Option
-	if err := db.GetDB().Where("autoload = ?", models.AutoloadYes).Find(&options).Error; err != nil {
-		return err
-	}
-
-	optionsCacheLock.Lock()
-	for _, opt := range options {
-		optionsCache[opt.OptionKey] = opt.OptionValue
-	}
-	optionsLoaded = true
-	optionsCacheLock.Unlock()
-
-	return nil
-}
-
 func GetAllOptions() map[string]string {
 	var options []models.Option
 	db.GetDB().Find(&options)
@@ -175,7 +157,6 @@ func SetOptions(options map[string]string) error {
 			option = models.Option{
 				OptionKey:   key,
 				OptionValue: value,
-				Autoload:    models.AutoloadNo,
 				CreatedAt:   now,
 				UpdatedAt:   now,
 			}
@@ -209,6 +190,5 @@ func SetOptions(options map[string]string) error {
 func ClearOptionsCache() {
 	optionsCacheLock.Lock()
 	optionsCache = make(map[string]string)
-	optionsLoaded = false
 	optionsCacheLock.Unlock()
 }

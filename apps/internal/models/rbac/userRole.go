@@ -1,12 +1,10 @@
 package rbac
 
 type UserRole struct {
-	Id        int  `gorm:"primaryKey;autoIncrement"`
-	UserId    int  `gorm:"not null;uniqueIndex:uix_user_role"`
-	RoleId    int  `gorm:"not null;uniqueIndex:uix_user_role"`
-	GrantedAt int  `gorm:"default:0"`
-	GrantedBy int  `gorm:"default:0"`
-	Role      Role `gorm:"foreignKey:RoleId"`
+	UserId    int    `gorm:"primaryKey;autoIncrement:false"`
+	RoleName  string `gorm:"primaryKey;size:32"`
+	GrantedAt int    `gorm:"default:0"`
+	GrantedBy int    `gorm:"default:0"`
 }
 
-func (UserRole) TableName() string { return "userrole" }
+func (UserRole) TableName() string { return "user_roles" }

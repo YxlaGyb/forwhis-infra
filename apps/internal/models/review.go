@@ -20,9 +20,6 @@ const (
 
 const (
 	TargetTypeUserProfile = "user_profile"
-	TargetTypeComment     = "comment"
-	TargetTypePost        = "post"
-	TargetTypeUserMeta    = "user_meta"
 )
 
-func (Review) TableName() string { return "review" }
+func (Review) TableName() string { return "reviews" }

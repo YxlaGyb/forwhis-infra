@@ -1,4 +1,4 @@
-package controller
+package handler
 
 import (
 	"strconv"
@@ -69,12 +69,7 @@ func CreateComment(c fiber.Ctx) error {
 		mail = user.Mail
 	}
 
-	commentType := req.Type
-	if commentType == "" {
-		commentType = "comment"
-	}
-
-	comment := service.CreateComment(req.Cid, strings.TrimSpace(req.Text), authorID, author, mail, req.Url, commentType, req.Parent)
+	comment := service.CreateComment(req.Cid, strings.TrimSpace(req.Text), authorID, author, mail, req.Url, req.Parent)
 
 	if authorID > 0 {
 		service.CreateUserinfo(authorID, "createComment", "发表了评论喵")
@@ -154,7 +149,6 @@ func GetComment(c fiber.Ctx) error {
 		"created": comment.Created,
 		"author":  comment.Author,
 		"text":    comment.Text,
-		"type":    comment.Type,
 		"status":  comment.Status,
 		"parent":  comment.Parent,
 	})

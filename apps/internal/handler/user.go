@@ -1,4 +1,4 @@
-package controller
+package handler
 
 import (
 	"strconv"
@@ -234,9 +234,9 @@ func UpdateProfile(c fiber.Ctx) error {
 	user := middleware.GetCurrentUserFromContext(c)
 
 	allowedKeys := map[string]int{
-		models.MetaGender:   0,
-		models.MetaBirthday: 0,
-		models.MetaBio:      200,
+		models.ProfileGender:   0,
+		models.ProfileBirthday: 10,
+		models.ProfileBio:      200,
 	}
 
 	pendingFields := map[string]string{}
@@ -247,7 +247,7 @@ func UpdateProfile(c fiber.Ctx) error {
 			if maxLen > 0 && len(strValue) > maxLen {
 				return middleware.JSONError(c, key+"长度不能超过"+strconv.Itoa(maxLen)+"个字符喵", nil)
 			}
-			if key == models.MetaGender {
+			if key == models.ProfileGender {
 				gender, _ := strconv.Atoi(strValue)
 				if gender < 0 || gender > 3 {
 					return middleware.JSONError(c, "性别值无效喵", nil)

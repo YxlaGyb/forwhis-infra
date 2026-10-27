@@ -15,14 +15,13 @@ func SetupFixRoutes(r *fiber.App) {
 
 	fixApi := r.Group("/api/fix")
 	fixApi.Use(middleware.AuthMiddleware())
-	fixApi.Use(middleware.RoleMiddleware(string(constants.RoleSuperadmin), string(constants.RoleAdmin)))
+	fixApi.Use(middleware.PermMiddleware(string(constants.PermSystemConfig)))
 	{
 		fixApi.Get("/status", FixStatusHandler)
 		fixApi.Get("/tables", CheckTablesHandler)
 		fixApi.Get("/table/info", GetTableInfoHandler)
 		fixApi.Post("/tables/fix", FixTablesHandler)
 		fixApi.Post("/table/fix", FixSingleTableHandler)
-		fixApi.Post("/indexes", CreateIndexesHandler)
 	}
 }
 

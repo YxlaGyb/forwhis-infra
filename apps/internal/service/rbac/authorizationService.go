@@ -3,6 +3,8 @@ package rbac
 import (
 	"context"
 	"encoding/json"
+	"sort"
+	"strconv"
 	"time"
 
 	"forestwhisperGo/apps/internal/models"
@@ -19,24 +21,24 @@ const (
 )
 
 func IsSuperadmin(user *models.User) bool {
-	cacheKey := superadminCache + intToString(user.Uid)
+	cacheKey := superadminCache + strconv.Itoa(user.Uid)
 	if cached, err := db.Get(cacheKey); err == nil && cached == "1" {
 		return true
 	}
 
-	var roles []rbac.UserRole
-	db.GetDB().Where("user_id = ?", user.Uid).Preload("Role").Find(&roles)
-	for _, ur := range roles {
-		if ur.Role.Name == string(constants.RoleSuperadmin) {
-			db.SetEX(cacheKey, "1", int(cacheTTL.Seconds()))
-			return true
-		}
+	var count int64
+	db.GetDB().Model(&rbac.UserRole{}).
+		Where("user_id = ? AND role_name = ?", user.Uid, string(constants.RoleSuperadmin)).
+		Count(&count)
+	if count > 0 {
+		db.SetEX(cacheKey, "1", int(cacheTTL.Seconds()))
+		return true
 	}
 	return false
 }
 
 func GetUserRoles(userId int) []string {
-	cacheKey := roleCachePrefix + intToString(userId)
+	cacheKey := roleCachePrefix + strconv.Itoa(userId)
 	if cached, err := db.Get(cacheKey); err == nil && cached != "" {
 		var roles []string
 		if json.Unmarshal([]byte(cached), &roles) == nil {
@@ -44,11 +46,11 @@ func GetUserRoles(userId int) []string {
 		}
 	}
 
-	var roles []rbac.UserRole
-	db.GetDB().Where("user_id = ?", userId).Preload("Role").Find(&roles)
-	roleNames := []string{}
-	for _, ur := range roles {
-		roleNames = append(roleNames, ur.Role.Name)
+	var rows []rbac.UserRole
+	db.GetDB().Where("user_id = ?", userId).Find(&rows)
+	roleNames := make([]string, 0, len(rows))
+	for _, row := range rows {
+		roleNames = append(roleNames, row.RoleName)
 	}
 
 	if data, err := json.Marshal(roleNames); err == nil {
@@ -58,8 +60,7 @@ func GetUserRoles(userId int) []string {
 }
 
 func HasRole(user *models.User, roleName string) bool {
-	roles := GetUserRoles(user.Uid)
-	for _, r := range roles {
+	for _, r := range GetUserRoles(user.Uid) {
 		if r == roleName {
 			return true
 		}
@@ -71,21 +72,14 @@ func HasAnyAdminRole(user *models.User) bool {
 	if IsSuperadmin(user) {
 		return true
 	}
-	roles := GetUserRoles(user.Uid)
-	for _, r := range roles {
-		if r == string(constants.RoleAdmin) {
-			return true
-		}
-	}
-	return false
+	return HasRole(user, string(constants.RoleAdmin))
 }
 
 func HasPermission(user *models.User, permissionName string) bool {
 	if IsSuperadmin(user) {
 		return true
 	}
-	perms := GetUserPermissions(user.Uid)
-	for _, p := range perms {
+	for _, p := range GetUserPermissions(user.Uid) {
 		if p == permissionName {
 			return true
 		}
@@ -102,7 +96,7 @@ func CanPerformAction(user *models.User, resource, action string) bool {
 }
 
 func GetUserPermissions(userId int) []string {
-	cacheKey := permCachePrefix + intToString(userId)
+	cacheKey := permCachePrefix + strconv.Itoa(userId)
 	if cached, err := db.Get(cacheKey); err == nil && cached != "" {
 		var perms []string
 		if json.Unmarshal([]byte(cached), &perms) == nil {
@@ -110,13 +104,17 @@ func GetUserPermissions(userId int) []string {
 		}
 	}
 
-	var perms []string
-	db.GetDB().Table("permission").
-		Select("DISTINCT permission.name").
-		Joins(`JOIN "rolePermission" ON "rolePermission".permission_id = permission.id`).
-		Joins(`JOIN "userrole" ON "userrole".role_id = "rolePermission".role_id`).
-		Where(`"userrole".user_id = ?`, userId).
-		Pluck("name", &perms)
+	seen := map[constants.Permission]struct{}{}
+	for _, roleName := range GetUserRoles(userId) {
+		for _, perm := range constants.RolePermissions[constants.Role(roleName)] {
+			seen[perm] = struct{}{}
+		}
+	}
+	perms := make([]string, 0, len(seen))
+	for perm := range seen {
+		perms = append(perms, string(perm))
+	}
+	sort.Strings(perms)
 
 	if data, err := json.Marshal(perms); err == nil {
 		db.SetEX(cacheKey, string(data), int(cacheTTL.Seconds()))
@@ -127,27 +125,8 @@ func GetUserPermissions(userId int) []string {
 func InvalidateUserCache(userId int) {
 	ctx := context.Background()
 	client := db.Client()
-	client.Del(ctx, permCachePrefix+intToString(userId))
-	client.Del(ctx, roleCachePrefix+intToString(userId))
-	client.Del(ctx, superadminCache+intToString(userId))
-}
-
-func intToString(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	var negative bool
-	if n < 0 {
-		negative = true
-		n = -n
-	}
-	var digits []byte
-	for n > 0 {
-		digits = append([]byte{byte('0' + n%10)}, digits...)
-		n /= 10
-	}
-	if negative {
-		digits = append([]byte{'-'}, digits...)
-	}
-	return string(digits)
+	key := strconv.Itoa(userId)
+	client.Del(ctx, permCachePrefix+key)
+	client.Del(ctx, roleCachePrefix+key)
+	client.Del(ctx, superadminCache+key)
 }

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 
 type UserWithRoles struct {
 	User  *models.User
-	Roles []rbac.UserRole
+	Roles []string
 }
 
 func GenerateRandomName() string {
@@ -32,17 +33,10 @@ func GetUserByEmail(email string) *models.User {
 
 func GetUserWithRoles(uid int) (*UserWithRoles, bool) {
 	var user models.User
-	var roles []rbac.UserRole
-
-	db.GetDB().Where("user_id = ?", uid).Preload("Role").Find(&roles)
 	if db.GetDB().First(&user, uid).Error != nil || user.Uid == 0 {
 		return nil, false
 	}
-
-	return &UserWithRoles{
-		User:  &user,
-		Roles: roles,
-	}, true
+	return &UserWithRoles{User: &user, Roles: rbacSvc.GetUserRoles(uid)}, true
 }
 
 func GetUsersByUsername(name, exactly string) []map[string]interface{} {
@@ -71,21 +65,15 @@ func GetUsersByUsername(name, exactly string) []map[string]interface{} {
 }
 
 func GetUserProfile(uid int) map[string]string {
-	var metas []models.Usermeta
-	db.GetDB().Where("user_id = ?", uid).Find(&metas)
-	profile := map[string]string{}
-	for _, m := range metas {
-		profile[m.MetaKey] = m.MetaValue
+	var user models.User
+	if db.GetDB().First(&user, uid).Error != nil {
+		return map[string]string{}
 	}
-	return profile
-}
-
-func GetUsermeta(uid int, metaKey string) string {
-	var meta models.Usermeta
-	if db.GetDB().Where("user_id = ? AND meta_key = ?", uid, metaKey).First(&meta).Error != nil {
-		return ""
+	return map[string]string{
+		models.ProfileGender:   strconv.Itoa(user.Gender),
+		models.ProfileBirthday: user.Birthday,
+		models.ProfileBio:      user.Bio,
 	}
-	return meta.MetaValue
 }
 
 func GetUsersList() []map[string]interface{} {
@@ -102,11 +90,11 @@ func GetUsersList() []map[string]interface{} {
 	}
 
 	var allRoles []rbac.UserRole
-	db.GetDB().Where("user_id IN ?", userIDs).Preload("Role").Find(&allRoles)
+	db.GetDB().Where("user_id IN ?", userIDs).Find(&allRoles)
 
 	userRolesMap := make(map[int][]string)
 	for _, ur := range allRoles {
-		userRolesMap[ur.UserId] = append(userRolesMap[ur.UserId], ur.Role.Name)
+		userRolesMap[ur.UserId] = append(userRolesMap[ur.UserId], ur.RoleName)
 	}
 
 	result := []map[string]interface{}{}
@@ -130,35 +118,20 @@ func CreateUser(name, email, password, ip, role string, autoGenerateName bool) (
 	now := int(time.Now().Unix())
 	user := models.User{
 		Name: name, Mail: email, Password: password,
+		Gender: models.GenderSecret, Bio: "系统默认签名, 送给每一位小可爱~",
 		CreatedAt: now, LastLogin: 0, LastIp: ip, IsActive: 1,
 	}
 	err := db.GetDB().Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&user).Error; err != nil {
 			return err
 		}
-		if err := rbacSvc.AssignRoleToUserTx(tx, user.Uid, role, 0); err != nil {
-			return err
-		}
-		return createDefaultUsermetaTx(tx, user.Uid)
+		return rbacSvc.AssignRoleToUserTx(tx, user.Uid, role, 0)
 	})
 
 	if err != nil {
 		return nil, err
 	}
 	return &user, nil
-}
-
-func createDefaultUsermetaTx(tx *gorm.DB, uid int) error {
-	now := int(time.Now().Unix())
-	defaults := []struct{ key, val string }{
-		{"gender", "0"}, {"birthday", ""}, {"bio", "系统默认签名, 送给每一位小可爱~"},
-	}
-	for _, d := range defaults {
-		if err := tx.Create(&models.Usermeta{UserId: uid, MetaKey: d.key, MetaValue: d.val, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func CreateUserinfo(uid int, t, content string) {
@@ -182,15 +155,9 @@ func LoginUser(email, password, ip string) (map[string]interface{}, int) {
 		return nil, 10103
 	}
 	perms := rbacSvc.GetUserPermissions(user.Uid)
-	var roles []rbac.UserRole
-	db.GetDB().Where("user_id = ?", user.Uid).Preload("Role").Find(&roles)
-	roleNames := []string{}
-	for _, r := range roles {
-		roleNames = append(roleNames, r.Role.Name)
-	}
 	return map[string]interface{}{
 		"uid": user.Uid, "name": user.Name, "email": user.Mail,
-		"roles": roleNames, "permissions": perms, "token": token,
+		"roles": rbacSvc.GetUserRoles(user.Uid), "permissions": perms, "token": token,
 	}, 0
 }
 
@@ -236,11 +203,9 @@ func AdminUpdateUser(uid int, name, email string, roles []string, isActive *int)
 
 	if len(roles) > 0 {
 		var existingRoles []rbac.UserRole
-		db.GetDB().Where("user_id = ?", uid).Preload("Role").Find(&existingRoles)
+		db.GetDB().Where("user_id = ?", uid).Find(&existingRoles)
 		for _, r := range existingRoles {
-			if r.Role.Name != "" {
-				rbacSvc.RemoveRoleFromUser(uid, r.Role.Name)
-			}
+			rbacSvc.RemoveRoleFromUser(uid, r.RoleName)
 		}
 		for _, role := range roles {
 			rbacSvc.AssignRoleToUser(uid, role, 0)
@@ -256,6 +221,7 @@ func DeleteUser(uid, selectedUid int) bool {
 		return false
 	}
 	db.GetDB().Delete(user)
+	db.GetDB().Where("user_id = ?", selectedUid).Delete(&rbac.UserRole{})
 	CreateUserinfo(uid, "delUser", "删除了 "+user.Name+" 喵")
 	return true
 }
@@ -274,31 +240,6 @@ func ChangePassword(uid int, oldPwd, newPwd string) (bool, string) {
 	}
 	db.GetDB().Model(user).Update("password", hashedPwd)
 	CreateUserinfo(uid, "changePassword", "用户修改了密码喵")
-	return true, ""
-}
-
-func UpdateUsermeta(uid int, metaKey, metaValue string) (bool, string) {
-	var meta models.Usermeta
-	result := db.GetDB().Where("user_id = ? AND meta_key = ?", uid, metaKey).First(&meta)
-	now := int(time.Now().Unix())
-	if result.Error != nil {
-		meta = models.Usermeta{
-			UserId:    uid,
-			MetaKey:   metaKey,
-			MetaValue: metaValue,
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
-		if err := db.GetDB().Create(&meta).Error; err != nil {
-			return false, "创建元数据失败喵"
-		}
-		return true, ""
-	}
-	meta.MetaValue = metaValue
-	meta.UpdatedAt = now
-	if err := db.GetDB().Save(&meta).Error; err != nil {
-		return false, "更新元数据失败喵"
-	}
 	return true, ""
 }
 

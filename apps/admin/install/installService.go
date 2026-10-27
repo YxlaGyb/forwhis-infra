@@ -4,9 +4,7 @@ import (
 	"fmt"
 
 	"forestwhisperGo/apps/internal/models"
-	"forestwhisperGo/apps/internal/models/rbac"
 	"forestwhisperGo/apps/internal/service"
-	rbacSvc "forestwhisperGo/apps/internal/service/rbac"
 	"forestwhisperGo/apps/pkg/db"
 	"forestwhisperGo/apps/pkg/utils"
 	"forestwhisperGo/apps/pkg/utils/configutil"
@@ -69,29 +67,10 @@ func InitDatabase() error {
 	if database == nil {
 		return fmt.Errorf("数据库未连接")
 	}
-	return database.AutoMigrate(
-		&models.User{},
-		&models.Usermeta{},
-		&models.Userinfo{},
-		&models.Content{},
-		&models.Comment{},
-		&models.Meta{},
-		&models.Relationship{},
-		&models.Review{},
-		&models.ContentField{},
-		&models.AIConversation{},
-		&models.Like{},
-		&models.Option{},
-		&rbac.Role{},
-		&rbac.Permission{},
-		&rbac.UserRole{},
-		&rbac.RolePermission{},
-	)
+	return database.AutoMigrate(models.All()...)
 }
 
 func CreateAdminUser(username, email, password string) error {
-	rbacSvc.InitDefaultRbac()
-
 	passwordHash, err := utils.HashPassword(password)
 	if err != nil {
 		return fmt.Errorf("密码加密失败: %v", err)

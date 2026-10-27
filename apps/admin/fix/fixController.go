@@ -70,19 +70,6 @@ func GetTableInfoHandler(c fiber.Ctx) error {
 	return middleware.JSONSuccess(c, "获取成功", info)
 }
 
-func CreateIndexesHandler(c fiber.Ctx) error {
-	if !CheckFixToolAllowed() {
-		return middleware.JSONError(c, "修复工具未启用, 请检查数据库连接", nil)
-	}
-
-	createdCount, results := CreateMissingIndexes()
-	return middleware.JSONSuccess(c, "索引创建完成", fiber.Map{
-		"createdCount": createdCount,
-		"results":      results,
-	})
-
-}
-
 func FixStatusHandler(c fiber.Ctx) error {
 	return middleware.JSONSuccess(c, "获取成功", fiber.Map{
 		"allowed": CheckFixToolAllowed(),

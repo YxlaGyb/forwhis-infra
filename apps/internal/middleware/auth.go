@@ -54,7 +54,7 @@ func RoleMiddleware(roles ...string) fiber.Handler {
 
 		hasRole := false
 		for _, role := range roles {
-			if rbacSvc.HasPermission(user, role) {
+			if rbacSvc.HasRole(user, role) {
 				hasRole = true
 				break
 			}
@@ -103,7 +103,7 @@ func RequireRole(roles ...constants.Role) func(fiber.Handler) fiber.Handler {
 			}
 			hasRole := false
 			for _, role := range roles {
-				if rbacSvc.HasPermission(user, string(role)) {
+				if rbacSvc.HasRole(user, string(role)) {
 					hasRole = true
 					break
 				}
