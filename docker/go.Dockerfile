@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY apps ./apps
 RUN mkdir -p /out && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" \
-    -o /out/forestwhisperGo ./apps/cmd/servers
+    -o /out/forestwhisperGo ./apps/api/cmd/servers
 
 FROM alpine:3.23
 

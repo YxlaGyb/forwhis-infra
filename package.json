@@ -1,0 +1,29 @@
+{
+  "name": "forwhis-infra",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm -F \"./apps/**\" --parallel --stream run dev",
+    "dev:admin": "pnpm -F admin run dev",
+    "dev:api": "pnpm -F @apps/api run dev",
+    "build": "pnpm run build:api && pnpm run build:admin",
+    "build:admin": "pnpm -F admin run build",
+    "build:api": "pnpm -F @apps/api run build",
+    "format": "pnpm -F \"./apps/**\" --parallel run format",
+    "lint": "pnpm -F admin run lint",
+    "lint:fix": "pnpm -F admin run lint:fix",
+    "typecheck": "pnpm -F admin run typecheck",
+    "vet": "pnpm -F @apps/api run vet",
+    "test:api": "pnpm -F @apps/api run test",
+    "migrate": "pnpm -F @apps/api run migrate",
+    "migrate:down": "pnpm -F @apps/api run migrate:down",
+    "prod:deploy": "./scripts/deploy.sh",
+    "prod:start": "./scripts/start.sh",
+    "prod:stop": "./scripts/stop.sh",
+    "prod:restart": "./scripts/restart.sh",
+    "prod:logs": "pm2 logs"
+  }
+}

@@ -22,7 +22,7 @@ The root `config.toml` is not mounted or changed. PostgreSQL and Redis data pers
 
 ## What the Docker files do
 
-- `go.Dockerfile` builds the server from `apps/cmd/servers`, then copies only the binary into a small non-root runtime image.
+- `go.Dockerfile` builds the server from `apps/api/cmd/servers`, then copies only the binary into a small non-root runtime image.
 - Compose connects containers by service name on its default network (`postgres:5432`, `redis:6379`); the host-only ports are `2324`, `5433`, and `6380`.
 - API database and Redis settings come from `docker/api.toml`; no `.env` file is used.
 - Database health checks gate API startup. Redis append-only persistence and named volumes keep service data across container recreation.

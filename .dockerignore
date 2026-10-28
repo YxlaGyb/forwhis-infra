@@ -9,3 +9,4 @@ Dockerfile
 *.md
 .idea
 .vscode
+apps/admin
