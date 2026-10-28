@@ -4,6 +4,7 @@ static/
 node_modules/
 dist/
 weSTS/
+build/
 
 config.toml
 docker/api.toml
