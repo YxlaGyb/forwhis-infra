@@ -22,11 +22,6 @@ func LoadConfig() {
 	toml.Unmarshal(data, &config)
 }
 
-func ReloadConfig() {
-	configOnce = sync.Once{}
-	LoadConfig()
-}
-
 func GetConfig(section, key string) interface{} {
 	configOnce.Do(LoadConfig)
 	if s, ok := config[section]; ok {
@@ -56,28 +51,4 @@ func GetInt(section, key string) int {
 		}
 	}
 	return 0
-}
-
-func SetConfig(section, key string, value interface{}) error {
-	LoadConfig()
-	if config[section] == nil {
-		config[section] = make(map[string]interface{})
-	}
-	config[section][key] = value
-	data, err := toml.Marshal(config)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(configPath, data, 0644)
-}
-
-func IsInstalled() bool {
-	LoadConfig()
-	installed, _ := config["server"]["install"].(bool)
-	return installed
-}
-
-func ConfigExists() bool {
-	_, err := os.Stat(configPath)
-	return err == nil
 }

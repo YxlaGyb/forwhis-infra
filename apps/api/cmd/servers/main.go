@@ -8,8 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"forestwhisperGo/apps/api/admin/fix"
-	"forestwhisperGo/apps/api/admin/install"
 	"forestwhisperGo/apps/api/internal/middleware"
 	"forestwhisperGo/apps/api/internal/routes"
 	_ "forestwhisperGo/apps/api/internal/routes/modules"
@@ -28,14 +26,9 @@ func main() {
 	app.Use(pkg.Logger())
 	app.Use(middleware.Cors())
 
-	if !utils.IsInstalled() {
-		install.SetupInstallRoutes(app)
-	} else {
-		app.Get("/", index)
-		app.Use("/static", static.New("./static"))
-		routes.SetupAllRoutes(app)
-		fix.SetupFixRoutes(app)
-	}
+	app.Get("/", index)
+	app.Use("/static", static.New("./static"))
+	routes.SetupAllRoutes(app)
 
 	go func() {
 		fmt.Println("Server starting on :2324")

@@ -2,13 +2,13 @@
   "name": "forwhis-infra",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
     "dev": "pnpm -F \"./apps/**\" --parallel --stream run dev",
     "dev:admin": "pnpm -F admin run dev",
     "dev:api": "pnpm -F @apps/api run dev",
+    "dev:db": "go run ./apps/api/cmd/devdb",
     "build": "pnpm run build:api && pnpm run build:admin",
     "build:admin": "pnpm -F admin run build",
     "build:api": "pnpm -F @apps/api run build",
@@ -18,8 +18,6 @@
     "typecheck": "pnpm -F admin run typecheck",
     "vet": "pnpm -F @apps/api run vet",
     "test:api": "pnpm -F @apps/api run test",
-    "migrate": "pnpm -F @apps/api run migrate",
-    "migrate:down": "pnpm -F @apps/api run migrate:down",
     "prod:deploy": "./scripts/deploy.sh",
     "prod:start": "./scripts/start.sh",
     "prod:stop": "./scripts/stop.sh",

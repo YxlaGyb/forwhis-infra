@@ -8,8 +8,3 @@ PGSQL_DB = "forestwhisper"
 [redis]
 REDIS_HOST = "redis"
 REDIS_PORT = 6379
-
-[server]
-install = false
-siteName = "Forest Whisper"
-siteUrl = "http://localhost:2324/"

@@ -9,14 +9,9 @@ Copy-Item docker\api.toml.example docker\api.toml
 docker compose up --build -d
 ```
 
-Open <http://localhost:2324> and complete the first-run installer. Enter these PostgreSQL values (replace the install page's default `127.0.0.1`; inside the API container, PostgreSQL is `postgres`):
+Open <http://localhost:2324>. The web installer has been removed: run `pnpm dev:db` from the repository root to create the tables and the first administrator. That command reads the root `config.toml`, so point it at `127.0.0.1:5433` (database and user `forestwhisper`, password `forestwhisper-dev`) before running it. Docker-side initialization is not wired up yet.
 
-- Host: `postgres`
-- Port: `5432`
-- Database and user: `forestwhisper`
-- Password: `forestwhisper-dev`
-
-`docker/api.toml` is the API's writable runtime config and is gitignored. The installer saves its settings there. PostgreSQL uses the same local-development-only password in Compose; change it in both files before starting a fresh stack if needed. This committed default is for local development, not production.
+`docker/api.toml` is the API's runtime config and is gitignored. It already contains the Compose connection settings, so no installer step is needed. PostgreSQL uses the same local-development-only password in Compose; change it in both files before starting a fresh stack if needed. This committed default is for local development, not production.
 
 The root `config.toml` is not mounted or changed. PostgreSQL and Redis data persist in named volumes.
 
