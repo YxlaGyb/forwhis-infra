@@ -10,9 +10,7 @@ const cursorVersion = 1
 
 var ErrInvalidCursor = errors.New("invalid feed cursor")
 
-// CursorState is the opaque payload returned to clients. The snapshot keeps
-// ordering stable across pages: recall is limited to created <= Snapshot and
-// the ranker treats Snapshot as "now".
+// Snapshot keeps ordering stable across pages.
 type CursorState struct {
 	Version  int    `json:"v"`
 	Offset   int    `json:"o"`

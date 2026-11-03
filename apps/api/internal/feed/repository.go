@@ -9,12 +9,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// ponytail: fixed recall cap (200 per source). Deep paging stops around 400
-// entries; swap for paginated recall or a Redis snapshot if that ever matters.
+// ponytail: fixed recall cap (200 per source); deep paging stops around 400.
 const recallLimit = 200
 
-// Recall loads a bounded candidate set from PostgreSQL and enriches it with
-// author/category/tag/comment/like data in batch queries.
 func Recall(snapshot int64) ([]Candidate, error) {
 	database := db.GetDB()
 	if database == nil {

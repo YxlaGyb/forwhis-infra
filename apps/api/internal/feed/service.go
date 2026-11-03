@@ -12,7 +12,6 @@ const (
 	excerptRunes = 120
 )
 
-// GetFeed recalls, ranks, diversifies and pages the community feed.
 func GetFeed(mode, rawCursor string, limit int) (*FeedResult, error) {
 	if limit < 1 {
 		limit = defaultLimit
@@ -90,7 +89,6 @@ func GetFeed(mode, rawCursor string, limit int) (*FeedResult, error) {
 	return result, nil
 }
 
-// rankTieBreak keeps ordering deterministic when score and created tie.
 func rankTieBreak(a, b Scored) bool {
 	if a.Kind != b.Kind {
 		return a.Kind < b.Kind

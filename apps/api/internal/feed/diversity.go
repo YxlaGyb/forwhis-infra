@@ -15,9 +15,6 @@ func authorKey(c Candidate) string {
 	return "n:" + c.AuthorName
 }
 
-// Diversify keeps the first 10 positions varied: at most 2 per author and 3
-// per kind. When no candidate satisfies the caps it stops enforcing them and
-// appends the rest in ranked order, so the feed never runs dry.
 func Diversify(items []Scored) []Scored {
 	out := make([]Scored, 0, len(items))
 	used := make([]bool, len(items))

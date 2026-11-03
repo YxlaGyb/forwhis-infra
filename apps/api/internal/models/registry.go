@@ -10,6 +10,7 @@ func All() []any {
 		&Tag{},
 		&Content{},
 		&ContentTag{},
+		&Wish{},
 		&Comment{},
 		&Like{},
 		&Option{},

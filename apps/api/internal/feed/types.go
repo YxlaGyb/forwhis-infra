@@ -12,7 +12,6 @@ const (
 	KindWish    Kind = "wish"
 )
 
-// Candidate is a recalled feed entry before ranking.
 type Candidate struct {
 	Kind         Kind
 	ID           int
@@ -28,14 +27,11 @@ type Candidate struct {
 	Comments     int
 	Likes        int
 
-	// Safety fields, checked again by IsVisible.
 	Status      string
 	Type        string
 	HasPassword bool
 }
 
-// Profile holds personalization signals. V1 leaves it empty, so the ranker
-// degrades to neutral values; V2 only needs to fill these maps.
 type Profile struct {
 	TopicWeights    map[int]float64
 	FollowedAuthors map[int]struct{}
