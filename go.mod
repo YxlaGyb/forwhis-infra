@@ -3,6 +3,7 @@ module forwhis-infra
 go 1.26.2
 
 require (
+	github.com/alicebob/miniredis/v2 v2.40.0
 	github.com/gofiber/fiber/v3 v3.6.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/mattn/go-isatty v0.0.24
@@ -14,7 +15,6 @@ require (
 )
 
 require (
-	github.com/alicebob/miniredis/v2 v2.40.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gofiber/schema v1.8.8 // indirect

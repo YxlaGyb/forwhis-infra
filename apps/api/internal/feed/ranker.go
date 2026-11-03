@@ -42,11 +42,11 @@ func Freshness(c Candidate, now time.Time) float64 {
 	return math.Exp(-math.Ln2 * age.Hours() / halfLife.Hours())
 }
 
-func helpfulness(c Candidate) float64 {
+func helpfulness(_ Candidate) float64 {
 	return 0.5
 }
 
-func quality(c Candidate) float64 {
+func quality(_ Candidate) float64 {
 	return 0.5
 }
 
