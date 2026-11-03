@@ -111,7 +111,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
         {
             key: '/articles',
             icon: <FileTextOutlined />,
-            label: '文章管理',
+            label: '内容管理',
         },
         {
             key: '/categories',

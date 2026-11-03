@@ -114,6 +114,9 @@ func toItem(c Candidate) Item {
 	if c.Kind == KindContent && c.CategoryID > 0 {
 		item.Category = &Category{MID: c.CategoryID, Name: c.CategoryName}
 	}
+	if c.Kind == KindContent {
+		item.Type = c.Type
+	}
 	if len(c.Tags) > 0 {
 		item.Tags = c.Tags
 	}

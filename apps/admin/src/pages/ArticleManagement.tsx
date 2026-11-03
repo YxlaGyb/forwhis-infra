@@ -30,7 +30,7 @@ import remarkGfm from 'remark-gfm';
 import { contentApi } from '../api';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 import { formatTimestamp } from '../utils/format';
-import { getStatusColor, getStatusName } from '../utils/mapping';
+import { getStatusColor, getStatusName, getTypeName } from '../utils/mapping';
 import { ResponsiveTable } from '../components/ResponsiveTable';
 import type { ResponsiveColumn, ActionItem } from '../components/ResponsiveTable';
 import type { Content } from '../types';
@@ -49,10 +49,11 @@ const ArticleManagement: React.FC = () => {
     const [viewingArticle, setViewingArticle] = useState<Content | null>(null);
     const [form] = Form.useForm();
     const [statusFilter, setStatusFilter] = useState<string>('');
+    const [typeFilter, setTypeFilter] = useState<string>('');
 
     const { filteredData: filteredArticles, handleSearch } = useSearchFilter<Content>({
         data: articles,
-        searchKeys: ['title']
+        searchKeys: ['title', 'text']
     });
 
     useEffect(() => {
@@ -169,9 +170,17 @@ const ArticleManagement: React.FC = () => {
 
     const filteredByStatus = useMemo(() => {
         return filteredArticles.filter(article => {
-            return !statusFilter || article.status === statusFilter;
+            const statusMatched = !statusFilter || article.status === statusFilter;
+            const typeMatched = !typeFilter || article.type === typeFilter;
+            return statusMatched && typeMatched;
         });
-    }, [filteredArticles, statusFilter]);
+    }, [filteredArticles, statusFilter, typeFilter]);
+
+    const displayTitle = (record: Content) => {
+        if (record.title?.trim()) return record.title;
+        const excerpt = (record.text || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+        return excerpt ? `${excerpt}` : '（无标题帖子）';
+    };
 
     // 表格列配置
     const columns: ResponsiveColumn<Content>[] = [
@@ -189,6 +198,15 @@ const ArticleManagement: React.FC = () => {
             width: 200,
             ellipsis: true,
             priority: 'low',
+            render: (_: string, record: Content) => displayTitle(record),
+        },
+        {
+            title: '类型',
+            dataIndex: 'type',
+            key: 'type',
+            width: 90,
+            priority: 'high',
+            render: (type: string) => <Tag>{getTypeName(type)}</Tag>,
         },
         {
             title: '状态',
@@ -251,7 +269,7 @@ const ArticleManagement: React.FC = () => {
             danger: true,
             onClick: () => {
                 Modal.confirm({
-                    title: '确定要删除这篇文章吗？',
+                    title: '确定要删除这条内容吗？',
                     content: '删除后无法恢复',
                     okText: '确定',
                     cancelText: '取消',
@@ -262,14 +280,14 @@ const ArticleManagement: React.FC = () => {
     ];
 
     // 卡片标题
-    const getCardTitle = (record: Content) => record.title;
+    const getCardTitle = (record: Content) => displayTitle(record);
 
     // 卡片副标题
     const getCardSubtitle = (record: Content) => {
-        const authorName = typeof record.author === 'string' 
-            ? record.author 
+        const authorName = typeof record.author === 'string'
+            ? record.author
             : record.author?.name || '-';
-        return `${authorName} · ${formatTimestamp(record.created)}`;
+        return `${getTypeName(record.type)} · ${authorName} · ${formatTimestamp(record.created)}`;
     };
 
     return (
@@ -278,14 +296,14 @@ const ArticleManagement: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <Title level={4} style={{ margin: 0 }}>
                         <FileTextOutlined style={{ marginRight: 8 }} />
-                        文章管理
+                        内容管理
                     </Title>
                     <Button
                         type="primary"
                         icon={<PlusOutlined />}
                         onClick={handleCreate}
                     >
-                        新建文章
+                        新建内容
                     </Button>
                 </div>
 
@@ -309,6 +327,17 @@ const ArticleManagement: React.FC = () => {
                         <Option value="private">私密</Option>
                         <Option value="trash">回收站</Option>
                     </Select>
+                    <Select
+                        placeholder="筛选类型"
+                        value={typeFilter || undefined}
+                        onChange={(value) => setTypeFilter(value)}
+                        style={{ width: 120 }}
+                        allowClear
+                    >
+                        <Option value="post">帖子</Option>
+                        <Option value="article">文章</Option>
+                        <Option value="page">页面</Option>
+                    </Select>
                 </Space>
 
                 <ResponsiveTable
@@ -328,7 +357,7 @@ const ArticleManagement: React.FC = () => {
             </Card>
 
             <Modal
-                title={editingArticle ? '编辑文章' : '新建文章'}
+                title={editingArticle ? '编辑内容' : '新建内容'}
                 open={isModalVisible}
                 onOk={handleModalOk}
                 onCancel={handleModalCancel}
@@ -372,8 +401,9 @@ const ArticleManagement: React.FC = () => {
                         label="类型"
                         rules={[{ required: true, message: '请选择文章类型' }]}
                     >
-                        <Select placeholder="请选择文章类型">
-                            <Option value="post">文章</Option>
+                        <Select placeholder="请选择内容类型">
+                            <Option value="post">帖子</Option>
+                            <Option value="article">文章</Option>
                             <Option value="page">页面</Option>
                         </Select>
                     </Form.Item>
@@ -428,7 +458,7 @@ const ArticleManagement: React.FC = () => {
                                         flex: 1
                                     }}
                                 >
-                                    {viewingArticle.title}
+                                    {displayTitle(viewingArticle)}
                                 </Title>
                                 <Tag 
                                     color={getStatusColor(viewingArticle.status)} 
@@ -464,9 +494,9 @@ const ArticleManagement: React.FC = () => {
                                 {/* 分类 */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <FolderOutlined style={{ fontSize: 14, color: '#faad14' }} />
-                                    <span style={{ fontSize: 12, color: '#8c8c8c' }}>分类:</span>
+                                    <span style={{ fontSize: 12, color: '#8c8c8c' }}>类型:</span>
                                     <span style={{ fontSize: 13, color: '#262626' }}>
-                                        {viewingArticle.type === 'post' ? '文章' : '页面'}
+                                        {getTypeName(viewingArticle.type)}
                                     </span>
                                 </div>
 

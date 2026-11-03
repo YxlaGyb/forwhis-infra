@@ -60,6 +60,7 @@ type Stats struct {
 
 type Item struct {
 	Kind     Kind      `json:"kind"`
+	Type     string    `json:"type,omitempty"`
 	ID       int       `json:"id"`
 	Title    string    `json:"title"`
 	Excerpt  string    `json:"excerpt"`

@@ -45,6 +45,19 @@ func GetCategoryByMid(mid int) *models.Category {
 	return &category
 }
 
+const DefaultCategoryName = "大别野"
+
+func ResolveCategoryMID(mid int) int {
+	if mid > 0 {
+		return mid
+	}
+	var category models.Category
+	if db.GetDB().Where("name = ?", DefaultCategoryName).First(&category).Error != nil {
+		return 0
+	}
+	return category.Mid
+}
+
 func GetCategoryBySlug(slug string) *models.Category {
 	var category models.Category
 	if db.GetDB().Where("slug = ?", slug).First(&category).Error != nil {

@@ -102,7 +102,7 @@ export const contentApi = {
     createContent: (data: { title: string; content: string; text?: string; status?: string; type?: string; categories?: number[]; tags?: number[] }) =>
         api.post('/api/v1/content', data),
     
-    updateContent: (cid: number, data: { title?: string; content?: string; text?: string; status?: string; categories?: number[], tags?: number[] }) =>
+    updateContent: (cid: number, data: { title?: string; content?: string; text?: string; status?: string; type?: string; categoryMid?: number; categories?: number[], tags?: number[] }) =>
         api.post(`/api/v1/content/${cid}`, data),
     
     deleteContent: (cid: number) =>

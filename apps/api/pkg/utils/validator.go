@@ -36,3 +36,13 @@ func IsValidName(name string) bool {
 	}
 	return true
 }
+
+func CountRunes(s string) int {
+	count := 0
+	for _, r := range s {
+		if !unicode.IsSpace(r) {
+			count++
+		}
+	}
+	return count
+}

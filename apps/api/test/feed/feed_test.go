@@ -102,6 +102,7 @@ func TestIsVisible(t *testing.T) {
 		want bool
 	}{
 		{"published content", feed.Candidate{Kind: feed.KindContent, Status: models.StatusPublish, Type: models.TypePost}, true},
+		{"published article", feed.Candidate{Kind: feed.KindContent, Status: models.StatusPublish, Type: models.TypeArticle}, true},
 		{"draft content", feed.Candidate{Kind: feed.KindContent, Status: models.StatusDraft, Type: models.TypePost}, false},
 		{"locked content", feed.Candidate{Kind: feed.KindContent, Status: models.StatusPublish, Type: models.TypePost, HasPassword: true}, false},
 		{"page", feed.Candidate{Kind: feed.KindContent, Status: models.StatusPublish, Type: models.TypePage}, false},

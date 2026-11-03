@@ -46,7 +46,7 @@ interface EditorState {
     title: string;
     text: string;
     status: 'draft' | 'publish' | 'private';
-    type: 'post' | 'page';
+    type: 'post' | 'article' | 'page';
     slug: string;
     categoryMid: number;
 }
@@ -75,6 +75,10 @@ const ArticleEditor: React.FC = () => {
         slug: '',
         categoryMid: 0
     });
+
+    const isPost = formData.type === 'post';
+    const contentLimit = isPost ? 1000 : 30000;
+    const typeLabel = formData.type === 'post' ? '帖子' : formData.type === 'article' ? '文章' : '页面';
 
     useEffect(() => {
         const checkMobile = () => {
@@ -136,12 +140,12 @@ const ArticleEditor: React.FC = () => {
                     categoryMid: data.categoryMid || data.category?.mid || 0
                 });
             } else {
-                message.error('获取文章失败');
+                message.error('获取内容失败');
                 navigate('/articles');
             }
         } catch (error) {
-            console.error('获取文章失败:', error);
-            message.error('获取文章失败');
+            console.error('获取内容失败:', error);
+            message.error('获取内容失败');
             navigate('/articles');
         }
     };
@@ -156,10 +160,15 @@ const ArticleEditor: React.FC = () => {
 
     const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const text = e.target.value;
-        if (text.replace(/\s/g, '').length <= 30000) {
+        if (text.replace(/\s/g, '').length <= contentLimit) {
             setFormData(prev => ({ ...prev, text }));
             setIsDirty(true);
         }
+    };
+
+    const selectType = (type: EditorState['type']) => {
+        setFormData(prev => ({ ...prev, type, title: type === 'post' ? '' : prev.title }));
+        setIsDirty(true);
     };
 
     const insertMarkdown = (before: string, after: string = '') => {
@@ -194,16 +203,16 @@ const ArticleEditor: React.FC = () => {
     ];
 
     const validateForm = (): boolean => {
-        if (!formData.title.trim()) {
-            message.error('请输入文章标题');
-            return false;
-        }
         if (!formData.text.trim()) {
-            message.error('请输入文章内容');
+            message.error('请输入内容');
             return false;
         }
-        if (!formData.categoryMid || formData.categoryMid === 0) {
-            message.error('请选择文章分类');
+        if (formData.text.replace(/\s/g, '').length > contentLimit) {
+            message.error(`${typeLabel}内容不能超过${contentLimit}字`);
+            return false;
+        }
+        if (!isPost && !formData.title.trim()) {
+            message.error(`请输入${typeLabel}标题`);
             return false;
         }
         return true;
@@ -272,7 +281,7 @@ const ArticleEditor: React.FC = () => {
         if (isEditMode && id) {
             window.open(`/post/${formData.slug || id}`, '_blank');
         } else {
-            message.info('请先保存文章');
+            message.info('请先保存内容');
         }
     };
 
@@ -341,36 +350,40 @@ const ArticleEditor: React.FC = () => {
                     overflow: 'auto'
                 }}>
                     {/* 标题输入 */}
-                    <div style={{ marginBottom: 12, flexShrink: 0 }}>
-                        <Input
-                            placeholder="标题（必填）"
-                            value={formData.title}
-                            onChange={handleTitleChange}
-                            style={{
-                                fontSize: 20,
-                                fontWeight: 500,
-                                border: 'none',
-                                padding: 0,
-                                boxShadow: 'none'
-                            }}
-                        />
-                        <div style={{
-                            textAlign: 'right',
-                            fontSize: 12,
-                            color: titleCount >= 30 ? '#ff4d4f' : '#999',
-                            marginTop: 4
-                        }}>
-                            {titleCount}/30
-                        </div>
-                    </div>
+                    {!isPost && (
+                        <>
+                            <div style={{ marginBottom: 12, flexShrink: 0 }}>
+                                <Input
+                                    placeholder="标题（必填）"
+                                    value={formData.title}
+                                    onChange={handleTitleChange}
+                                    style={{
+                                        fontSize: 20,
+                                        fontWeight: 500,
+                                        border: 'none',
+                                        padding: 0,
+                                        boxShadow: 'none'
+                                    }}
+                                />
+                                <div style={{
+                                    textAlign: 'right',
+                                    fontSize: 12,
+                                    color: titleCount >= 30 ? '#ff4d4f' : '#999',
+                                    marginTop: 4
+                                }}>
+                                    {titleCount}/30
+                                </div>
+                            </div>
 
-                    <Divider style={{ margin: '8px 0', flexShrink: 0 }} />
+                            <Divider style={{ margin: '8px 0', flexShrink: 0 }} />
+                        </>
+                    )}
 
                     {/* 正文输入区域 */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         <TextArea
                             ref={textAreaRef}
-                            placeholder="请尽情发挥吧"
+                            placeholder={isPost ? '分享你的想法...' : '请尽情发挥吧'}
                             value={formData.text}
                             onChange={handleContentChange}
                             style={{
@@ -388,11 +401,11 @@ const ArticleEditor: React.FC = () => {
                         <div style={{
                             textAlign: 'right',
                             fontSize: 12,
-                            color: contentCount >= 30000 ? '#ff4d4f' : '#999',
+                            color: contentCount >= contentLimit ? '#ff4d4f' : '#999',
                             marginTop: 8,
                             flexShrink: 0
                         }}>
-                            {contentCount}/30000
+                            {contentCount}/{contentLimit}
                         </div>
                     </div>
                 </div>
@@ -479,14 +492,14 @@ const ArticleEditor: React.FC = () => {
 
                 {/* 设置抽屉 */}
                 <Drawer
-                    title="文章设置"
+                    title="内容设置"
                     placement="bottom"
                     onClose={() => setCategoryDrawerOpen(false)}
                     open={categoryDrawerOpen}
                     height="50%"
                 >
                     <div style={{ marginBottom: 24 }}>
-                        <Text type="secondary">文章分类</Text>
+                        <Text type="secondary">内容分类（不选则默认归入大别野分区）</Text>
                         <div style={{ marginTop: 8, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                             {categories.length === 0 ? (
                                 <Text type="secondary">暂无分类，请先创建分类</Text>
@@ -509,18 +522,25 @@ const ArticleEditor: React.FC = () => {
                         </div>
                     </div>
                     <div style={{ marginBottom: 24 }}>
-                        <Text type="secondary">文章类型</Text>
+                        <Text type="secondary">内容类型</Text>
                         <div style={{ marginTop: 8, display: 'flex', gap: 12 }}>
                             <Tag
                                 color={formData.type === 'post' ? 'blue' : undefined}
-                                onClick={() => setFormData(prev => ({ ...prev, type: 'post' }))}
+                                onClick={() => selectType('post')}
+                                style={{ cursor: 'pointer', padding: '4px 12px' }}
+                            >
+                                帖子
+                            </Tag>
+                            <Tag
+                                color={formData.type === 'article' ? 'blue' : undefined}
+                                onClick={() => selectType('article')}
                                 style={{ cursor: 'pointer', padding: '4px 12px' }}
                             >
                                 文章
                             </Tag>
                             <Tag
                                 color={formData.type === 'page' ? 'blue' : undefined}
-                                onClick={() => setFormData(prev => ({ ...prev, type: 'page' }))}
+                                onClick={() => selectType('page')}
                                 style={{ cursor: 'pointer', padding: '4px 12px' }}
                             >
                                 页面
@@ -556,7 +576,7 @@ const ArticleEditor: React.FC = () => {
                     {isEditMode && (
                         <div>
                             <Popconfirm
-                                title="确定删除这篇文章吗？"
+                                title={`确定删除这个${typeLabel}吗？`}
                                 description="删除后无法恢复"
                                 onConfirm={handleDelete}
                                 okText="确定"
@@ -564,7 +584,7 @@ const ArticleEditor: React.FC = () => {
                                 okButtonProps={{ danger: true }}
                             >
                                 <Button danger block icon={<DeleteOutlined />}>
-                                    删除文章
+                                    删除{typeLabel}
                                 </Button>
                             </Popconfirm>
                         </div>
@@ -598,7 +618,7 @@ const ArticleEditor: React.FC = () => {
                         onClick={() => navigate('/articles')}
                     />
                     <Text strong style={{ fontSize: 16 }}>
-                        {isEditMode ? '编辑文章' : '新建文章'}
+                        {isEditMode ? `编辑${typeLabel}` : `新建${typeLabel}`}
                     </Text>
                     {isDirty && <Tag color="orange">未保存</Tag>}
                 </div>
@@ -610,7 +630,7 @@ const ArticleEditor: React.FC = () => {
                         </Text>
                     )}
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                        {contentCount} 字
+                        {contentCount}/{contentLimit} 字
                     </Text>
                     <Button
                         icon={<EyeOutlined />}
@@ -636,7 +656,7 @@ const ArticleEditor: React.FC = () => {
                     </Button>
                     {isEditMode && (
                         <Popconfirm
-                            title="确定删除这篇文章吗？"
+                            title={`确定删除这个${typeLabel}吗？`}
                             description="删除后无法恢复"
                             onConfirm={handleDelete}
                             okText="确定"
@@ -691,22 +711,26 @@ const ArticleEditor: React.FC = () => {
                     minHeight: 0
                 }}>
                     {/* 标题输入 */}
-                    <div style={{ padding: '32px 40px 16px' }}>
-                        <Input
-                            placeholder="请输入文章标题..."
-                            value={formData.title}
-                            onChange={handleTitleChange}
-                            style={{
-                                fontSize: 32,
-                                fontWeight: 600,
-                                border: 'none',
-                                padding: 0,
-                                boxShadow: 'none'
-                            }}
-                        />
-                    </div>
+                    {!isPost && (
+                        <>
+                            <div style={{ padding: '32px 40px 16px' }}>
+                                <Input
+                                    placeholder="请输入标题..."
+                                    value={formData.title}
+                                    onChange={handleTitleChange}
+                                    style={{
+                                        fontSize: 32,
+                                        fontWeight: 600,
+                                        border: 'none',
+                                        padding: 0,
+                                        boxShadow: 'none'
+                                    }}
+                                />
+                            </div>
 
-                    <Divider style={{ margin: 0 }} />
+                            <Divider style={{ margin: 0 }} />
+                        </>
+                    )}
 
                     {/* 正文输入 */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -714,7 +738,7 @@ const ArticleEditor: React.FC = () => {
                             ref={textAreaRef}
                             value={formData.text}
                             onChange={handleContentChange}
-                            placeholder="开始写作..."
+                            placeholder={isPost ? '分享你的想法...' : '开始写作...'}
                             style={{
                                 flex: 1,
                                 border: 'none',
@@ -741,7 +765,7 @@ const ArticleEditor: React.FC = () => {
                             支持 Markdown 语法
                         </Text>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                            快捷键: Ctrl+S 保存 | {contentCount} 字
+                            快捷键: Ctrl+S 保存 | {contentCount}/{contentLimit} 字
                         </Text>
                     </div>
                 </div>
@@ -763,7 +787,10 @@ const ArticleEditor: React.FC = () => {
                     }}>
                         <Text strong style={{ display: 'block', marginBottom: 12 }}>
                             <FolderOutlined style={{ marginRight: 8 }} />
-                            文章分类
+                            内容分类
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                            不选则默认归入大别野分区
                         </Text>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                             {categories.length === 0 ? (
@@ -796,19 +823,26 @@ const ArticleEditor: React.FC = () => {
                         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
                     }}>
                         <Text strong style={{ display: 'block', marginBottom: 12 }}>
-                            文章类型
+                            内容类型
                         </Text>
                         <div style={{ display: 'flex', gap: 8 }}>
                             <Tag
                                 color={formData.type === 'post' ? 'blue' : undefined}
-                                onClick={() => setFormData(prev => ({ ...prev, type: 'post' }))}
+                                onClick={() => selectType('post')}
+                                style={{ cursor: 'pointer', padding: '4px 12px' }}
+                            >
+                                帖子
+                            </Tag>
+                            <Tag
+                                color={formData.type === 'article' ? 'blue' : undefined}
+                                onClick={() => selectType('article')}
                                 style={{ cursor: 'pointer', padding: '4px 12px' }}
                             >
                                 文章
                             </Tag>
                             <Tag
                                 color={formData.type === 'page' ? 'blue' : undefined}
-                                onClick={() => setFormData(prev => ({ ...prev, type: 'page' }))}
+                                onClick={() => selectType('page')}
                                 style={{ cursor: 'pointer', padding: '4px 12px' }}
                             >
                                 页面

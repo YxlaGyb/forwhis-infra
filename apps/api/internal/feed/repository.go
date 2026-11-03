@@ -20,8 +20,8 @@ func Recall(snapshot int64) ([]Candidate, error) {
 
 	var contents []models.Content
 	if err := database.
-		Where("status = ? AND type = ? AND password = ? AND created <= ?",
-			models.StatusPublish, models.TypePost, "", snapshot).
+		Where("status = ? AND type IN ? AND password = ? AND created <= ?",
+			models.StatusPublish, []string{models.TypePost, models.TypeArticle}, "", snapshot).
 		Order("created desc").
 		Limit(recallLimit).
 		Find(&contents).Error; err != nil {

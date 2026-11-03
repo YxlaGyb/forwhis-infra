@@ -5,19 +5,33 @@ import (
 	"strings"
 
 	"forwhis-infra/apps/api/internal/middleware"
+	"forwhis-infra/apps/api/internal/models"
 	"forwhis-infra/apps/api/internal/request"
 	"forwhis-infra/apps/api/internal/service"
 	rbacSvc "forwhis-infra/apps/api/internal/service/rbac"
 	"forwhis-infra/apps/api/pkg/constants"
+	"forwhis-infra/apps/api/pkg/utils"
 
 	"github.com/gofiber/fiber/v3"
 )
+
+func contentLabel(contentType string) string {
+	switch contentType {
+	case models.TypePost:
+		return "帖子"
+	case models.TypeArticle:
+		return "文章"
+	default:
+		return "页面"
+	}
+}
 
 func GetContents(c fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page"))
 	limit, _ := strconv.Atoi(c.Query("limit"))
 	status := c.Query("status")
 	categoryMid, _ := strconv.Atoi(c.Query("categoryMid"))
+	contentType := c.Query("type")
 
 	if page < 1 {
 		page = 1
@@ -29,7 +43,7 @@ func GetContents(c fiber.Ctx) error {
 		limit = 100
 	}
 
-	result := service.GetContentsList(page, limit, status, 0, categoryMid)
+	result := service.GetContentsList(page, limit, status, 0, categoryMid, contentType)
 	return middleware.JSONSuccess(c, "获取成功喵", result)
 }
 
@@ -39,48 +53,66 @@ func CreateContent(c fiber.Ctx) error {
 	if err := c.Bind().JSON(&req); err != nil {
 		return middleware.JSONError(c, "请求数据不能为空喵", nil)
 	}
-	if strings.TrimSpace(req.Title) == "" {
-		return middleware.JSONError(c, "文章标题不能为空喵", nil)
+
+	contentType := req.Type
+	if contentType == "" {
+		contentType = models.TypePost
 	}
-	if strings.TrimSpace(req.Text) == "" {
-		return middleware.JSONError(c, "文章内容不能为空喵", nil)
+	if !models.IsContentType(contentType) {
+		return middleware.JSONError(c, "内容类型无效喵", nil)
 	}
-	if req.CategoryMid == 0 {
-		return middleware.JSONError(c, "请选择分类喵", nil)
+	label := contentLabel(contentType)
+
+	text := strings.TrimSpace(req.Text)
+	if text == "" {
+		return middleware.JSONError(c, label+"内容不能为空喵", nil)
 	}
-	if len(req.Title) > 150 {
-		return middleware.JSONError(c, "标题长度不能超过150个字符喵", nil)
+	if utils.CountRunes(text) > models.TextLimit(contentType) {
+		return middleware.JSONError(c, label+"内容不能超过"+strconv.Itoa(models.TextLimit(contentType))+"字喵", nil)
+	}
+
+	title := strings.TrimSpace(req.Title)
+	if contentType == models.TypePost {
+		title = ""
+	} else {
+		if title == "" {
+			return middleware.JSONError(c, label+"标题不能为空喵", nil)
+		}
+		if len(title) > 150 {
+			return middleware.JSONError(c, "标题长度不能超过150个字符喵", nil)
+		}
 	}
 
 	user := middleware.GetCurrentUserFromContext(c)
-	contentType := req.Type
-	if contentType == "" {
-		contentType = "post"
-	}
 	status := req.Status
 	if status == "" {
 		status = "draft"
 	}
 
 	content := service.CreateContent(
-		strings.TrimSpace(req.Title),
-		req.Text,
+		title,
+		text,
 		user.Uid,
 		contentType,
 		status,
 		req.Password,
-		req.CategoryMid,
+		service.ResolveCategoryMID(req.CategoryMid),
 		req.TagIds,
 	)
 
 	if content == nil {
-		return middleware.JSONSystemError(c, "文章创建失败喵", nil)
+		return middleware.JSONSystemError(c, label+"创建失败喵", nil)
 	}
 
-	service.CreateUserinfo(user.Uid, "createContent", "创建了文章: "+req.Title+"喵")
-	return middleware.JSONSuccess(c, "文章创建成功喵", map[string]interface{}{
+	detail := "创建了" + label + "喵"
+	if title != "" {
+		detail = "创建了" + label + ": " + title + "喵"
+	}
+	service.CreateUserinfo(user.Uid, "createContent", detail)
+	return middleware.JSONSuccess(c, label+"创建成功喵", map[string]interface{}{
 		"cid":     content.Cid,
 		"title":   content.Title,
+		"type":    content.Type,
 		"created": content.Created,
 	})
 
@@ -166,24 +198,62 @@ func UpdateContent(c fiber.Ctx) error {
 		return middleware.JSONError(c, "无权修改此文章喵", nil)
 	}
 
-	if title, ok := req["title"].(string); ok {
-		if strings.TrimSpace(title) == "" {
-			return middleware.JSONError(c, "文章标题不能为空喵", nil)
+	contentType := content.Type
+	if rawType, ok := req["type"].(string); ok && rawType != "" {
+		if !models.IsContentType(rawType) {
+			return middleware.JSONError(c, "内容类型无效喵", nil)
+		}
+		contentType = rawType
+	}
+	label := contentLabel(contentType)
+
+	text := content.Text
+	if rawText, ok := req["text"].(string); ok {
+		text = rawText
+	}
+	if strings.TrimSpace(text) == "" {
+		return middleware.JSONError(c, label+"内容不能为空喵", nil)
+	}
+	if utils.CountRunes(text) > models.TextLimit(contentType) {
+		return middleware.JSONError(c, label+"内容不能超过"+strconv.Itoa(models.TextLimit(contentType))+"字喵", nil)
+	}
+
+	if contentType == models.TypePost {
+		req["title"] = ""
+	} else {
+		title := content.Title
+		if rawTitle, ok := req["title"].(string); ok {
+			title = rawTitle
+		}
+		title = strings.TrimSpace(title)
+		if title == "" {
+			return middleware.JSONError(c, label+"标题不能为空喵", nil)
 		}
 		if len(title) > 150 {
 			return middleware.JSONError(c, "标题长度不能超过150个字符喵", nil)
 		}
+		req["title"] = title
 	}
+
+	if categoryMid, ok := req["categoryMid"].(float64); ok && int(categoryMid) == 0 {
+		req["categoryMid"] = float64(service.ResolveCategoryMID(0))
+	}
+	req["type"] = contentType
 
 	updated := service.UpdateContent(cid, req)
 	if updated == nil {
-		return middleware.JSONSystemError(c, "文章更新失败喵", nil)
+		return middleware.JSONSystemError(c, label+"更新失败喵", nil)
 	}
 
-	service.CreateUserinfo(user.Uid, "updateContent", "更新了文章: "+updated.Title+"喵")
-	return middleware.JSONSuccess(c, "文章更新成功喵", map[string]interface{}{
+	detail := "更新了" + label + "喵"
+	if updated.Title != "" {
+		detail = "更新了" + label + ": " + updated.Title + "喵"
+	}
+	service.CreateUserinfo(user.Uid, "updateContent", detail)
+	return middleware.JSONSuccess(c, label+"更新成功喵", map[string]interface{}{
 		"cid":      updated.Cid,
 		"title":    updated.Title,
+		"type":     updated.Type,
 		"modified": updated.Modified,
 	})
 

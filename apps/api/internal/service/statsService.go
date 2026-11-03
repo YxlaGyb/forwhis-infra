@@ -19,14 +19,15 @@ func GetUserStats() map[string]int {
 }
 
 func GetContentStats() map[string]int {
-	var posts, pages, drafts, published, private, views int64
+	var posts, articles, pages, drafts, published, private, views int64
 	db.GetDB().Model(&models.Content{}).Where("type = ?", models.TypePost).Count(&posts)
+	db.GetDB().Model(&models.Content{}).Where("type = ?", models.TypeArticle).Count(&articles)
 	db.GetDB().Model(&models.Content{}).Where("type = ?", models.TypePage).Count(&pages)
 	db.GetDB().Model(&models.Content{}).Where("status = ?", models.StatusDraft).Count(&drafts)
 	db.GetDB().Model(&models.Content{}).Where("status = ?", models.StatusPublish).Count(&published)
 	db.GetDB().Model(&models.Content{}).Where("status = ?", models.StatusPrivate).Count(&private)
-	db.GetDB().Model(&models.Content{}).Where("type = ?", models.TypePost).Select("COALESCE(SUM(views), 0)").Scan(&views)
-	return map[string]int{"posts": int(posts), "pages": int(pages), "drafts": int(drafts), "published": int(published), "private": int(private), "views": int(views)}
+	db.GetDB().Model(&models.Content{}).Where("type IN ?", []string{models.TypePost, models.TypeArticle}).Select("COALESCE(SUM(views), 0)").Scan(&views)
+	return map[string]int{"posts": int(posts), "articles": int(articles), "pages": int(pages), "drafts": int(drafts), "published": int(published), "private": int(private), "views": int(views)}
 }
 
 func GetCommentStats() map[string]int {
@@ -118,7 +119,7 @@ func GetTrendData(days int) []TrendData {
 	var viewsCounts []dailyCount
 	db.GetDB().Model(&models.Content{}).
 		Select("to_char(to_timestamp(created), 'YYYY-MM-DD') as date, COALESCE(SUM(views), 0) as count").
-		Where("type = ? AND created >= ?", models.TypePost, dayStart).
+		Where("type IN ? AND created >= ?", []string{models.TypePost, models.TypeArticle}, dayStart).
 		Group("date").
 		Scan(&viewsCounts)
 	for _, vc := range viewsCounts {

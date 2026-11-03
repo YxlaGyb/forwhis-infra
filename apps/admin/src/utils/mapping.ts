@@ -26,7 +26,8 @@ export const getStatusName = (status: string): string => {
 
 export const getTypeName = (type: string): string => {
     const nameMap: Record<string, string> = {
-        'post': '文章',
+        'post': '帖子',
+        'article': '文章',
         'page': '页面'
     };
     return nameMap[type] || type;

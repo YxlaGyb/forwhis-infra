@@ -147,16 +147,16 @@ const Dashboard: React.FC = () => {
                         <Statistic
                             title={
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    文章总数
+                                    内容总数
                                     <EditOutlined style={{ fontSize: 12, opacity: 0.5 }} />
                                 </span>
                             }
-                            value={dashboardData.contents?.posts || 0}
+                            value={(dashboardData.contents?.posts || 0) + (dashboardData.contents?.articles || 0)}
                             prefix={<FileTextOutlined />}
                             valueStyle={{ color: '#1890ff' }}
                         />
                         <div style={{ marginTop: 8, fontSize: 12, color: '#888' }}>
-                            已发布 {dashboardData.contents?.published || 0} | 草稿 {dashboardData.contents?.drafts || 0}
+                            文章 {dashboardData.contents?.articles || 0} | 帖子 {dashboardData.contents?.posts || 0}
                         </div>
                     </Card>
                 </Col>
@@ -178,7 +178,7 @@ const Dashboard: React.FC = () => {
                 <Col xs={24} sm={12} lg={8}>
                     <Card>
                         <Statistic
-                            title="文章访问量"
+                            title="内容访问量"
                             value={dashboardData.contents?.views || 0}
                             prefix={<EyeOutlined />}
                             valueStyle={{ color: '#722ed1' }}
@@ -217,7 +217,7 @@ const Dashboard: React.FC = () => {
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                     <Card style={{ textAlign: 'center' }}>
-                        <div style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>新增文章</div>
+                        <div style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>新增内容</div>
                         <div style={{ fontSize: 28, fontWeight: 'bold', color: '#1890ff' }}>+{increments.contentInc}</div>
                     </Card>
                 </Col>

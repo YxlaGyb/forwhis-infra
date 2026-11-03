@@ -15,9 +15,30 @@ type Content struct {
 }
 
 const (
-	TypePost = "post"
-	TypePage = "page"
+	TypePost    = "post"
+	TypeArticle = "article"
+	TypePage    = "page"
 )
+
+const (
+	PostMaxRunes    = 1000
+	ArticleMaxRunes = 30000
+)
+
+func IsContentType(contentType string) bool {
+	switch contentType {
+	case TypePost, TypeArticle, TypePage:
+		return true
+	}
+	return false
+}
+
+func TextLimit(contentType string) int {
+	if contentType == TypePost {
+		return PostMaxRunes
+	}
+	return ArticleMaxRunes
+}
 
 const (
 	StatusDraft   = "draft"

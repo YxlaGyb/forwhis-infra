@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetContentsList(page, limit int, status string, authorID, categoryMid int) map[string]interface{} {
+func GetContentsList(page, limit int, status string, authorID, categoryMid int, contentType string) map[string]interface{} {
 	query := db.GetDB().Model(&models.Content{})
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -19,6 +19,9 @@ func GetContentsList(page, limit int, status string, authorID, categoryMid int) 
 	}
 	if categoryMid > 0 {
 		query = query.Where("category_id = ?", categoryMid)
+	}
+	if contentType != "" {
+		query = query.Where("type = ?", contentType)
 	}
 	var total int64
 	query.Count(&total)
@@ -190,7 +193,7 @@ func UpdateContent(cid int, data map[string]interface{}) *models.Content {
 		return nil
 	}
 	updates := map[string]interface{}{}
-	for _, k := range []string{"title", "text", "status", "password"} {
+	for _, k := range []string{"title", "text", "status", "password", "type"} {
 		if v, ok := data[k]; ok {
 			updates[k] = v
 		}

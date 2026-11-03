@@ -6,6 +6,7 @@ export interface UserStats {
 
 export interface ContentStats {
     posts: number;
+    articles: number;
     pages: number;
     drafts: number;
     published: number;
