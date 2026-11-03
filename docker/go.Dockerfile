@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY apps ./apps
 RUN mkdir -p /out && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" \
-    -o /out/forestwhisperGo ./apps/api/cmd/servers
+    -o /out/forwhis-infra ./apps/api/cmd/servers
 
 FROM alpine:3.23
 
@@ -18,8 +18,8 @@ RUN apk add --no-cache ca-certificates tzdata \
     && chown app:app /app
 
 WORKDIR /app
-COPY --from=builder /out/forestwhisperGo /usr/local/bin/forestwhisperGo
+COPY --from=builder /out/forwhis-infra /usr/local/bin/forwhis-infra
 
 USER app
 EXPOSE 2324
-CMD ["/usr/local/bin/forestwhisperGo"]
+CMD ["/usr/local/bin/forwhis-infra"]

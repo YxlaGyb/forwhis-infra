@@ -5,8 +5,8 @@ services:
     build:
       context: .
       dockerfile: docker/go.Dockerfile
-    image: forestwhispergo:latest
-    container_name: forestwhispergo
+    image: forwhis-infra:latest
+    container_name: forwhis-infra
     ports: ["2324:2324"]
     volumes:
       - ./docker/api.toml:/app/config.toml

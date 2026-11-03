@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"forestwhisperGo/apps/api/internal/middleware"
-	"forestwhisperGo/apps/api/internal/request"
-	"forestwhisperGo/apps/api/internal/service"
-	"forestwhisperGo/apps/api/pkg/db"
-	"forestwhisperGo/apps/api/pkg/utils"
+	"forwhis-infra/apps/api/internal/middleware"
+	"forwhis-infra/apps/api/internal/request"
+	"forwhis-infra/apps/api/internal/service"
+	"forwhis-infra/apps/api/pkg/db"
+	"forwhis-infra/apps/api/pkg/utils"
 
 	"github.com/gofiber/fiber/v3"
 )

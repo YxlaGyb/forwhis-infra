@@ -8,12 +8,12 @@ import (
 	"syscall"
 	"time"
 
-	"forestwhisperGo/apps/api/internal/middleware"
-	"forestwhisperGo/apps/api/internal/routes"
-	_ "forestwhisperGo/apps/api/internal/routes/modules"
-	"forestwhisperGo/apps/api/pkg/db"
-	pkg "forestwhisperGo/apps/api/pkg/logger"
-	"forestwhisperGo/apps/api/pkg/utils"
+	"forwhis-infra/apps/api/internal/middleware"
+	"forwhis-infra/apps/api/internal/routes"
+	_ "forwhis-infra/apps/api/internal/routes/modules"
+	"forwhis-infra/apps/api/pkg/db"
+	pkg "forwhis-infra/apps/api/pkg/logger"
+	"forwhis-infra/apps/api/pkg/utils"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/static"

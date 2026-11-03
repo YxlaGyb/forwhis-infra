@@ -1,6 +1,6 @@
 package models
 
-import "forestwhisperGo/apps/api/internal/models/rbac"
+import "forwhis-infra/apps/api/internal/models/rbac"
 
 func All() []any {
 	return []any{

@@ -11,6 +11,7 @@ type Like struct {
 const (
 	LikeTargetTypeContent = "content"
 	LikeTargetTypeComment = "comment"
+	LikeTargetTypeWish    = "wish"
 )
 
 func (Like) TableName() string { return "likes" }

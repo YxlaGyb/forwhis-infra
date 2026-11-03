@@ -3,8 +3,8 @@ package service
 import (
 	"time"
 
-	"forestwhisperGo/apps/api/internal/models"
-	"forestwhisperGo/apps/api/pkg/db"
+	"forwhis-infra/apps/api/internal/models"
+	"forwhis-infra/apps/api/pkg/db"
 )
 
 func GetCommentsList(cid int, status string, authorID, page, limit int) map[string]interface{} {

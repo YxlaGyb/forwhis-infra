@@ -3,8 +3,8 @@ package handler
 import (
 	"strconv"
 
-	"forestwhisperGo/apps/api/internal/middleware"
-	"forestwhisperGo/apps/api/internal/service"
+	"forwhis-infra/apps/api/internal/middleware"
+	"forwhis-infra/apps/api/internal/service"
 
 	"github.com/gofiber/fiber/v3"
 )

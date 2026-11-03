@@ -3,11 +3,11 @@ package handler
 import (
 	"strconv"
 
-	"forestwhisperGo/apps/api/internal/middleware"
-	"forestwhisperGo/apps/api/internal/request"
-	"forestwhisperGo/apps/api/internal/service"
-	rbacSvc "forestwhisperGo/apps/api/internal/service/rbac"
-	"forestwhisperGo/apps/api/pkg/constants"
+	"forwhis-infra/apps/api/internal/middleware"
+	"forwhis-infra/apps/api/internal/request"
+	"forwhis-infra/apps/api/internal/service"
+	rbacSvc "forwhis-infra/apps/api/internal/service/rbac"
+	"forwhis-infra/apps/api/pkg/constants"
 
 	"github.com/gofiber/fiber/v3"
 )

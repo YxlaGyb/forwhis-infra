@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"forestwhisperGo/apps/api/internal/models/types"
-	"forestwhisperGo/apps/api/pkg/db"
+	"forwhis-infra/apps/api/internal/models/types"
+	"forwhis-infra/apps/api/pkg/db"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"

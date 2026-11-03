@@ -1,8 +1,8 @@
 package modules
 
 import (
-	"forestwhisperGo/apps/api/internal/handler"
-	"forestwhisperGo/apps/api/internal/routes"
+	"forwhis-infra/apps/api/internal/handler"
+	"forwhis-infra/apps/api/internal/routes"
 
 	"github.com/gofiber/fiber/v3"
 )

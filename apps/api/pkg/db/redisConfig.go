@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"forestwhisperGo/apps/api/pkg/utils/configutil"
+	"forwhis-infra/apps/api/pkg/utils/configutil"
 
 	"github.com/alicebob/miniredis/v2"
 

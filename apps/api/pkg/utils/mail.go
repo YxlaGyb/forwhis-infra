@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"forestwhisperGo/apps/api/pkg/utils/configutil"
+	"forwhis-infra/apps/api/pkg/utils/configutil"
 
 	"github.com/pelletier/go-toml/v2"
 )

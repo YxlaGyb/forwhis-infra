@@ -3,9 +3,9 @@ package user
 import (
 	"net/http"
 
-	"forestwhisperGo/apps/api/internal/middleware"
-	"forestwhisperGo/apps/api/internal/service"
-	rbacSvc "forestwhisperGo/apps/api/internal/service/rbac"
+	"forwhis-infra/apps/api/internal/middleware"
+	"forwhis-infra/apps/api/internal/service"
+	rbacSvc "forwhis-infra/apps/api/internal/service/rbac"
 
 	"github.com/gofiber/fiber/v3"
 )

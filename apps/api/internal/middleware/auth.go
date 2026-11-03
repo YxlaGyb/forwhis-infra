@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"forestwhisperGo/apps/api/internal/models"
-	rbacSvc "forestwhisperGo/apps/api/internal/service/rbac"
-	"forestwhisperGo/apps/api/pkg/constants"
-	"forestwhisperGo/apps/api/pkg/db"
-	"forestwhisperGo/apps/api/pkg/utils"
+	"forwhis-infra/apps/api/internal/models"
+	rbacSvc "forwhis-infra/apps/api/internal/service/rbac"
+	"forwhis-infra/apps/api/pkg/constants"
+	"forwhis-infra/apps/api/pkg/db"
+	"forwhis-infra/apps/api/pkg/utils"
 
 	"github.com/gofiber/fiber/v3"
 )

@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"forestwhisperGo/apps/api/internal/models/types"
+	"forwhis-infra/apps/api/internal/models/types"
 	"time"
 
 	"github.com/gofiber/fiber/v3"

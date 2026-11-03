@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	"forestwhisperGo/apps/api/internal/response"
+	"forwhis-infra/apps/api/internal/response"
 
 	"github.com/gofiber/fiber/v3"
 )

@@ -1,4 +1,4 @@
-module forestwhisperGo
+module forwhis-infra
 
 go 1.26.2
 

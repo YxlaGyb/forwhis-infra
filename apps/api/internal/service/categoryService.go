@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"forestwhisperGo/apps/api/internal/models"
-	"forestwhisperGo/apps/api/pkg/db"
+	"forwhis-infra/apps/api/internal/models"
+	"forwhis-infra/apps/api/pkg/db"
 )
 
 func GetCategoriesList() []map[string]interface{} {

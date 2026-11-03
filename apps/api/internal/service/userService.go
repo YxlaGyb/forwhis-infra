@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"forestwhisperGo/apps/api/internal/models"
-	"forestwhisperGo/apps/api/internal/models/rbac"
-	rbacSvc "forestwhisperGo/apps/api/internal/service/rbac"
-	"forestwhisperGo/apps/api/pkg/db"
-	"forestwhisperGo/apps/api/pkg/utils"
+	"forwhis-infra/apps/api/internal/models"
+	"forwhis-infra/apps/api/internal/models/rbac"
+	rbacSvc "forwhis-infra/apps/api/internal/service/rbac"
+	"forwhis-infra/apps/api/pkg/db"
+	"forwhis-infra/apps/api/pkg/utils"
 
 	"gorm.io/gorm"
 )

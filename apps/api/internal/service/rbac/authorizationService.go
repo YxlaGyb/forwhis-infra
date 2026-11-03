@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"forestwhisperGo/apps/api/internal/models"
-	"forestwhisperGo/apps/api/internal/models/rbac"
-	"forestwhisperGo/apps/api/pkg/constants"
-	"forestwhisperGo/apps/api/pkg/db"
+	"forwhis-infra/apps/api/internal/models"
+	"forwhis-infra/apps/api/internal/models/rbac"
+	"forwhis-infra/apps/api/pkg/constants"
+	"forwhis-infra/apps/api/pkg/db"
 )
 
 const (
