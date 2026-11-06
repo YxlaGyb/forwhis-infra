@@ -31,7 +31,8 @@ export function unwrap<T>(response: ApiResponse<T> | undefined): T {
 
 export async function request<T>(url: string, options?: ApiRequestOptions): Promise<T> {
 	if (!client) throw new ApiError('API 客户端尚未初始化')
-	return unwrap(await client<ApiResponse<T>>(url, options))
+	const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
+	return unwrap(await client<ApiResponse<T>>(url, { ...options, headers }))
 }
 
 const AUTH_FAILURE_PATTERN = /未登录|登录已过期|登录失效|token/i

@@ -2,8 +2,6 @@ import type { UserInfo } from '~/types/domain'
 import { authApi } from '~/api'
 import { getRoleName } from '~/utils/mapping'
 
-let pendingFetch: Promise<UserInfo | null> | null = null
-
 export function useAuth() {
 	const user = useState<UserInfo | null>('auth:user', () => null)
 	const checked = useState<boolean>('auth:checked', () => false)
@@ -21,23 +19,17 @@ export function useAuth() {
 
 	async function fetchMe(force = false): Promise<UserInfo | null> {
 		if (checked.value && !force) return user.value
-		if (pendingFetch && !force) return pendingFetch
 
-		pendingFetch = (async () => {
-			try {
-				const me = await authApi.me()
-				user.value = me
-				return me
-			} catch {
-				user.value = null
-				return null
-			} finally {
-				checked.value = true
-				pendingFetch = null
-			}
-		})()
-
-		return pendingFetch
+		try {
+			const me = await authApi.me()
+			user.value = me
+			return me
+		} catch {
+			user.value = null
+			return null
+		} finally {
+			checked.value = true
+		}
 	}
 
 	async function login(email: string, passwd: string): Promise<UserInfo | null> {

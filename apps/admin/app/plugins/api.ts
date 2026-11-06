@@ -11,13 +11,16 @@ export default defineNuxtPlugin(() => {
 	const handleAuthFailure = () => {
 		user.value = null
 		checked.value = true
+		if (import.meta.server) return
 		if (router.currentRoute.value.path !== '/login') {
 			void router.push('/login')
 		}
 	}
 
 	const api = $fetch.create({
-		baseURL: config.public.apiBaseUrl,
+		baseURL: import.meta.server
+			? config.apiBaseSsr || config.public.apiBaseUrl
+			: config.public.apiBaseUrl,
 		credentials: 'include',
 		onResponse({ response }) {
 			if (isAuthFailure(response._data)) handleAuthFailure()

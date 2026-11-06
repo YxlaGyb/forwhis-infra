@@ -2,7 +2,6 @@ import Components from 'unplugin-vue-components/vite'
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineNuxtConfig({
-	ssr: false,
 	compatibilityDate: '2026-11-06',
 	devtools: { enabled: false },
 	modules: ['@nuxt/eslint'],
@@ -14,6 +13,7 @@ export default defineNuxtConfig({
 		},
 	},
 	runtimeConfig: {
+		apiBaseSsr: '',
 		public: {
 			apiBaseUrl: 'https://api.banana404.top',
 			loginBgUrl: '',
@@ -27,6 +27,14 @@ export default defineNuxtConfig({
 				resolvers: [AntDesignVueResolver({ importStyle: false, resolveIcons: true })],
 			}),
 		],
+	},
+	build: {
+		transpile: ['ant-design-vue', '@ant-design/icons-vue'],
+	},
+	nitro: {
+		externals: {
+			inline: ['lodash-es'],
+		},
 	},
 	typescript: {
 		strict: true,

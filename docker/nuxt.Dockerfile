@@ -27,13 +27,14 @@ FROM deps AS build
 
 ARG NUXT_PUBLIC_API_BASE_URL=/
 ENV NUXT_PUBLIC_API_BASE_URL=${NUXT_PUBLIC_API_BASE_URL}
+ENV NODE_OPTIONS=--max-old-space-size=2048
 
 COPY apps/admin apps/admin
 RUN pnpm --filter "./apps/admin" exec nuxt build
 
 FROM docker.1ms.run/library/node:${NODE_VERSION}-alpine AS run
 
-ENV NODE_ENV=production HOST=0.0.0.0 NITRO_PORT=23325
+ENV NODE_ENV=production HOST=0.0.0.0 NITRO_PORT=23325 NODE_OPTIONS=--max-old-space-size=384
 WORKDIR /app
 
 COPY --from=build /repo/apps/admin/.output ./.output

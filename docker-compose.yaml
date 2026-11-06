@@ -31,7 +31,10 @@ services:
     container_name: forwhis-admin
     environment:
       NUXT_PUBLIC_API_BASE_URL: ${ADMIN_API_BASE_URL:-/}
+      NUXT_API_BASE_SSR: ${ADMIN_API_BASE_SSR:-http://forwhis-api:23324}
     ports: ["23325:23325"]
+    depends_on:
+      - forwhis-api
     restart: unless-stopped
 
   postgres:

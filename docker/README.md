@@ -33,6 +33,8 @@ The root `config.toml` is not mounted or changed. PostgreSQL and Redis data pers
 $env:ADMIN_API_BASE_URL = "https://api.example.com"; docker compose up -d --build admin
 ```
 
+The app renders on the server, so it also talks to the API from inside the container: `ADMIN_API_BASE_SSR` (default `http://forwhis-api:23324`) becomes `NUXT_API_BASE_SSR`, and the incoming request's `cookie` header is forwarded there during SSR. Keep the two in sync — `NUXT_PUBLIC_API_BASE_URL` is what the browser uses after hydration, `NUXT_API_BASE_SSR` is what the renderer uses.
+
 ```powershell
 docker compose logs -f forwhis-api
 docker compose down
