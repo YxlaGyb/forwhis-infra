@@ -6,6 +6,7 @@ services:
       context: .
       dockerfile: docker/go.Dockerfile
     image: forwhis-infra:latest
+    pull_policy: build
     container_name: forwhis-infra
     ports: ["2324:2324"]
     volumes:
