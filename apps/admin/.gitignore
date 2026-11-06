@@ -3,16 +3,18 @@
 *.local
 *.log*
 
-# Dist
+# Build
 node_modules
-dist/
-
-# Profile
-.rspack-profile-*/
+.nuxt
+.output
+.data
+dist
 
 # IDE
 .vscode/*
 !.vscode/extensions.json
 .idea
 .trae
+
+# Env
 .env

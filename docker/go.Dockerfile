@@ -21,5 +21,5 @@ WORKDIR /app
 COPY --from=builder /out/forwhis-infra /usr/local/bin/forwhis-infra
 
 USER app
-EXPOSE 2324
+EXPOSE 23324
 CMD ["/usr/local/bin/forwhis-infra"]

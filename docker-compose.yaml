@@ -8,7 +8,7 @@ services:
     image: forwhis-infra:latest
     pull_policy: build
     container_name: forwhis-infra
-    ports: ["2324:2324"]
+    ports: ["23324:23324"]
     volumes:
       - ./docker/api.toml:/app/config.toml
     depends_on:

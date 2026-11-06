@@ -1,36 +1,43 @@
-# Rsbuild project
+# Admin
+
+Nuxt 4 + Vue 3 + Ant Design Vue administration app. Built as a static SPA.
 
 ## Setup
-
-Install the dependencies:
 
 ```bash
 pnpm install
 ```
 
-## Get started
+Copy `.env.example` to `.env` and point `NUXT_PUBLIC_API_BASE_URL` at the Go API.
 
-Start the dev server, and the app will be available at [http://localhost:3000](http://localhost:3000).
+## Development
 
 ```bash
 pnpm run dev
 ```
 
-Build the app for production:
+Runs at <http://localhost:3000>. From the repository root, `pnpm dev:admin` does the same.
+
+## Build
 
 ```bash
 pnpm run build
 ```
 
-Preview the production build locally:
+Produces a static site in `.output/public`. Preview it with `pnpm run preview`.
+
+`NUXT_PUBLIC_*` values are inlined at build time. Build with the production API
+URL (`NUXT_PUBLIC_API_BASE_URL=https://api.banana404.top`) or without a local
+`.env`, otherwise the local development URL ends up in the bundle.
+
+The host must serve `200.html` for unknown paths so client-side routes such as
+`/editor/12` and `/settings` resolve. For example, Cloudflare Pages needs
+`/* /index.html 200`.
+
+## Checks
 
 ```bash
-pnpm run preview
+pnpm run typecheck
+pnpm run lint
+pnpm run format
 ```
-
-## Learn more
-
-To learn more about Rsbuild, check out the following resources:
-
-- [Rsbuild documentation](https://rsbuild.rs) - explore Rsbuild features and APIs.
-- [Rsbuild GitHub repository](https://github.com/web-infra-dev/rsbuild) - your feedback and contributions are welcome!
