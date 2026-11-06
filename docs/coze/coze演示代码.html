@@ -520,7 +520,7 @@
 
     <script>
         // 修改API_BASE为完整的URL，包含http协议
-        const API_BASE = 'http://127.0.0.1:2324/api/v1';
+        const API_BASE = 'http://127.0.0.1:23324/api/v1';
         let currentUser = null;
         let currentConversationId = '';
         let isStreaming = false;
@@ -558,7 +558,7 @@
 
         async function checkAuth() {
             try {
-                // 现在会请求 http://127.0.0.1:2324/api/v1/user/me
+                // 现在会请求 http://127.0.0.1:23324/api/v1/user/me
                 const res = await fetch(`${API_BASE}/user/me`, { credentials: 'include' });
                 const data = await res.json();
                 if (data.code === 200) {

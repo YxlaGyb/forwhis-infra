@@ -9,4 +9,8 @@ Dockerfile
 *.md
 .idea
 .vscode
-apps/admin
+**/node_modules
+apps/admin/.env
+apps/admin/.nuxt
+apps/admin/.output
+apps/admin/dist

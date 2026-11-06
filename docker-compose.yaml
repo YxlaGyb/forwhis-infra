@@ -9,6 +9,8 @@ services:
     pull_policy: build
     container_name: forwhis-infra
     ports: ["23324:23324"]
+    environment:
+      PORT: "23324"
     volumes:
       - ./docker/api.toml:/app/config.toml
     depends_on:
@@ -16,6 +18,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: docker/nuxt.Dockerfile
+      args:
+        NUXT_PUBLIC_API_BASE_URL: ${ADMIN_API_BASE_URL:-/}
+    image: forwhis-admin:latest
+    pull_policy: build
+    container_name: forwhis-admin
+    environment:
+      NUXT_PUBLIC_API_BASE_URL: ${ADMIN_API_BASE_URL:-/}
+    ports: ["23325:23325"]
     restart: unless-stopped
 
   postgres:

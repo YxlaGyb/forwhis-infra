@@ -30,9 +30,14 @@ func main() {
 	app.Use("/static", static.New("./static"))
 	routes.SetupAllRoutes(app)
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "23324"
+	}
+
 	go func() {
-		fmt.Println("Server starting on :2324")
-		if err := app.Listen(":2324"); err != nil {
+		fmt.Println("Server starting on :" + port)
+		if err := app.Listen(":" + port); err != nil {
 			fmt.Printf("Server error: %v\n", err)
 		}
 	}()
