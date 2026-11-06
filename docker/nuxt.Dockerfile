@@ -17,7 +17,11 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/admin/package.json apps/admin/package.json
 
-RUN pnpm install --frozen-lockfile --ignore-scripts --filter "./apps/admin..." --registry=${NPM_REGISTRY}
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm-store \
+    --mount=type=cache,id=pnpm-metadata,target=/root/.cache/pnpm \
+    pnpm install --frozen-lockfile --ignore-scripts --prefer-offline --store-dir=/pnpm-store \
+    --network-concurrency=4 --fetch-retries=5 --fetch-timeout=180000 --fetch-retry-maxtimeout=180000 \
+    --filter "./apps/admin..." --registry=${NPM_REGISTRY}
 
 FROM deps AS build
 
