@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"strconv"
 	"strings"
 
@@ -92,13 +93,7 @@ func Register(c fiber.Ctx) error {
 	if err != nil {
 		return middleware.JSONSystemError(c, "密码加密失败喵喵", nil)
 	}
-	user, err := service.CreateUser(
-		"",
-		req.Email,
-		hashedPwd,
-		clientIP, "user",
-		true)
-
+	user, err := service.CreateRegisteredUser(req.Email, hashedPwd, clientIP)
 	if err != nil {
 		return middleware.JSONSystemError(c, "注册失败喵喵", nil)
 	}
@@ -139,6 +134,7 @@ func SendEmailCodeRegister(c fiber.Ctx) error {
 	if err != nil {
 		return middleware.JSONSystemError(c, "验证码生成失败喵喵", nil)
 	}
+
 	htmlContent := `
 		<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
 			<h2 style="color: #333;">✨ 注册验证码待查收</h2>
@@ -149,13 +145,20 @@ func SendEmailCodeRegister(c fiber.Ctx) error {
 		</div>
 	`
 
+	message := "验证码已发送喵"
+
+	if service.CountUsers() == 0 {
+		log.Printf("[注册] 首位用户 %s 的验证码: %s", req.Email, code)
+		message = "首位用户的验证码已输出到服务端控制台喵"
+	}
+
 	if !utils.SendMail("注册验证码", []string{req.Email}, htmlContent) {
 		return middleware.JSONSystemError(c, "邮件服务连接超时, 请稍后再试喵喵", nil)
 	}
 
 	codeKey := db.FormatKey("verify:code", req.Email)
 	db.SetEX(codeKey, hashedCode, codeExpirationTime)
-	return middleware.JSONSuccess(c, "验证码已发送喵", fiber.Map{"codeSalt": hashedCode})
+	return middleware.JSONSuccess(c, message, fiber.Map{"codeSalt": hashedCode})
 }
 
 func GetUserByUsername(c fiber.Ctx) error {

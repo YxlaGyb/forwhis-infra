@@ -1,0 +1,60 @@
+name: forwhis
+
+services:
+  forwhis-api:
+    image: yxlagyb/forwhis-infra:latest
+    container_name: forwhis-infra
+    ports: ["23324:23324"]
+    environment:
+      PORT: "23324"
+    volumes:
+      - ./docker/api.toml:/app/config.toml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  admin:
+    image: yxlagyb/forwhis-admin:latest
+    container_name: forwhis-admin
+    environment:
+      NUXT_PUBLIC_API_BASE_URL: ${ADMIN_API_BASE_URL:-http://127.0.0.1:23324}
+      NUXT_API_BASE_SSR: ${ADMIN_API_BASE_SSR:-http://forwhis-api:23324}
+    ports: ["23325:23325"]
+    depends_on:
+      - forwhis-api
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: forwhis
+      POSTGRES_USER: forwhis
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports: ["25432:25432"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

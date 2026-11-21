@@ -8,6 +8,7 @@ import (
 	"forwhis-infra/apps/api/internal/models"
 	"forwhis-infra/apps/api/internal/models/rbac"
 	rbacSvc "forwhis-infra/apps/api/internal/service/rbac"
+	"forwhis-infra/apps/api/pkg/constants"
 	"forwhis-infra/apps/api/pkg/db"
 	"forwhis-infra/apps/api/pkg/utils"
 
@@ -110,17 +111,27 @@ func GetUsersList() []map[string]interface{} {
 	return result
 }
 
+func newUser(name, email, password, ip string) models.User {
+	return models.User{
+		Name: name, Mail: email, Password: password,
+		Gender: models.GenderSecret, Bio: "系统默认签名, 送给每一位小可爱~",
+		CreatedAt: int(time.Now().Unix()), LastLogin: 0, LastIp: ip, IsActive: 1,
+	}
+}
+
+func registrationRole(existing int64) string {
+	if existing == 0 {
+		return string(constants.RoleSuperadmin)
+	}
+	return string(constants.RoleUser)
+}
+
 func CreateUser(name, email, password, ip, role string, autoGenerateName bool) (*models.User, error) {
 	if autoGenerateName {
 		name = GenerateRandomName()
 	}
 
-	now := int(time.Now().Unix())
-	user := models.User{
-		Name: name, Mail: email, Password: password,
-		Gender: models.GenderSecret, Bio: "系统默认签名, 送给每一位小可爱~",
-		CreatedAt: now, LastLogin: 0, LastIp: ip, IsActive: 1,
-	}
+	user := newUser(name, email, password, ip)
 	err := db.GetDB().Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&user).Error; err != nil {
 			return err
@@ -132,6 +143,31 @@ func CreateUser(name, email, password, ip, role string, autoGenerateName bool) (
 		return nil, err
 	}
 	return &user, nil
+}
+
+func CreateRegisteredUser(email, password, ip string) (*models.User, error) {
+	user := newUser(GenerateRandomName(), email, password, ip)
+	err := db.GetDB().Transaction(func(tx *gorm.DB) error {
+		var existing int64
+		if err := tx.Model(&models.User{}).Count(&existing).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&user).Error; err != nil {
+			return err
+		}
+		return rbacSvc.AssignRoleToUserTx(tx, user.Uid, registrationRole(existing), 0)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func CountUsers() int64 {
+	var count int64
+	db.GetDB().Model(&models.User{}).Count(&count)
+	return count
 }
 
 func CreateUserinfo(uid int, t, content string) {
