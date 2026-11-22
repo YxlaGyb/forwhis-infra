@@ -1,38 +1,56 @@
 <script setup lang="ts">
-import { h } from 'vue'
-import {
-	CommentOutlined,
-	DashboardOutlined,
-	FileTextOutlined,
-	FolderOutlined,
-	SafetyOutlined,
-	SettingOutlined,
-	UserOutlined,
-} from '@ant-design/icons-vue'
-
+const props = defineProps<{ compact?: boolean }>()
 const emit = defineEmits<{ select: [key: string] }>()
 
 const route = useRoute()
 
 const items = [
-	{ key: '/', icon: () => h(DashboardOutlined), label: '仪表盘' },
-	{ key: '/users', icon: () => h(UserOutlined), label: '用户管理' },
-	{ key: '/articles', icon: () => h(FileTextOutlined), label: '内容管理' },
-	{ key: '/categories', icon: () => h(FolderOutlined), label: '分类管理' },
-	{ key: '/comments', icon: () => h(CommentOutlined), label: '评论管理' },
-	{ key: '/reviews', icon: () => h(SafetyOutlined), label: '审核管理' },
-	{ key: '/settings', icon: () => h(SettingOutlined), label: '系统设置' },
+	{ value: '/', icon: 'layout-dashboard', label: '仪表盘' },
+	{ value: '/users', icon: 'users', label: '用户管理' },
+	{ value: '/articles', icon: 'file-text', label: '内容管理' },
+	{ value: '/categories', icon: 'folder-tree', label: '分类管理' },
+	{ value: '/comments', icon: 'message-square', label: '评论管理' },
+	{ value: '/reviews', icon: 'shield-check', label: '审核管理' },
+	{ value: '/settings', icon: 'settings-2', label: '系统设置' },
 ]
 
-const selectedKeys = computed(() => [route.path])
+function handleChange(event: Event) {
+	const value = (event as CustomEvent<{ value?: string }>).detail?.value
+	if (value) emit('select', value)
+}
 </script>
 
 <template>
-	<a-menu
-		mode="inline"
-		:items="items"
-		:selected-keys="selectedKeys"
-		:style="{ borderRight: 0 }"
-		@click="(info: { key: string | number }) => emit('select', String(info.key))"
-	/>
+	<nav class="nav" :class="{ 'is-compact': props.compact }">
+		<mao-menu :value="route.path" orientation="vertical" label="主导航" @mt-change="handleChange">
+			<mao-menu-item
+				v-for="item in items"
+				:key="item.value"
+				:value="item.value"
+				:icon="item.icon"
+				:title="props.compact ? item.label : undefined"
+			>
+				<span class="nav-label">{{ item.label }}</span>
+			</mao-menu-item>
+		</mao-menu>
+	</nav>
 </template>
+
+<style scoped>
+.nav {
+	padding: 12px 8px;
+}
+
+.nav.is-compact {
+	padding: 12px 6px;
+}
+
+.nav.is-compact .nav-label {
+	display: none;
+}
+
+.nav.is-compact mao-menu-item {
+	justify-content: center;
+	padding: 9px 0;
+}
+</style>

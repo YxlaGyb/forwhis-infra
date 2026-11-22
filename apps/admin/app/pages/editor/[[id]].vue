@@ -1,25 +1,6 @@
 <script setup lang="ts">
-import { computed, h, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useEventListener, useMediaQuery } from '@vueuse/core'
-import {
-	BoldOutlined,
-	CloseOutlined,
-	CodeOutlined,
-	DeleteOutlined,
-	EyeOutlined,
-	ItalicOutlined,
-	LinkOutlined,
-	OrderedListOutlined,
-	PictureOutlined,
-	PlusOutlined,
-	SaveOutlined,
-	SendOutlined,
-	SettingOutlined,
-	SmileOutlined,
-	TagOutlined,
-	UnorderedListOutlined,
-} from '@ant-design/icons-vue'
-import type { Component } from 'vue'
 import { errorMessage } from '~/api/client'
 import { contentsApi, metasApi } from '~/api'
 import type { Category, ContentType } from '~/types/domain'
@@ -28,14 +9,14 @@ import { CONTENT_LIMITS, EDITOR_TITLE_MAX_LENGTH } from '~/utils/constants'
 definePageMeta({ layout: 'admin' })
 
 interface ToolbarItem {
-	icon: Component
+	icon: string
 	title: string
 	action: () => void
 }
 
 const route = useRoute()
 const config = useRuntimeConfig()
-const { message } = useNotify()
+const { message, modal } = useNotify()
 const isMobile = useMediaQuery('(max-width: 768px)')
 
 const routeId = computed(() => {
@@ -48,12 +29,11 @@ const routeId = computed(() => {
 const isEditMode = computed(() => routeId.value !== null)
 const currentCid = ref<number | null>(routeId.value)
 
-const editorRoot = ref<HTMLElement | null>(null)
+const contentField = ref<HTMLElement | null>(null)
 const saving = ref(false)
 const publishing = ref(false)
 const lastSaved = ref<Date | null>(null)
 const isDirty = ref(false)
-const showToolbar = ref(true)
 const settingsOpen = ref(false)
 const categories = ref<Category[]>([])
 
@@ -72,22 +52,21 @@ const typeLabel = computed(() =>
 	formData.type === 'post' ? '帖子' : formData.type === 'article' ? '文章' : '页面',
 )
 const contentCount = computed(() => formData.text.replace(/\s/g, '').length)
-const titleCount = computed(() => formData.title.length)
 
 const toolbarItems: ToolbarItem[] = [
-	{ icon: PictureOutlined, title: '图片', action: () => insertMarkdown('![图片](', ')') },
-	{ icon: SmileOutlined, title: '表情', action: () => message.info('表情功能开发中') },
-	{ icon: TagOutlined, title: '话题', action: () => insertMarkdown('#话题#') },
-	{ icon: BoldOutlined, title: '粗体', action: () => insertMarkdown('**', '**') },
-	{ icon: ItalicOutlined, title: '斜体', action: () => insertMarkdown('*', '*') },
-	{ icon: UnorderedListOutlined, title: '列表', action: () => insertMarkdown('\n- ') },
-	{ icon: OrderedListOutlined, title: '有序列表', action: () => insertMarkdown('\n1. ') },
-	{ icon: CodeOutlined, title: '代码', action: () => insertMarkdown('```\n', '\n```') },
-	{ icon: LinkOutlined, title: '链接', action: () => insertMarkdown('[', '](url)') },
+	{ icon: 'image', title: '图片', action: () => insertMarkdown('![图片](', ')') },
+	{ icon: 'smile', title: '表情', action: () => message.info('表情功能开发中') },
+	{ icon: 'hash', title: '话题', action: () => insertMarkdown('#话题#') },
+	{ icon: 'bold', title: '粗体', action: () => insertMarkdown('**', '**') },
+	{ icon: 'italic', title: '斜体', action: () => insertMarkdown('*', '*') },
+	{ icon: 'list', title: '列表', action: () => insertMarkdown('\n- ') },
+	{ icon: 'list-ordered', title: '有序列表', action: () => insertMarkdown('\n1. ') },
+	{ icon: 'code', title: '代码', action: () => insertMarkdown('```\n', '\n```') },
+	{ icon: 'link', title: '链接', action: () => insertMarkdown('[', '](url)') },
 ]
 
 function getTextarea(): HTMLTextAreaElement | null {
-	return editorRoot.value?.querySelector('textarea') ?? null
+	return contentField.value?.shadowRoot?.querySelector('textarea') ?? null
 }
 
 function insertMarkdown(before: string, after = '') {
@@ -108,25 +87,24 @@ function insertMarkdown(before: string, after = '') {
 	})
 }
 
+function readValue(event: Event): string {
+	return (event as CustomEvent<{ value?: string }>).detail?.value ?? ''
+}
+
 function handleTitleInput(event: Event) {
-	const input = event.target as HTMLInputElement
-	if (input.value.length <= EDITOR_TITLE_MAX_LENGTH) {
-		formData.title = input.value
-		isDirty.value = true
-	} else {
-		input.value = formData.title
-	}
+	formData.title = readValue(event)
+	isDirty.value = true
 }
 
 function handleContentInput(event: Event) {
-	const textarea = event.target as HTMLTextAreaElement
-	const value = textarea.value
-	if (value.replace(/\s/g, '').length <= contentLimit.value) {
-		formData.text = value
-		isDirty.value = true
-	} else {
-		textarea.value = formData.text
+	const value = readValue(event)
+	if (value.replace(/\s/g, '').length > contentLimit.value) {
+		const textarea = getTextarea()
+		if (textarea) textarea.value = formData.text
+		return
 	}
+	formData.text = value
+	isDirty.value = true
 }
 
 function selectType(type: ContentType) {
@@ -230,6 +208,14 @@ async function handleSave(publish = false) {
 
 async function handleDelete() {
 	if (!currentCid.value) return
+	const confirmed = await modal.confirm({
+		title: `确定删除这个${typeLabel.value}吗？`,
+		content: '删除后无法恢复',
+		okText: '确定',
+		cancelText: '取消',
+		okType: 'danger',
+	})
+	if (!confirmed) return
 	try {
 		await contentsApi.remove(currentCid.value)
 		message.success('删除成功')
@@ -279,434 +265,298 @@ onMounted(async () => {
 </script>
 
 <template>
-	<div ref="editorRoot">
-		<div v-if="isMobile" class="editor-mobile">
-			<div class="mobile-top">
-				<a-button type="text" :icon="h(CloseOutlined)" @click="navigateTo('/articles')" />
-				<div class="mobile-actions">
-					<a-button type="text" size="small" :loading="saving" @click="handleSave(false)">
-						草稿箱
-					</a-button>
-					<a-button type="primary" size="small" :loading="publishing" @click="handleSave(true)">
-						发布
-					</a-button>
-				</div>
+	<div class="editor">
+		<header class="editor-bar">
+			<div class="bar-group">
+				<mao-button variant="flat" size="sm" aria-label="返回列表" @click="navigateTo('/articles')">
+					<mao-icon name="x" :size="18" />
+				</mao-button>
+				<span class="editor-heading">
+					{{ isEditMode ? `编辑${typeLabel}` : `新建${typeLabel}` }}
+				</span>
+				<mao-badge v-if="isDirty" tone="accent">未保存</mao-badge>
 			</div>
 
-			<div class="mobile-body" :style="{ paddingBottom: showToolbar ? '140px' : '90px' }">
-				<template v-if="!isPost">
-					<div class="mobile-title-wrap">
-						<a-input
-							class="mobile-title"
-							placeholder="标题（必填）"
-							:value="formData.title"
-							@input="handleTitleInput"
-						/>
-						<div class="counter" :class="{ limit: titleCount >= EDITOR_TITLE_MAX_LENGTH }">
-							{{ titleCount }}/{{ EDITOR_TITLE_MAX_LENGTH }}
-						</div>
-					</div>
-					<a-divider :style="{ margin: '8px 0' }" />
-				</template>
+			<div class="bar-group bar-actions">
+				<span v-if="lastSaved" class="meta hide-sm">上次保存 {{ formatTime(lastSaved) }}</span>
+				<span class="meta nowrap">{{ contentCount }}/{{ contentLimit }} 字</span>
+				<mao-button
+					v-if="isMobile"
+					variant="flat"
+					size="sm"
+					aria-label="内容设置"
+					@click="settingsOpen = true"
+				>
+					<mao-icon name="settings-2" :size="18" />
+				</mao-button>
+				<mao-button
+					variant="bordered"
+					size="sm"
+					:disabled="(!isEditMode || saving) || undefined"
+					@click="handlePreview"
+				>
+					<mao-icon name="eye" :size="15" />
+					<span class="hide-sm">预览</span>
+				</mao-button>
+				<mao-button
+					variant="bordered"
+					size="sm"
+					:loading="saving || undefined"
+					@click="handleSave(false)"
+				>
+					<mao-icon name="save" :size="15" />
+					<span class="hide-sm">保存草稿</span>
+				</mao-button>
+				<mao-button
+					color="primary"
+					size="sm"
+					:loading="publishing || undefined"
+					@click="handleSave(true)"
+				>
+					<mao-icon name="send" :size="15" />
+					{{ formData.status === 'publish' ? '更新发布' : '立即发布' }}
+				</mao-button>
+				<mao-button
+					v-if="isEditMode"
+					color="danger"
+					variant="bordered"
+					size="sm"
+					@click="handleDelete"
+				>
+					<mao-icon name="trash-2" :size="15" />
+					<span class="hide-sm">删除</span>
+				</mao-button>
+			</div>
+		</header>
 
-				<div class="mobile-content">
-					<a-textarea
-						class="mobile-textarea"
-						:placeholder="isPost ? '分享你的想法...' : '请尽情发挥吧'"
-						:value="formData.text"
-						@input="handleContentInput"
+		<div class="editor-toolbar" role="toolbar" aria-label="Markdown 格式">
+			<mao-tooltip v-for="item in toolbarItems" :key="item.title" :content="item.title">
+				<mao-button variant="flat" size="sm" :aria-label="item.title" @click="item.action">
+					<mao-icon :name="item.icon" :size="16" />
+				</mao-button>
+			</mao-tooltip>
+		</div>
+
+		<div class="editor-body">
+			<div class="editor-main">
+				<div class="editor-sheet">
+					<mao-text-field
+						v-if="!isPost"
+						class="editor-title"
+						:value="formData.title"
+						placeholder="请输入标题..."
+						:maxlength="EDITOR_TITLE_MAX_LENGTH"
+						show-count
+						@mt-input="handleTitleInput"
 					/>
-					<div class="counter" :class="{ limit: contentCount >= contentLimit }">
-						{{ contentCount }}/{{ contentLimit }}
-					</div>
+					<mao-text-area
+						ref="contentField"
+						class="editor-content"
+						:value="formData.text"
+						:placeholder="isPost ? '分享你的想法...' : '开始写作...'"
+						rows="16"
+						@mt-input="handleContentInput"
+					/>
+				</div>
+				<div class="editor-foot">
+					<span class="meta">支持 Markdown 语法</span>
+					<span class="meta">Ctrl+S 保存 · {{ contentCount }}/{{ contentLimit }} 字</span>
 				</div>
 			</div>
 
-			<div class="mobile-toolbar">
-				<div class="mobile-toolbar-row">
-					<div class="mobile-toolbar-icons">
-						<div
-							v-for="item in toolbarItems.slice(0, 5)"
-							:key="item.title"
-							class="toolbar-icon"
-							@click="item.action"
-						>
-							<component :is="item.icon" />
-						</div>
-						<div class="toolbar-icon" @click="showToolbar = !showToolbar">
-							<PlusOutlined />
-						</div>
-					</div>
-					<div class="toolbar-icon" @click="settingsOpen = true">
-						<SettingOutlined />
-					</div>
-				</div>
-
-				<div v-if="showToolbar" class="mobile-toolbar-extra">
-					<a-tooltip v-for="item in toolbarItems.slice(5)" :key="item.title" :title="item.title">
-						<div class="toolbar-icon small" @click="item.action">
-							<component :is="item.icon" />
-						</div>
-					</a-tooltip>
-				</div>
-			</div>
-
-			<a-drawer
-				title="内容设置"
-				placement="bottom"
-				:open="settingsOpen"
-				height="50%"
-				@close="settingsOpen = false"
-			>
+			<aside v-if="!isMobile" class="editor-aside">
 				<EditorSettings
 					:categories="categories"
 					:category-mid="formData.categoryMid"
 					:type="formData.type"
 					:status="formData.status"
 					:type-label="typeLabel"
-					:can-delete="!!currentCid"
+					:can-delete="false"
 					@select-category="selectCategory"
 					@select-type="selectType"
 					@select-status="selectStatus"
-					@delete="handleDelete"
 				/>
-			</a-drawer>
+			</aside>
 		</div>
 
-		<div v-else class="editor-desktop">
-			<div class="desktop-top">
-				<div class="desktop-top-left">
-					<a-button :icon="h(CloseOutlined)" @click="navigateTo('/articles')" />
-					<span class="editor-heading">{{
-						isEditMode ? `编辑${typeLabel}` : `新建${typeLabel}`
-					}}</span>
-					<a-tag v-if="isDirty" color="orange">未保存</a-tag>
-				</div>
-
-				<div class="desktop-top-right">
-					<a-typography-text v-if="lastSaved" type="secondary" class="tiny-text">
-						上次保存: {{ formatTime(lastSaved) }}
-					</a-typography-text>
-					<a-typography-text type="secondary" class="tiny-text">
-						{{ contentCount }}/{{ contentLimit }} 字
-					</a-typography-text>
-					<a-button :icon="h(EyeOutlined)" :disabled="!isEditMode" @click="handlePreview">
-						预览
-					</a-button>
-					<a-button :icon="h(SaveOutlined)" :loading="saving" @click="handleSave(false)">
-						保存草稿
-					</a-button>
-					<a-button
-						type="primary"
-						:icon="h(SendOutlined)"
-						:loading="publishing"
-						@click="handleSave(true)"
-					>
-						{{ formData.status === 'publish' ? '更新发布' : '立即发布' }}
-					</a-button>
-					<a-popconfirm
-						v-if="isEditMode"
-						:title="`确定删除这个${typeLabel}吗？`"
-						description="删除后无法恢复"
-						ok-text="确定"
-						cancel-text="取消"
-						@confirm="handleDelete"
-					>
-						<a-button danger :icon="h(DeleteOutlined)">删除</a-button>
-					</a-popconfirm>
-				</div>
-			</div>
-
-			<div class="desktop-toolbar">
-				<a-tooltip v-for="item in toolbarItems" :key="item.title" :title="item.title">
-					<a-button type="text" size="small" @click="item.action">
-						<template #icon><component :is="item.icon" /></template>
-					</a-button>
-				</a-tooltip>
-			</div>
-
-			<div class="desktop-body">
-				<div class="editor-card">
-					<template v-if="!isPost">
-						<div class="editor-title-wrap">
-							<a-input
-								class="editor-title"
-								placeholder="请输入标题..."
-								:value="formData.title"
-								@input="handleTitleInput"
-							/>
-						</div>
-						<a-divider :style="{ margin: 0 }" />
-					</template>
-
-					<div class="editor-body">
-						<a-textarea
-							class="editor-textarea"
-							:placeholder="isPost ? '分享你的想法...' : '开始写作...'"
-							:value="formData.text"
-							@input="handleContentInput"
-						/>
-					</div>
-
-					<div class="editor-footer">
-						<a-typography-text type="secondary" class="tiny-text"
-							>支持 Markdown 语法</a-typography-text
-						>
-						<a-typography-text type="secondary" class="tiny-text">
-							快捷键: Ctrl+S 保存 | {{ contentCount }}/{{ contentLimit }} 字
-						</a-typography-text>
-					</div>
-				</div>
-
-				<div class="settings-panel">
-					<EditorSettings
-						:categories="categories"
-						:category-mid="formData.categoryMid"
-						:type="formData.type"
-						:status="formData.status"
-						:type-label="typeLabel"
-						:can-delete="false"
-						@select-category="selectCategory"
-						@select-type="selectType"
-						@select-status="selectStatus"
-					/>
-				</div>
-			</div>
-		</div>
+		<mao-drawer
+			v-if="isMobile"
+			:open="settingsOpen || undefined"
+			heading="内容设置"
+			placement="end"
+			size="sm"
+			closable
+			@mt-close="settingsOpen = false"
+		>
+			<EditorSettings
+				:categories="categories"
+				:category-mid="formData.categoryMid"
+				:type="formData.type"
+				:status="formData.status"
+				:type-label="typeLabel"
+				:can-delete="!!currentCid"
+				@select-category="selectCategory"
+				@select-type="selectType"
+				@select-status="selectStatus"
+				@delete="handleDelete"
+			/>
+		</mao-drawer>
 	</div>
 </template>
 
 <style scoped>
-.editor-mobile {
+.editor {
 	display: flex;
 	flex-direction: column;
 	height: 100vh;
-	background: #fff;
-	overflow: hidden;
+	height: 100dvh;
+	min-height: 0;
+	background: var(--mt-bg);
+	color: var(--mt-text);
 }
 
-.mobile-top {
+.editor-bar {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
-	padding: 12px 16px;
-	border-bottom: 1px solid #f0f0f0;
-	flex-shrink: 0;
-}
-
-.mobile-actions {
-	display: flex;
-	gap: 12px;
-}
-
-.mobile-body {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	padding: 16px;
-	overflow: auto;
-}
-
-.mobile-title-wrap {
-	margin-bottom: 12px;
-	flex-shrink: 0;
-}
-
-.mobile-title {
-	font-size: 20px;
-	font-weight: 500;
-}
-
-.mobile-content {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-}
-
-.mobile-textarea {
-	flex: 1;
-	border: none;
-	resize: none;
-	font-size: 16px;
-	line-height: 1.8;
-	padding: 0;
-	min-height: 200px;
-}
-
-.counter {
-	text-align: right;
-	font-size: 12px;
-	color: #999;
-	margin-top: 4px;
-}
-
-.counter.limit {
-	color: #ff4d4f;
-}
-
-.mobile-toolbar {
-	position: fixed;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	background: #fafafa;
-	z-index: 100;
-	border-top: 1px solid #f0f0f0;
-}
-
-.mobile-toolbar-row {
-	display: flex;
 	justify-content: space-between;
-	align-items: center;
-	padding: 8px 16px;
-}
-
-.mobile-toolbar-icons {
-	display: flex;
-	gap: 20px;
-}
-
-.toolbar-icon {
-	cursor: pointer;
-	color: #666;
-	font-size: 20px;
-}
-
-.toolbar-icon.small {
-	font-size: 18px;
-}
-
-.mobile-toolbar-extra {
-	display: flex;
-	gap: 20px;
-	padding: 8px 16px;
-	border-top: 1px solid #f5f5f5;
-	overflow-x: auto;
-}
-
-.editor-desktop {
-	display: flex;
-	flex-direction: column;
-	height: 100vh;
-	background: #f5f5f5;
-}
-
-.desktop-top {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 12px 24px;
-	background: #fff;
-	border-bottom: 1px solid #e8e8e8;
-	flex-shrink: 0;
-	gap: 12px;
+	gap: var(--mt-space-3);
+	padding: 10px 20px;
+	background: var(--mt-surface);
+	border-bottom: 1px solid var(--mt-border);
+	flex: none;
 	flex-wrap: wrap;
 }
 
-.desktop-top-left,
-.desktop-top-right {
+.bar-group {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: var(--mt-space-2);
+	min-width: 0;
+}
+
+.bar-actions {
 	flex-wrap: wrap;
+	justify-content: flex-end;
 }
 
 .editor-heading {
+	font-size: var(--mt-fs-md);
 	font-weight: 600;
-	font-size: 16px;
+	white-space: nowrap;
 }
 
-.tiny-text {
-	font-size: 12px;
+.meta {
+	font-size: var(--mt-fs-xs);
+	color: var(--mt-muted);
 }
 
-.desktop-toolbar {
+.editor-toolbar {
 	display: flex;
-	padding: 8px 24px;
-	background: #fff;
-	border-bottom: 1px solid #e8e8e8;
-	gap: 4px;
-	flex-shrink: 0;
-}
-
-.desktop-body {
-	flex: 1;
-	display: flex;
-	padding: 24px;
-	overflow: auto;
-	gap: 24px;
-}
-
-.editor-card {
-	flex: 1;
-	max-width: 900px;
-	background: #fff;
-	border-radius: 8px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-	display: flex;
-	flex-direction: column;
-	min-height: 0;
-}
-
-.editor-title-wrap {
-	padding: 32px 40px 16px;
-}
-
-.editor-title {
-	font-size: 32px;
-	font-weight: 600;
+	align-items: center;
+	gap: 2px;
+	padding: 6px 16px;
+	background: var(--mt-surface);
+	border-bottom: 1px solid var(--mt-border);
+	overflow-x: auto;
+	flex: none;
 }
 
 .editor-body {
 	flex: 1;
-	display: flex;
-	flex-direction: column;
 	min-height: 0;
-}
-
-.editor-textarea {
-	flex: 1;
-	border: none;
-	resize: none;
-	font-size: 16px;
-	line-height: 1.8;
-	padding: 24px 40px;
-	min-height: 400px;
-}
-
-.editor-footer {
 	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 12px 40px;
-	border-top: 1px solid #f0f0f0;
-	background: #fafafa;
-	border-radius: 0 0 8px 8px;
+	gap: var(--mt-space-4);
+	padding: var(--mt-space-4);
+	overflow: auto;
 }
 
-.settings-panel {
-	width: 280px;
-	flex-shrink: 0;
+.editor-main {
+	flex: 1;
+	min-width: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: var(--mt-space-2);
 }
 
-@media (max-width: 1024px) {
-	.desktop-body {
+.editor-sheet {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--mt-space-3);
+	padding: var(--mt-space-4) var(--mt-space-5);
+	background: var(--mt-surface);
+	border: 1px solid var(--mt-border);
+	border-radius: var(--mt-radius-lg);
+}
+
+.editor-title::part(input) {
+	font-size: var(--mt-fs-xl);
+	font-weight: 600;
+	padding-top: 4px;
+	padding-bottom: 4px;
+}
+
+.editor-content::part(textarea) {
+	min-height: 46vh;
+	font-size: var(--mt-fs-md);
+	line-height: 1.8;
+	resize: vertical;
+}
+
+.editor-foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--mt-space-3);
+	flex-wrap: wrap;
+	padding: 0 2px;
+}
+
+.editor-aside {
+	width: 288px;
+	flex: none;
+	display: flex;
+	flex-direction: column;
+	gap: var(--mt-space-3);
+}
+
+@media (max-width: 900px) {
+	.editor-body {
 		flex-direction: column;
 	}
 
-	.settings-panel {
+	.editor-aside {
 		width: 100%;
-		flex-direction: row;
-		flex-wrap: wrap;
+	}
+}
+
+@media (max-width: 768px) {
+	.editor-bar {
+		padding: 8px 12px;
+		gap: var(--mt-space-2);
 	}
 
-	.settings-panel > * {
-		flex: 1;
-		min-width: 240px;
+	.editor-toolbar {
+		padding: 4px 10px;
+	}
+
+	.editor-body {
+		padding: var(--mt-space-3);
+		gap: var(--mt-space-3);
+	}
+
+	.editor-sheet {
+		padding: var(--mt-space-3);
+	}
+
+	.editor-content::part(textarea) {
+		min-height: 40vh;
+	}
+
+	.meta.hide-sm,
+	.hide-sm {
+		display: none;
 	}
 }
 </style>

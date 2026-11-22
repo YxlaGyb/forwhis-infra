@@ -1,14 +1,4 @@
 <script setup lang="ts">
-import { computed, h, nextTick, onMounted, reactive, ref } from 'vue'
-import type { FormInstance } from 'ant-design-vue'
-import {
-	DeleteOutlined,
-	EditOutlined,
-	FolderOpenOutlined,
-	FolderOutlined,
-	PlusOutlined,
-	SearchOutlined,
-} from '@ant-design/icons-vue'
 import { errorMessage } from '~/api/client'
 import { metasApi } from '~/api'
 import type { Category } from '~/types/domain'
@@ -19,34 +9,30 @@ interface CategoryNode extends Category {
 	children?: CategoryNode[]
 }
 
-interface TreeItem {
-	key: number
-	title: string
-	item: CategoryNode
-	children?: TreeItem[]
+interface CategoryRow extends CategoryNode {
+	depth: number
 }
 
-const { message } = useNotify()
+interface FormHost extends HTMLElement {
+	submit: () => void
+	clearErrors: () => void
+}
+
+const { message, modal } = useNotify()
 
 const categories = ref<CategoryNode[]>([])
 const expandedKeys = ref<number[]>([])
-const modalOpen = ref(false)
+const dialogOpen = ref(false)
 const saving = ref(false)
 const editingCategory = ref<CategoryNode | null>(null)
-const formRef = ref<FormInstance>()
+const form = ref({ name: '', slug: '', parent: '', description: '' })
+const formEl = ref<FormHost | null>(null)
 
-const formState = reactive({
-	name: '',
-	slug: '',
-	parent: undefined as number | undefined,
-	description: '',
-})
-
-const { searchText, filtered } = useSearchFilter<CategoryNode>(categories, [
-	'name',
-	'slug',
-	'description',
-])
+const RULES = {
+	name: '[{"rule":"required","message":"请输入分类名称"}]',
+	slug: '[{"rule":"required","message":"请输入别名"},{"rule":"pattern","value":"^[a-z0-9-]+$","message":"只能使用小写字母、数字和连字符"}]',
+	description: '[{"rule":"maxLength","value":200,"message":"描述不能超过 200 个字符"}]',
+}
 
 function buildTree(items: Category[]): CategoryNode[] {
 	const map = new Map<number, CategoryNode>()
@@ -69,6 +55,36 @@ function buildTree(items: Category[]): CategoryNode[] {
 	return roots
 }
 
+function flatten(nodes: CategoryNode[], depth = 0, out: CategoryRow[] = []): CategoryRow[] {
+	nodes.forEach((node) => {
+		out.push({ ...node, depth })
+		if (node.children?.length) flatten(node.children, depth + 1, out)
+	})
+	return out
+}
+
+const flatRows = computed(() => flatten(categories.value))
+const { searchText, filtered } = useSearchFilter<CategoryRow>(flatRows, ['name', 'slug', 'description'])
+
+const rows = computed(() => {
+	if (searchText.value.trim()) return filtered.value
+	return flatRows.value.filter((row) => row.depth === 0 || expandedKeys.value.includes(row.parent ?? -1))
+})
+
+function hasChildren(row: CategoryRow): boolean {
+	return Boolean(row.children?.length)
+}
+
+function isExpanded(row: CategoryRow): boolean {
+	return expandedKeys.value.includes(row.mid)
+}
+
+function toggleExpand(row: CategoryRow) {
+	expandedKeys.value = isExpanded(row)
+		? expandedKeys.value.filter((key) => key !== row.mid)
+		: [...expandedKeys.value, row.mid]
+}
+
 async function fetchCategories() {
 	try {
 		const items = (await metasApi.list('category')) || []
@@ -81,25 +97,25 @@ async function fetchCategories() {
 
 function openCreate() {
 	editingCategory.value = null
-	Object.assign(formState, { name: '', slug: '', parent: undefined, description: '' })
-	modalOpen.value = true
-	nextTick(() => formRef.value?.clearValidate())
+	form.value = { name: '', slug: '', parent: '', description: '' }
+	dialogOpen.value = true
+	nextTick(() => formEl.value?.clearErrors())
 }
 
-function openEdit(record: CategoryNode) {
-	editingCategory.value = record
-	Object.assign(formState, {
-		name: record.name,
-		slug: record.slug,
-		parent: record.parent,
-		description: record.description || '',
-	})
-	modalOpen.value = true
-	nextTick(() => formRef.value?.clearValidate())
+function openEdit(row: CategoryRow) {
+	editingCategory.value = row
+	form.value = {
+		name: row.name,
+		slug: row.slug,
+		parent: row.parent ? String(row.parent) : '',
+		description: row.description || '',
+	}
+	dialogOpen.value = true
+	nextTick(() => formEl.value?.clearErrors())
 }
 
-function closeModal() {
-	modalOpen.value = false
+function closeDialog() {
+	dialogOpen.value = false
 	editingCategory.value = null
 }
 
@@ -113,23 +129,41 @@ async function handleDelete(mid: number) {
 	}
 }
 
-async function handleOk() {
-	try {
-		await formRef.value?.validate()
-	} catch {
+function requestDelete(row: CategoryRow) {
+	void modal.confirm({
+		title: '确定要删除这个分类吗？',
+		content: '删除后无法恢复, 相关文章将失去分类',
+		okText: '确定',
+		cancelText: '取消',
+		okType: 'danger',
+		onOk: () => handleDelete(row.mid),
+	})
+}
+
+async function handleSubmit(event: Event) {
+	const values = (event as CustomEvent<{ values?: Record<string, string> }>).detail?.values ?? {}
+	const parent = values.parent?.trim() ? Number(values.parent) : undefined
+	if (parent !== undefined && !Number.isFinite(parent)) {
+		message.warning('父分类 ID 必须是数字')
 		return
 	}
 
 	saving.value = true
 	try {
+		const payload = {
+			name: values.name ?? '',
+			slug: values.slug ?? '',
+			parent,
+			description: values.description ?? '',
+		}
 		if (editingCategory.value) {
-			await metasApi.update(editingCategory.value.mid, { ...formState })
+			await metasApi.update(editingCategory.value.mid, payload)
 			message.success('更新成功')
 		} else {
-			await metasApi.create({ ...formState, type: 'category' })
+			await metasApi.create({ ...payload, type: 'category' })
 			message.success('创建成功')
 		}
-		closeModal()
+		closeDialog()
 		await fetchCategories()
 	} catch (error) {
 		message.error(errorMessage(error, editingCategory.value ? '更新失败' : '创建失败'))
@@ -138,181 +172,191 @@ async function handleOk() {
 	}
 }
 
-function toTreeData(items: CategoryNode[]): TreeItem[] {
-	return items.map((item) => ({
-		key: item.mid,
-		title: item.name,
-		item,
-		children: item.children?.length ? toTreeData(item.children) : undefined,
-	}))
-}
-
-const treeData = computed(() => toTreeData(filtered.value))
-
 onMounted(fetchCategories)
 </script>
 
 <template>
-	<div>
-		<a-card>
-			<div class="page-header">
-				<a-typography-title :level="4" :style="{ margin: 0 }">
-					<FolderOutlined :style="{ marginRight: '8px' }" />
-					分类管理
-				</a-typography-title>
-				<a-button type="primary" :icon="h(PlusOutlined)" @click="openCreate"> 新增分类 </a-button>
+	<div class="page">
+		<header class="page-head">
+			<div>
+				<h1 class="page-title">分类管理</h1>
+				<p class="page-desc">维护内容分类的层级、别名与描述</p>
 			</div>
+			<mao-button color="primary" @click="openCreate">
+				<mao-icon name="plus" :size="15" />
+				新增分类
+			</mao-button>
+		</header>
 
-			<a-input
-				v-model:value="searchText"
-				placeholder="搜索分类名称"
-				allow-clear
-				:style="{ width: '300px', maxWidth: '100%', marginBottom: '16px' }"
-			>
-				<template #prefix><SearchOutlined /></template>
-			</a-input>
+		<mao-card padding="md">
+			<div class="mt-card-body">
+				<mao-text-field
+					:value="searchText"
+					icon="search"
+					clearable
+					placeholder="搜索分类名称"
+					aria-label="搜索分类"
+					class="search"
+					@mt-input="searchText = ($event as CustomEvent<{ value: string }>).detail.value"
+				/>
 
-			<a-tree
-				:tree-data="treeData"
-				:expanded-keys="expandedKeys"
-				:motion="false"
-				show-icon
-				:style="{ background: 'transparent' }"
-				@update:expanded-keys="(keys: number[]) => (expandedKeys = keys)"
-			>
-				<template #icon="{ expanded }">
-					<FolderOpenOutlined v-if="expanded" />
-					<FolderOutlined v-else />
-				</template>
-				<template #title="{ dataRef }">
-					<div class="category-node">
-						<div class="category-node-main">
-							<span class="category-name">{{ dataRef.item.name }}</span>
-							<span class="category-slug">/{{ dataRef.item.slug }}</span>
-							<span v-if="dataRef.item.count > 0" class="category-count">
-								({{ dataRef.item.count }} 篇文章)
-							</span>
-						</div>
-						<div class="category-actions" @click.stop>
-							<a-tooltip title="编辑">
-								<a-button
-									type="text"
-									size="small"
-									:icon="h(EditOutlined)"
-									@click="openEdit(dataRef.item)"
-								/>
-							</a-tooltip>
-							<a-popconfirm
-								title="确定要删除这个分类吗？"
-								description="删除后无法恢复, 相关文章将失去分类"
-								ok-text="确定"
-								cancel-text="取消"
-								@confirm="handleDelete(dataRef.item.mid)"
-							>
-								<a-button type="text" size="small" danger :icon="h(DeleteOutlined)" />
-							</a-popconfirm>
-						</div>
-					</div>
-				</template>
-			</a-tree>
-		</a-card>
+				<mao-empty v-if="!rows.length" icon="folder-open" title="暂无分类" description="创建第一个分类后就会出现在这里" />
 
-		<a-modal
-			:title="editingCategory ? '编辑分类' : '新增分类'"
-			:open="modalOpen"
-			:width="500"
-			:confirm-loading="saving"
-			ok-text="确定"
-			cancel-text="取消"
-			@ok="handleOk"
-			@cancel="closeModal"
+				<ul v-else class="cat-list">
+					<li v-for="row in rows" :key="row.mid" class="cat-item" :class="{ 'is-child': row.depth > 0 }">
+						<button
+							v-if="hasChildren(row)"
+							type="button"
+							class="cat-toggle"
+							:aria-expanded="isExpanded(row)"
+							:aria-label="isExpanded(row) ? '收起子分类' : '展开子分类'"
+							@click="toggleExpand(row)"
+						>
+							<mao-icon :name="isExpanded(row) ? 'chevron-down' : 'chevron-right'" :size="15" />
+						</button>
+						<span v-else class="cat-toggle is-placeholder" aria-hidden="true"/>
+
+						<mao-icon :name="row.depth > 0 ? 'folder' : 'folder-open'" :size="16" class="cat-icon" />
+
+						<span class="cat-name">{{ row.name }}</span>
+						<span class="cat-slug">/{{ row.slug }}</span>
+						<span v-if="(row.count ?? 0) > 0" class="cat-count">{{ row.count ?? 0 }} 篇</span>
+
+						<span class="cat-actions">
+							<mao-button size="sm" variant="flat" aria-label="编辑分类" @click="openEdit(row)">
+								<mao-icon name="pencil" :size="15" />
+							</mao-button>
+							<mao-button size="sm" variant="flat" color="danger" aria-label="删除分类" @click="requestDelete(row)">
+								<mao-icon name="trash-2" :size="15" />
+							</mao-button>
+						</span>
+					</li>
+				</ul>
+			</div>
+		</mao-card>
+
+		<mao-dialog
+			:open="dialogOpen || undefined"
+			:heading="editingCategory ? '编辑分类' : '新增分类'"
+			size="sm"
+			closable
+			@mt-close="closeDialog"
 		>
-			<a-form ref="formRef" :model="formState" layout="vertical">
-				<a-form-item
-					label="分类名称"
-					name="name"
-					:rules="[{ required: true, message: '请输入分类名称' }]"
-				>
-					<a-input v-model:value="formState.name" placeholder="例如：技术文章" />
-				</a-form-item>
+			<mao-form ref="formEl" label="分类信息" @mt-submit="handleSubmit">
+				<mao-form-item name="name" label="分类名称" :rules="RULES.name">
+					<mao-text-field name="name" :value="form.name" placeholder="例如：技术文章" />
+				</mao-form-item>
 
-				<a-form-item
-					label="别名 (Slug)"
-					name="slug"
-					:rules="[
-						{ required: true, message: '请输入别名' },
-						{ pattern: /^[a-z0-9-]+$/, message: '只能使用小写字母、数字和连字符' },
-					]"
-				>
-					<a-input v-model:value="formState.slug" placeholder="例如：tech-articles" />
-				</a-form-item>
+				<mao-form-item name="slug" label="别名 (Slug)" :rules="RULES.slug">
+					<mao-text-field name="slug" :value="form.slug" placeholder="例如：tech-articles" />
+				</mao-form-item>
 
-				<a-form-item label="父分类" name="parent">
-					<a-input-search
-						:value="formState.parent"
-						placeholder="输入分类ID, 留空为顶级分类"
-						allow-clear
-						disabled
-					/>
-				</a-form-item>
+				<mao-form-item name="parent" label="父分类 ID" hint="留空表示顶级分类">
+					<mao-text-field name="parent" :value="form.parent" placeholder="输入分类 ID" />
+				</mao-form-item>
 
-				<a-form-item
-					label="描述"
-					name="description"
-					:rules="[{ max: 200, message: '描述不能超过 200 个字符' }]"
-				>
-					<a-textarea
-						v-model:value="formState.description"
+				<mao-form-item name="description" label="描述" :rules="RULES.description">
+					<mao-text-area
+						name="description"
+						:value="form.description"
 						:rows="3"
-						placeholder="分类的描述信息"
 						:maxlength="200"
 						show-count
+						placeholder="分类的描述信息"
 					/>
-				</a-form-item>
-			</a-form>
-		</a-modal>
+				</mao-form-item>
+			</mao-form>
+
+			<mao-button slot="actions" variant="flat" @click="closeDialog">取消</mao-button>
+			<mao-button slot="actions" color="primary" :loading="saving || undefined" @click="formEl?.submit()">
+				确定
+			</mao-button>
+		</mao-dialog>
 	</div>
 </template>
 
 <style scoped>
-.page-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 16px;
-	flex-wrap: wrap;
-	gap: 12px;
+.search {
+	width: 300px;
+	max-width: 100%;
+	margin-bottom: var(--mt-space-3);
 }
 
-:deep(.category-node) {
+.cat-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
 	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 0;
-	gap: 16px;
+	flex-direction: column;
+	gap: 2px;
 }
 
-:deep(.category-node-main) {
+.cat-item {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	min-width: 0;
+	gap: var(--mt-space-2);
+	padding: 8px 10px;
+	border-radius: var(--mt-radius);
+	color: var(--mt-text);
 }
 
-:deep(.category-name) {
-	font-weight: 600;
-	color: #1e293b;
+.cat-item:hover {
+	background: var(--mt-surface-2);
 }
 
-:deep(.category-slug),
-:deep(.category-count) {
-	font-size: 12px;
-	color: #94a3b8;
+.cat-item.is-child {
+	margin-left: 22px;
 }
 
-:deep(.category-actions) {
+.cat-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	flex: none;
+	padding: 0;
+	border: 0;
+	border-radius: var(--mt-radius-sm);
+	background: transparent;
+	color: var(--mt-muted);
+	cursor: pointer;
+}
+
+.cat-toggle:hover {
+	background: var(--mt-border);
+	color: var(--mt-text);
+}
+
+.cat-toggle.is-placeholder {
+	cursor: default;
+	background: transparent;
+}
+
+.cat-icon {
+	color: var(--mt-muted);
+}
+
+.cat-name {
+	font-weight: 500;
+}
+
+.cat-slug,
+.cat-count {
+	font-size: var(--mt-fs-xs);
+	color: var(--mt-faint);
+}
+
+.cat-actions {
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: 2px;
+	margin-left: auto;
+}
+
+@media (max-width: 480px) {
+	.cat-slug {
+		display: none;
+	}
 }
 </style>

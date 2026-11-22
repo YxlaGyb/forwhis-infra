@@ -1,5 +1,3 @@
-import type { Component } from 'vue'
-
 export type ContentType = 'post' | 'article' | 'page'
 export type ContentStatus = 'publish' | 'draft' | 'private' | 'trash' | 'pending' | 'rejected'
 export type CommentStatus = 'approved' | 'pending' | 'spam' | 'trash'
@@ -163,7 +161,7 @@ export interface RoleDefinition {
 export interface ActionItem {
 	key: string
 	text: string
-	icon?: Component
+	icon?: string
 	danger?: boolean
 	disabled?: boolean
 	hidden?: boolean

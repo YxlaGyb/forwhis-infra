@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
-import { LockOutlined, UserOutlined } from '@ant-design/icons-vue'
 import { errorMessage } from '~/api/client'
 
 definePageMeta({ layout: 'blank' })
@@ -9,15 +7,28 @@ const config = useRuntimeConfig()
 const { message } = useNotify()
 const { login, canAccessAdmin } = useAuth()
 
-const form = reactive({ email: '', password: '' })
 const loading = ref(false)
 
 const backgroundUrl = computed(() => config.public.loginBgUrl || '/110546943_p0.webp')
 
-async function handleFinish() {
+const RULES = {
+	email: '[{"rule":"required","message":"请输入邮箱地址"},{"rule":"email","message":"邮箱格式不正确"}]',
+	password: '[{"rule":"required","message":"请输入密码"}]',
+}
+
+function readForm(event: Event) {
+	const values = (event as CustomEvent<{ values?: Record<string, string> }>).detail?.values ?? {}
+	return {
+		email: (values.email ?? '').trim(),
+		password: values.password ?? '',
+	}
+}
+
+async function handleSubmit(event: Event) {
+	const { email, password } = readForm(event)
 	loading.value = true
 	try {
-		const user = await login(form.email, form.password)
+		const user = await login(email, password)
 		message.success('登录成功')
 		await navigateTo(user && canAccessAdmin.value ? '/' : '/no-access')
 	} catch (error) {
@@ -33,115 +44,119 @@ function openSite() {
 </script>
 
 <template>
-	<div class="login-container" :style="{ backgroundImage: `url('${backgroundUrl}')` }">
-		<a-card class="login-card" :bordered="false">
-			<div class="login-title">
-				<a-typography-title :level="2" style="margin-bottom: 8px; color: #2996ff">
-					林影心语
-					<span style="color: red; font-size: 16px">admin</span>
-				</a-typography-title>
-			</div>
+	<div class="login-shell" :style="{ backgroundImage: `url('${backgroundUrl}')` }">
+		<mao-card id="login-card" padding="lg">
+			<div class="mt-card-body login-body">
+				<div class="login-brand">
+					<mao-icon name="feather" :size="22" />
+					<span class="login-brand-name">林影心语</span>
+					<mao-badge tone="danger">admin</mao-badge>
+				</div>
 
-			<a-form :model="form" layout="vertical" autocomplete="off" @finish="handleFinish">
-				<a-form-item
-					label="邮箱"
-					name="email"
-					:rules="[{ required: true, message: '请输入邮箱地址' }]"
-				>
-					<a-input
-						v-model:value="form.email"
-						size="large"
-						placeholder="请输入邮箱地址"
-						class="login-input"
-					>
-						<template #prefix><UserOutlined /></template>
-					</a-input>
-				</a-form-item>
+				<mao-form label="管理员登录" @mt-submit="handleSubmit">
+					<mao-form-item name="email" label="邮箱" :rules="RULES.email">
+						<mao-text-field
+							name="email"
+							icon="mail"
+							placeholder="请输入邮箱地址"
+							autocomplete="username"
+						/>
+					</mao-form-item>
 
-				<a-form-item
-					label="密码"
-					name="password"
-					:rules="[{ required: true, message: '请输入密码' }]"
-				>
-					<a-input-password
-						v-model:value="form.password"
-						size="large"
-						placeholder="请输入密码"
-						class="login-input"
-					>
-						<template #prefix><LockOutlined /></template>
-					</a-input-password>
-				</a-form-item>
+					<mao-form-item name="password" label="密码" :rules="RULES.password">
+						<mao-text-field
+							name="password"
+							type="password"
+							icon="lock"
+							placeholder="请输入密码"
+							autocomplete="current-password"
+						/>
+					</mao-form-item>
 
-				<a-form-item>
-					<a-button
-						type="primary"
-						html-type="submit"
-						size="large"
-						:loading="loading"
+					<mao-button
+						color="primary"
+						type="submit"
+						size="lg"
 						block
-						class="login-button"
+						:loading="loading || undefined"
 					>
 						登录
-					</a-button>
-				</a-form-item>
+					</mao-button>
+				</mao-form>
 
-				<a-typography-text class="login-back" @click="openSite"> 返回首页 </a-typography-text>
-			</a-form>
-		</a-card>
+				<button type="button" class="login-back" @click="openSite">
+					<mao-icon name="arrow-left" :size="14" />
+					返回首页
+				</button>
+			</div>
+		</mao-card>
 	</div>
 </template>
 
 <style scoped>
-.login-container {
+.login-shell {
 	min-height: 100vh;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	padding: var(--mt-space-4);
+	background-color: var(--mt-bg);
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;
-	background-color: #667eea;
 }
 
-.login-card {
+#login-card {
 	width: 400px;
-	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-	border-radius: 12px;
-	background-color: rgba(255, 255, 255, 0.5);
-	backdrop-filter: blur(20px);
-	border: 1px solid rgba(255, 255, 255, 0.3);
+	max-width: 100%;
+	backdrop-filter: blur(18px);
+	background: color-mix(in srgb, var(--mt-surface) 86%, transparent);
+	box-shadow: var(--mt-shadow-overlay);
 }
 
-.login-title {
-	text-align: center;
-	margin-bottom: 32px;
+.login-body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--mt-space-4);
 }
 
-.login-input {
-	background-color: rgba(255, 255, 255, 0.85);
-	border: 1px solid rgba(255, 255, 255, 0.5);
+.login-brand {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--mt-space-2);
+	color: var(--mt-text);
 }
 
-.login-button {
-	background-color: rgba(135, 133, 162, 0.6);
-	border-color: rgba(135, 133, 162, 1);
-	backdrop-filter: blur(10px);
-	transition: all 0.3s ease;
-}
-
-.login-button:hover {
-	background-color: rgba(135, 133, 162, 1) !important;
+.login-brand-name {
+	font-family: var(--mt-font-display);
+	font-size: var(--mt-fs-xl);
+	font-weight: 600;
+	letter-spacing: 0.02em;
 }
 
 .login-back {
-	color: #f6f6f6;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	margin: 0 auto;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--mt-muted);
+	font: inherit;
+	font-size: var(--mt-fs-sm);
 	cursor: pointer;
 }
 
+.login-back:hover {
+	color: var(--mt-text);
+}
+
 @media (max-width: 480px) {
-	.login-card {
-		width: calc(100% - 32px);
+	#login-card {
+		width: 100%;
 	}
 }
 </style>

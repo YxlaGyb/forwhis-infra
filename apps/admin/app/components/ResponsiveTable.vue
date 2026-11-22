@@ -1,13 +1,10 @@
 <script setup lang="ts" generic="T extends object">
-import { computed, h, ref, useSlots, watch } from 'vue'
-import type { Component } from 'vue'
-import { MoreOutlined } from '@ant-design/icons-vue'
+import { computed, ref, useSlots, watch } from 'vue'
 import type { ActionItem, ResponsiveColumn } from '~/types/domain'
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '~/utils/constants'
 
 interface PaginationConfig {
 	showSizeChanger?: boolean
-	showQuickJumper?: boolean
 	showTotal?: (total: number) => string
 }
 
@@ -40,7 +37,11 @@ const pageSize = ref(DEFAULT_PAGE_SIZE)
 const paginationConfig = computed(() => (props.pagination ? props.pagination : null))
 const total = computed(() => props.dataSource.length)
 
-const priorityColumns = computed(() =>
+const sizeOptions = computed(() =>
+	JSON.stringify(PAGE_SIZE_OPTIONS.map((size) => ({ value: size, label: `${size} 条/页` }))),
+)
+
+const cardColumns = computed(() =>
 	props.columns.filter((col) => col.priority === 'high' || col.priority === 'medium'),
 )
 
@@ -78,13 +79,17 @@ function visibleActions(record: T): ActionItem[] {
 	return props.actions ? props.actions(record).filter((item) => !item.hidden) : []
 }
 
-function iconNode(icon?: Component) {
-	return icon ? h(icon) : undefined
+function handlePageChange(event: Event) {
+	const detail = (event as CustomEvent<{ page?: number; pageSize?: number }>).detail
+	if (detail?.page) currentPage.value = detail.page
+	if (detail?.pageSize) pageSize.value = detail.pageSize
 }
 
-function handlePageChange(page: number, size: number) {
-	currentPage.value = page
-	if (size) pageSize.value = size
+function handleSizeChange(event: Event) {
+	const value = (event as CustomEvent<{ value?: string }>).detail?.value
+	if (!value) return
+	pageSize.value = Number(value)
+	currentPage.value = 1
 }
 
 function formatTotal(count: number) {
@@ -95,20 +100,90 @@ function formatTotal(count: number) {
 
 <template>
 	<div class="responsive-table-container">
-		<a-spin :spinning="loading">
-			<div v-if="!dataSource.length && !loading" class="responsive-table-empty">
-				<a-empty :description="emptyText" />
+		<div v-if="loading" class="table-loading">
+			<mao-spinner size="md" label="加载中" />
+		</div>
+
+		<mao-empty v-else-if="!dataSource.length" :title="emptyText" icon="inbox" />
+
+		<template v-else>
+			<div class="table-scroll is-desktop">
+				<table class="data-table">
+					<thead>
+						<tr>
+							<th v-for="column in columns" :key="column.key">{{ column.title }}</th>
+							<th v-if="actions" class="col-actions">操作</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="(record, index) in currentData" :key="getRowKey(record)">
+							<td v-for="column in columns" :key="column.key">
+								<slot
+									:name="`cell-${column.key}`"
+									:value="valueOf(column, record)"
+									:record="record"
+									:index="index"
+								>
+									{{ valueOf(column, record) ?? '-' }}
+								</slot>
+							</td>
+							<td v-if="actions" class="col-actions">
+								<div class="row">
+									<mao-button
+										v-for="item in visibleActions(record).slice(0, 2)"
+										:key="item.key"
+										size="sm"
+										variant="bordered"
+										:color="item.danger ? 'danger' : 'primary'"
+										:disabled="item.disabled || undefined"
+										@click="item.onClick()"
+									>
+										<mao-icon v-if="item.icon" :name="item.icon" :size="14" />
+										{{ item.text }}
+									</mao-button>
+
+									<mao-dropdown
+										v-if="visibleActions(record).length > 2"
+										placement="bottom-end"
+									>
+										<mao-button
+											slot="trigger"
+											size="sm"
+											variant="flat"
+											aria-label="更多操作"
+										>
+											<mao-icon name="ellipsis" :size="16" />
+										</mao-button>
+										<mao-menu-item
+											v-for="item in visibleActions(record).slice(2)"
+											:key="item.key"
+											:icon="item.icon"
+											:disabled="item.disabled || undefined"
+											@click="item.onClick()"
+										>
+											{{ item.text }}
+										</mao-menu-item>
+									</mao-dropdown>
+								</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
 			</div>
 
-			<template v-else>
-				<div class="card-list">
-					<a-card
-						v-for="(record, index) in currentData"
-						:key="getRowKey(record)"
-						class="responsive-table-card"
-						:body-style="{ padding: '12px 16px' }"
-					>
-						<div class="card-header">
+			<div class="card-list is-mobile">
+				<mao-card
+					v-for="(record, index) in currentData"
+					:key="getRowKey(record)"
+					class="responsive-table-card"
+					padding="sm"
+					bordered
+				>
+					<div class="mt-card-body">
+						<div
+							v-if="slots['card-title'] || cardTitle || slots['card-subtitle'] || cardSubtitle"
+							class="card-header"
+						>
 							<div class="card-title-section">
 								<div v-if="slots['card-title'] || cardTitle" class="card-title">
 									<slot name="card-title" :record="record">{{ cardTitle?.(record) }}</slot>
@@ -121,12 +196,12 @@ function formatTotal(count: number) {
 
 						<div class="card-content">
 							<div
-								v-for="column in priorityColumns"
+								v-for="column in cardColumns"
 								v-show="shouldShow(column, record)"
 								:key="column.key"
 								class="card-field"
 							>
-								<span class="card-field-label" :data-field="column.title">{{ column.title }}:</span>
+								<span class="card-field-label">{{ column.title }}:</span>
 								<span class="card-field-value">
 									<slot
 										:name="`cell-${column.key}`"
@@ -141,57 +216,108 @@ function formatTotal(count: number) {
 						</div>
 
 						<div v-if="visibleActions(record).length" class="card-actions">
-							<a-button
+							<mao-button
 								v-for="item in visibleActions(record).slice(0, 3)"
 								:key="item.key"
-								:type="item.danger ? 'default' : 'primary'"
-								size="small"
-								:danger="item.danger"
-								:disabled="item.disabled"
-								:icon="iconNode(item.icon)"
+								size="sm"
+								variant="bordered"
+								:color="item.danger ? 'danger' : 'primary'"
+								:disabled="item.disabled || undefined"
 								class="card-action-btn"
-								@click="item.onClick"
+								@click="item.onClick()"
 							>
+								<mao-icon v-if="item.icon" :name="item.icon" :size="14" />
 								{{ item.text }}
-							</a-button>
+							</mao-button>
 
-							<a-dropdown v-if="visibleActions(record).length > 3" placement="topRight">
-								<a-button size="small" :icon="h(MoreOutlined)" class="card-action-btn">
+							<mao-dropdown v-if="visibleActions(record).length > 3" placement="top-end">
+								<mao-button slot="trigger" size="sm" variant="bordered" class="card-action-btn">
 									更多
-								</a-button>
-								<template #overlay>
-									<a-menu>
-										<a-menu-item
-											v-for="item in visibleActions(record).slice(3)"
-											:key="item.key"
-											:disabled="item.disabled"
-											@click="item.onClick"
-										>
-											<component :is="item.icon" v-if="item.icon" style="margin-right: 8px" />
-											<span :style="{ color: item.danger ? '#ff4d4f' : undefined }">
-												{{ item.text }}
-											</span>
-										</a-menu-item>
-									</a-menu>
-								</template>
-							</a-dropdown>
+									<mao-icon name="chevron-down" :size="14" />
+								</mao-button>
+								<mao-menu-item
+									v-for="item in visibleActions(record).slice(3)"
+									:key="item.key"
+									:icon="item.icon"
+									:disabled="item.disabled || undefined"
+									@click="item.onClick()"
+								>
+									{{ item.text }}
+								</mao-menu-item>
+							</mao-dropdown>
 						</div>
-					</a-card>
-				</div>
+					</div>
+				</mao-card>
+			</div>
 
-				<div v-if="paginationConfig && total > 0" class="table-pagination">
-					<a-pagination
-						:current="currentPage"
-						:page-size="pageSize"
-						:total="total"
-						:show-size-changer="paginationConfig.showSizeChanger"
-						:show-quick-jumper="paginationConfig.showQuickJumper"
-						:show-total="formatTotal"
-						:page-size-options="PAGE_SIZE_OPTIONS"
-						@change="handlePageChange"
+			<div v-if="paginationConfig && total > 0" class="table-pagination">
+				<span class="tiny muted">{{ formatTotal(total) }}</span>
+				<mao-pagination
+					:total="total"
+					:page="currentPage"
+					:page-size="pageSize"
+					@mt-change="handlePageChange"
+				>
+					<mao-select
+						v-if="paginationConfig.showSizeChanger"
+						slot="sizes"
+						:options="sizeOptions"
+						:value="String(pageSize)"
+						aria-label="每页条数"
+						@mt-change="handleSizeChange"
 					/>
-				</div>
-			</template>
-		</a-spin>
+				</mao-pagination>
+			</div>
+		</template>
 	</div>
 </template>
+
+<style scoped>
+.table-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 60px 0;
+}
+
+.table-pagination {
+	align-items: center;
+	gap: var(--mt-space-3);
+}
+
+.responsive-table-card {
+	transition: border-color var(--mt-dur-fast) var(--mt-ease);
+}
+
+.responsive-table-card:hover {
+	border-color: var(--mt-line-strong);
+}
+
+.card-action-btn {
+	flex: 1;
+	min-width: 64px;
+}
+
+.col-actions {
+	width: 1%;
+	white-space: nowrap;
+}
+
+.is-desktop {
+	display: block;
+}
+
+.is-mobile {
+	display: none;
+}
+
+@media (max-width: 768px) {
+	.is-desktop {
+		display: none;
+	}
+
+	.is-mobile {
+		display: grid;
+	}
+}
+</style>

@@ -1,0 +1,7 @@
+- Do not use emojis or icons (e.g., 🔒, ✅, ⚠️, 🟢) in the documentation; they render inconsistently across operating systems and fonts, which actually reduces readability.
+ - Convey everything clearly through text:
+ - Use specific terms for status or results: Yes/No, Supported/Unsupported, Completed/In Progress/Not Started, Normal/Abnormal, High/Medium/Low.
+ - Use text in table status columns instead of symbols like ✅, ❌, 🟢, or 🔴; if a legend is required, use a text-based legend.
+ - Use text labels for hints or warnings (e.g., "Note:", "Important:", "Implemented:") rather than emoji prefixes.
+ - The following are acceptable (as they render consistently in monospaced fonts and serve a structural rather than decorative purpose): ASCII box-drawing characters (┌─┘├), geometric arrows (▲ ► ▼), circled numbers (① ② ③), plain-text arrows (→ ← ↓), and text-based keyboard shortcuts (e.g., Cmd+K).
+ - Minimize the use of dashes or non-textual symbols to maintain a clean, tidy appearance.

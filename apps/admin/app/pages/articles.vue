@@ -1,23 +1,9 @@
 <script setup lang="ts">
-import { computed, h, onMounted, ref } from 'vue'
-import {
-	ClockCircleOutlined,
-	DeleteOutlined,
-	EditOutlined,
-	EyeOutlined,
-	FileTextOutlined,
-	FolderOutlined,
-	InfoCircleOutlined,
-	PlusOutlined,
-	SearchOutlined,
-	SendOutlined,
-	UserOutlined,
-} from '@ant-design/icons-vue'
 import { errorMessage } from '~/api/client'
 import { contentsApi, listItems } from '~/api'
 import type { ActionItem, Content, ResponsiveColumn } from '~/types/domain'
 import { formatTimestamp } from '~/utils/format'
-import { getStatusColor, getStatusName, getTypeName } from '~/utils/mapping'
+import { getStatusName, getStatusTone, getTypeName } from '~/utils/mapping'
 
 definePageMeta({ layout: 'admin' })
 
@@ -41,18 +27,18 @@ const filteredArticles = computed(() =>
 	),
 )
 
-const statusOptions = [
+const statusOptions = JSON.stringify([
 	{ value: 'publish', label: '已发布' },
 	{ value: 'draft', label: '草稿' },
 	{ value: 'private', label: '私密' },
 	{ value: 'trash', label: '回收站' },
-]
+])
 
-const typeOptions = [
+const typeOptions = JSON.stringify([
 	{ value: 'post', label: '帖子' },
 	{ value: 'article', label: '文章' },
 	{ value: 'page', label: '页面' },
-]
+])
 
 const columns: ResponsiveColumn[] = [
 	{ key: 'cid', title: 'ID', dataIndex: 'cid', priority: 'low' },
@@ -62,6 +48,10 @@ const columns: ResponsiveColumn[] = [
 	{ key: 'created', title: '创建时间', dataIndex: 'created', priority: 'high' },
 	{ key: 'author', title: '作者', dataIndex: 'author', priority: 'low' },
 ]
+
+function detailValue(event: Event): string {
+	return (event as CustomEvent<{ value?: string }>).detail?.value ?? ''
+}
 
 function authorName(record: Content): string {
 	if (typeof record.author === 'string') return record.author
@@ -131,32 +121,22 @@ async function handleDelete(cid: number) {
 
 function getActions(record: Content): ActionItem[] {
 	return [
-		{
-			key: 'view',
-			text: '查看',
-			icon: EyeOutlined,
-			onClick: () => openView(record),
-		},
-		{
-			key: 'edit',
-			text: '编辑',
-			icon: EditOutlined,
-			onClick: () => goEdit(record),
-		},
+		{ key: 'view', text: '查看', icon: 'eye', onClick: () => openView(record) },
+		{ key: 'edit', text: '编辑', icon: 'pencil', onClick: () => goEdit(record) },
 		{
 			key: 'publish',
 			text: '发布',
-			icon: SendOutlined,
+			icon: 'send',
 			hidden: record.status === 'publish',
 			onClick: () => handlePublish(record.cid),
 		},
 		{
 			key: 'delete',
 			text: '删除',
-			icon: DeleteOutlined,
+			icon: 'trash-2',
 			danger: true,
 			onClick: () => {
-				modal.confirm({
+				void modal.confirm({
 					title: '确定要删除这条内容吗？',
 					content: '删除后无法恢复',
 					okText: '确定',
@@ -173,237 +153,135 @@ onMounted(fetchArticles)
 </script>
 
 <template>
-	<div>
-		<a-card>
-			<div class="page-header">
-				<a-typography-title :level="4" :style="{ margin: 0 }">
-					<FileTextOutlined :style="{ marginRight: '8px' }" />
-					内容管理
-				</a-typography-title>
-				<a-button type="primary" :icon="h(PlusOutlined)" @click="navigateTo('/editor')">
-					新建内容
-				</a-button>
+	<div class="page">
+		<header class="page-head">
+			<div>
+				<h1 class="page-title">内容管理</h1>
+				<p class="page-desc">查看、发布与维护站点上的全部内容</p>
 			</div>
+			<mao-button color="primary" @click="navigateTo('/editor')">
+				<mao-icon name="plus" :size="15" />
+				新建内容
+			</mao-button>
+		</header>
 
-			<a-space wrap :style="{ marginBottom: '16px' }">
-				<a-input
-					v-model:value="searchText"
-					placeholder="搜索标题"
-					allow-clear
-					:style="{ width: '250px' }"
+		<mao-card padding="md">
+			<div class="mt-card-body">
+				<div class="toolbar filters">
+					<mao-text-field
+						:value="searchText"
+						icon="search"
+						clearable
+						placeholder="搜索标题或正文"
+						aria-label="搜索内容"
+						@mt-input="searchText = detailValue($event)"
+					/>
+					<mao-select
+						:options="statusOptions"
+						:value="statusFilter"
+						placeholder="全部状态"
+						clearable
+						aria-label="筛选状态"
+						@mt-change="statusFilter = detailValue($event)"
+					/>
+					<mao-select
+						:options="typeOptions"
+						:value="typeFilter"
+						placeholder="全部类型"
+						clearable
+						aria-label="筛选类型"
+						@mt-change="typeFilter = detailValue($event)"
+					/>
+				</div>
+
+				<ResponsiveTable
+					:columns="columns"
+					:data-source="filteredArticles"
+					row-key="cid"
+					:loading="loading"
+					:actions="getActions"
+					:card-title="displayTitle"
+					:card-subtitle="cardSubtitle"
+					empty-text="暂无内容"
+					:pagination="{ showSizeChanger: true, showTotal: (total: number) => `共 ${total} 条` }"
 				>
-					<template #prefix><SearchOutlined /></template>
-				</a-input>
-				<a-select
-					:value="statusFilter || undefined"
-					:options="statusOptions"
-					placeholder="筛选状态"
-					allow-clear
-					:style="{ width: '120px' }"
-					@change="(value: string | undefined) => (statusFilter = value || '')"
-				/>
-				<a-select
-					:value="typeFilter || undefined"
-					:options="typeOptions"
-					placeholder="筛选类型"
-					allow-clear
-					:style="{ width: '120px' }"
-					@change="(value: string | undefined) => (typeFilter = value || '')"
-				/>
-			</a-space>
-
-			<ResponsiveTable
-				:columns="columns"
-				:data-source="filteredArticles"
-				row-key="cid"
-				:loading="loading"
-				:actions="getActions"
-				:card-title="displayTitle"
-				:card-subtitle="cardSubtitle"
-				:pagination="{
-					showSizeChanger: true,
-					showTotal: (total: number) => `共 ${total} 条`,
-				}"
-			>
-				<template #cell-type="{ record }">
-					<a-tag>{{ getTypeName(record.type) }}</a-tag>
-				</template>
-				<template #cell-status="{ record }">
-					<a-tag :color="getStatusColor(record.status)">{{ getStatusName(record.status) }}</a-tag>
-				</template>
-				<template #cell-created="{ record }">{{ formatTimestamp(record.created) }}</template>
-				<template #cell-author="{ record }">{{ authorName(record) }}</template>
-			</ResponsiveTable>
-		</a-card>
-
-		<a-modal
-			:open="viewOpen"
-			:title="null"
-			:footer="null"
-			:width="600"
-			centered
-			:body-style="{ padding: 0 }"
-			@cancel="closeView"
-		>
-			<div v-if="viewingArticle" class="article-view">
-				<div class="article-view-header">
-					<div class="article-view-title-row">
-						<a-typography-title :level="4" class="article-view-title">
-							{{ displayTitle(viewingArticle) }}
-						</a-typography-title>
-						<a-tag :color="getStatusColor(viewingArticle.status)" class="article-view-status">
-							{{ getStatusName(viewingArticle.status) }}
-						</a-tag>
-					</div>
-				</div>
-
-				<div class="article-view-meta">
-					<div class="article-meta-item">
-						<UserOutlined class="meta-icon meta-icon-blue" />
-						<span class="meta-label">作者:</span>
-						<span class="meta-value">{{ authorName(viewingArticle) }}</span>
-					</div>
-					<div class="article-meta-item">
-						<FolderOutlined class="meta-icon meta-icon-gold" />
-						<span class="meta-label">类型:</span>
-						<span class="meta-value">{{ getTypeName(viewingArticle.type) }}</span>
-					</div>
-					<div class="article-meta-item">
-						<ClockCircleOutlined class="meta-icon meta-icon-green" />
-						<span class="meta-label">创建:</span>
-						<span class="meta-value">{{ formatTimestamp(viewingArticle.created) }}</span>
-					</div>
-					<div class="article-meta-item">
-						<InfoCircleOutlined class="meta-icon meta-icon-purple" />
-						<span class="meta-label">ID:</span>
-						<span class="meta-value">{{ viewingArticle.cid }}</span>
-					</div>
-				</div>
-
-				<div class="article-view-body">
-					<!-- eslint-disable-next-line vue/no-v-html -->
-					<div class="markdown-body" v-html="renderMarkdown(viewingArticle.text || '*暂无内容*')" />
-				</div>
-
-				<div class="article-view-footer">
-					<a-button size="small" @click="closeView">关闭</a-button>
-					<a-button type="primary" size="small" :icon="h(EditOutlined)" @click="editFromView">
-						编辑
-					</a-button>
-				</div>
+					<template #cell-title="{ record }">
+						<span class="strong">{{ displayTitle(record as Content) }}</span>
+					</template>
+					<template #cell-type="{ record }">
+						<mao-chip>{{ getTypeName((record as Content).type) }}</mao-chip>
+					</template>
+					<template #cell-status="{ record }">
+						<mao-badge :tone="getStatusTone((record as Content).status)">
+							{{ getStatusName((record as Content).status) }}
+						</mao-badge>
+					</template>
+					<template #cell-created="{ record }">{{ formatTimestamp((record as Content).created) }}</template>
+					<template #cell-author="{ record }">{{ authorName(record as Content) }}</template>
+				</ResponsiveTable>
 			</div>
-		</a-modal>
+		</mao-card>
+
+		<mao-dialog
+			:open="viewOpen || undefined"
+			:heading="viewingArticle ? displayTitle(viewingArticle) : '内容详情'"
+			size="lg"
+			closable
+			@mt-close="closeView"
+		>
+			<div v-if="viewingArticle" class="stack">
+				<div class="row">
+					<mao-badge :tone="getStatusTone(viewingArticle.status)">
+						{{ getStatusName(viewingArticle.status) }}
+					</mao-badge>
+					<mao-chip>{{ getTypeName(viewingArticle.type) }}</mao-chip>
+					<span class="tiny faint">ID {{ viewingArticle.cid }}</span>
+				</div>
+
+				<mao-descriptions>
+					<mao-descriptions-item label="作者">{{ authorName(viewingArticle) }}</mao-descriptions-item>
+					<mao-descriptions-item label="创建">
+						{{ formatTimestamp(viewingArticle.created) }}
+					</mao-descriptions-item>
+					<mao-descriptions-item label="修改">
+						{{ viewingArticle.modified ? formatTimestamp(viewingArticle.modified) : '-' }}
+					</mao-descriptions-item>
+					<mao-descriptions-item label="浏览">{{ viewingArticle.views ?? 0 }}</mao-descriptions-item>
+				</mao-descriptions>
+
+				<mao-divider/>
+
+				<!-- eslint-disable-next-line vue/no-v-html -->
+				<div class="markdown-body" v-html="renderMarkdown(viewingArticle.text || '*暂无内容*')" />
+			</div>
+
+			<mao-button slot="actions" variant="flat" @click="closeView">关闭</mao-button>
+			<mao-button slot="actions" color="primary" @click="editFromView">
+				<mao-icon name="pencil" :size="15" />
+				编辑
+			</mao-button>
+		</mao-dialog>
 	</div>
 </template>
 
 <style scoped>
-.page-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 16px;
+.filters {
+	margin-bottom: var(--mt-space-3);
 }
 
-.article-view {
-	display: flex;
-	flex-direction: column;
-	max-height: 80vh;
-	background: #fff;
-	border-radius: 12px;
-	overflow: hidden;
+.filters :deep(mao-text-field) {
+	width: 260px;
+	max-width: 100%;
 }
 
-.article-view-header {
-	padding: 20px 24px 16px;
-	border-bottom: 1px solid #f0f0f0;
-}
-
-.article-view-title-row {
-	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
-	gap: 12px;
-}
-
-.article-view-title {
-	margin: 0;
-	font-size: 18px;
-	font-weight: 600;
-	line-height: 1.4;
-	color: #1f1f1f;
-	flex: 1;
-}
-
-.article-view-status {
-	font-size: 11px;
-	padding: 1px 8px;
-	border-radius: 4px;
-}
-
-.article-view-meta {
-	padding: 12px 24px;
-	background: #fafafa;
-	border-bottom: 1px solid #f0f0f0;
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	gap: 8px 16px;
-}
-
-.article-meta-item {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-}
-
-.meta-icon {
-	font-size: 14px;
-}
-
-.meta-icon-blue {
-	color: #1890ff;
-}
-
-.meta-icon-gold {
-	color: #faad14;
-}
-
-.meta-icon-green {
-	color: #52c41a;
-}
-
-.meta-icon-purple {
-	color: #722ed1;
-}
-
-.meta-label {
-	font-size: 12px;
-	color: #8c8c8c;
-}
-
-.meta-value {
-	font-size: 13px;
-	color: #262626;
-}
-
-.article-view-body {
-	flex: 1;
-	overflow: auto;
-	padding: 16px 24px;
-	background: #fff;
-}
-
-.article-view-footer {
-	display: flex;
-	justify-content: flex-end;
-	gap: 10px;
-	padding: 12px 24px;
-	border-top: 1px solid #f0f0f0;
-	background: #fafafa;
+.filters :deep(mao-select) {
+	width: 140px;
 }
 
 @media (max-width: 480px) {
-	.article-view-meta {
-		grid-template-columns: 1fr;
+	.filters :deep(mao-text-field),
+	.filters :deep(mao-select) {
+		width: 100%;
 	}
 }
 </style>

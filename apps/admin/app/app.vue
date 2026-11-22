@@ -1,18 +1,6 @@
-<script setup lang="ts">
-import zhCN from 'ant-design-vue/es/locale/zh_CN'
-import dayjs from 'dayjs'
-import 'dayjs/locale/zh-cn'
-
-dayjs.locale('zh-cn')
-</script>
-
 <template>
-	<a-config-provider :locale="zhCN">
-		<a-app>
-			<NuxtLoadingIndicator />
-			<NuxtLayout>
-				<NuxtPage />
-			</NuxtLayout>
-		</a-app>
-	</a-config-provider>
+	<NuxtLoadingIndicator />
+	<NuxtLayout>
+		<NuxtPage />
+	</NuxtLayout>
 </template>

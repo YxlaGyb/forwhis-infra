@@ -1,208 +1,232 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { theme } from 'ant-design-vue'
 import { useMediaQuery } from '@vueuse/core'
-import { LogoutOutlined, UserOutlined } from '@ant-design/icons-vue'
 
 const route = useRoute()
 const { displayName, identity, logout } = useAuth()
-const { token } = theme.useToken()
+const { theme, toggle: toggleTheme } = useTheme()
 
 const isMobile = useMediaQuery('(max-width: 767px)')
 const collapsed = ref(false)
-const drawerVisible = ref(false)
+const drawerOpen = ref(false)
 
 watch(
 	isMobile,
 	(mobile) => {
 		collapsed.value = mobile
-		if (!mobile) drawerVisible.value = false
+		if (!mobile) drawerOpen.value = false
 	},
 	{ immediate: true },
 )
 
 const isEditorPage = computed(() => route.path.startsWith('/editor'))
-const siderWidth = computed(() => (collapsed.value ? 80 : 200))
 
-const colorBgContainer = computed(() => token.value.colorBgContainer)
-const borderRadiusLG = computed(() => token.value.borderRadiusLG)
+const avatarText = computed(() => displayName.value.slice(0, 1).toUpperCase())
 
-const siderStyle = computed(() => ({
-	background: colorBgContainer.value,
-	boxShadow: '2px 0 8px rgba(0, 0, 0, 0.1)',
-	position: 'fixed' as const,
-	left: 0,
-	top: 0,
-	bottom: 0,
-	zIndex: 100,
-	overflow: 'auto' as const,
-}))
-
-const headerStyle = computed(() => ({
-	padding: '0 24px',
-	background: colorBgContainer.value,
-	display: 'flex',
-	alignItems: 'center',
-	justifyContent: 'space-between',
-	boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-	position: 'fixed' as const,
-	top: 0,
-	right: 0,
-	left: `${isMobile.value ? 0 : siderWidth.value}px`,
-	zIndex: 99,
-}))
-
-const contentStyle = computed(() => {
-	if (isEditorPage.value) {
-		return {
-			margin: 0,
-			padding: 0,
-			background: 'transparent',
-			borderRadius: 0,
-			minHeight: '280px',
-			maxWidth: '100%',
-			overflow: 'hidden' as const,
-		}
-	}
-	return {
-		margin: isMobile.value ? '76px 0 0' : '24px',
-		marginTop: isMobile.value ? '76px' : '88px',
-		padding: isMobile.value ? '12px' : '24px',
-		background: colorBgContainer.value,
-		borderRadius: isMobile.value ? 0 : `${borderRadiusLG.value}px`,
-		minHeight: '280px',
-		maxWidth: '100%',
-		overflow: 'hidden' as const,
-	}
-})
-
-function handleMenuClick(key: string) {
+function handleMenuSelect(key: string) {
 	void navigateTo(key)
-	if (isMobile.value) drawerVisible.value = false
+	drawerOpen.value = false
 }
 
 async function handleLogout() {
 	await logout()
 	await navigateTo('/login')
 }
-
-function handleUserMenuClick(info: { key: string | number }) {
-	if (String(info.key) === 'logout') void handleLogout()
-}
 </script>
 
 <template>
-	<a-layout :style="{ minHeight: '100vh' }">
-		<a-drawer
-			v-if="isMobile"
-			placement="left"
-			:open="drawerVisible"
-			:width="200"
-			@close="drawerVisible = false"
-		>
-			<template #title>
-				<span style="color: #1890ff; font-weight: 600">Lmoadll</span>
-			</template>
-			<SideMenu @select="handleMenuClick" />
-		</a-drawer>
-
-		<a-layout-sider
-			v-else
-			:collapsed="collapsed"
-			collapsible
-			:trigger="null"
-			:width="200"
-			:collapsed-width="80"
-			:style="siderStyle"
-		>
-			<div class="layout-brand">
-				<span :style="{ fontSize: collapsed ? '14px' : '16px' }">
-					{{ collapsed ? 'L' : 'Lmoadll' }}
-				</span>
+	<div
+		class="shell"
+		:class="{
+			'is-compact': collapsed && !isMobile,
+			'is-mobile': isMobile,
+			'is-editor': isEditorPage,
+		}"
+	>
+		<aside v-if="!isMobile" class="sider">
+			<div class="brand">
+				<mao-icon name="feather" :size="20" />
+				<span v-show="!collapsed" class="brand-name">forwhis</span>
 			</div>
-			<SideMenu style="margin-top: 16px" @select="handleMenuClick" />
-		</a-layout-sider>
+			<div class="nav-wrap">
+				<SideMenu :compact="collapsed" @select="handleMenuSelect" />
+			</div>
+		</aside>
 
-		<a-layout :style="{ marginLeft: isMobile ? '0' : `${siderWidth}px` }">
-			<a-layout-header v-if="!isEditorPage" :style="headerStyle">
-				<div class="layout-header-left">
-					<MenuOutlined v-if="isMobile" class="layout-trigger" @click="drawerVisible = true" />
-					<MenuUnfoldOutlined
-						v-else-if="collapsed"
-						class="layout-trigger"
-						@click="collapsed = false"
+		<mao-drawer
+			v-if="isMobile"
+			:open="drawerOpen || undefined"
+			placement="start"
+			size="sm"
+			heading="forwhis"
+			@mt-close="drawerOpen = false"
+		>
+			<SideMenu @select="handleMenuSelect" />
+		</mao-drawer>
+
+		<div class="main">
+			<header v-if="!isEditorPage" class="topbar">
+				<mao-button
+					variant="flat"
+					size="sm"
+					aria-label="切换导航"
+					@click="isMobile ? (drawerOpen = true) : (collapsed = !collapsed)"
+				>
+					<mao-icon
+						:name="isMobile ? 'menu' : collapsed ? 'panel-left-open' : 'panel-left-close'"
+						:size="18"
 					/>
-					<MenuFoldOutlined v-else class="layout-trigger" @click="collapsed = true" />
+				</mao-button>
+
+				<div class="topbar-end">
+					<mao-button
+						variant="flat"
+						size="sm"
+						:aria-label="theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
+						@click="toggleTheme"
+					>
+						<mao-icon :name="theme === 'dark' ? 'sun' : 'moon'" :size="18" />
+					</mao-button>
+
+					<mao-dropdown placement="bottom-end">
+						<mao-button slot="trigger" variant="flat" size="sm">
+							<span class="user-trigger">
+								<mao-avatar :label="avatarText" size="sm" tone="accent" />
+								<span class="user-name">{{ displayName }}</span>
+								<span class="user-identity">{{ identity }}</span>
+								<mao-icon name="chevron-down" :size="14" />
+							</span>
+						</mao-button>
+						<mao-menu-item icon="log-out" @click="handleLogout">退出登录</mao-menu-item>
+					</mao-dropdown>
 				</div>
+			</header>
 
-				<a-space :size="16">
-					<BellOutlined class="layout-bell" />
-					<a-dropdown placement="bottomRight" arrow>
-						<a-space class="layout-user">
-							<a-avatar size="small">
-								<template #icon><UserOutlined /></template>
-							</a-avatar>
-							<span>{{ displayName }}</span>
-							<span class="layout-identity">{{ identity }}</span>
-						</a-space>
-						<template #overlay>
-							<a-menu @click="handleUserMenuClick">
-								<a-menu-item key="profile">
-									<UserOutlined />
-									个人信息
-								</a-menu-item>
-								<a-menu-item key="logout">
-									<LogoutOutlined />
-									退出登录
-								</a-menu-item>
-							</a-menu>
-						</template>
-					</a-dropdown>
-				</a-space>
-			</a-layout-header>
-
-			<a-layout-content :style="contentStyle">
+			<main class="content">
 				<slot />
-			</a-layout-content>
-		</a-layout>
-	</a-layout>
+			</main>
+		</div>
+	</div>
 </template>
 
 <style scoped>
-.layout-brand {
-	height: 64px;
+.shell {
+	--sider-w: 200px;
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	border-bottom: 1px solid #f0f0f0;
+	min-height: 100vh;
+	background: var(--mt-bg);
+	color: var(--mt-text);
 }
 
-.layout-brand span {
+.shell.is-compact {
+	--sider-w: 72px;
+}
+
+.shell.is-mobile {
+	--sider-w: 0px;
+}
+
+.sider {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 100;
+	display: flex;
+	flex-direction: column;
+	width: var(--sider-w);
+	background: var(--mt-surface);
+	border-right: 1px solid var(--mt-border);
+	transition: width var(--mt-dur) var(--mt-ease);
+}
+
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	height: 56px;
+	padding: 0 18px;
+	border-bottom: 1px solid var(--mt-border);
+	color: var(--mt-accent);
+	overflow: hidden;
+}
+
+.brand-name {
 	font-weight: 600;
-	color: #1890ff;
+	font-size: var(--mt-fs-md);
+	letter-spacing: 0.02em;
+	white-space: nowrap;
 }
 
-.layout-header-left {
+.nav-wrap {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	margin-left: var(--sider-w);
+	transition: margin-left var(--mt-dur) var(--mt-ease);
+}
+
+.topbar {
+	position: sticky;
+	top: 0;
+	z-index: 90;
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
+	gap: var(--mt-space-2);
+	height: 56px;
+	padding: 0 16px;
+	background: var(--mt-surface);
+	border-bottom: 1px solid var(--mt-border);
 }
 
-.layout-trigger {
-	font-size: 18px;
-	cursor: pointer;
+.topbar-end {
+	display: flex;
+	align-items: center;
+	gap: var(--mt-space-2);
 }
 
-.layout-bell {
-	font-size: 18px;
-	cursor: pointer;
+.user-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--mt-space-2);
 }
 
-.layout-user {
-	cursor: pointer;
+.user-name {
+	color: var(--mt-text);
+	font-size: var(--mt-fs-sm);
+	font-weight: 500;
 }
 
-.layout-identity {
-	color: #94a3b8;
-	font-size: 12px;
+.user-identity {
+	color: var(--mt-muted);
+	font-size: var(--mt-fs-xs);
+}
+
+.content {
+	flex: 1;
+	min-width: 0;
+	padding: 20px 24px 32px;
+}
+
+.shell.is-mobile .content {
+	padding: 12px 12px 24px;
+}
+
+.shell.is-editor .content {
+	padding: 0;
+}
+
+@media (max-width: 767px) {
+	.user-name,
+	.user-identity {
+		display: none;
+	}
 }
 </style>

@@ -1,131 +1,101 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart } from 'echarts/charts'
-import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
-import VChart from 'vue-echarts'
-import { theme } from 'ant-design-vue'
 import type { TrendPoint } from '~/types/domain'
-
-use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent])
 
 const props = defineProps<{
 	data: TrendPoint[]
-	height?: number
 	mobile?: boolean
 }>()
 
-const { token } = theme.useToken()
-
 const SERIES = [
-	{ key: 'user', name: '用户', color: '#3f8600' },
-	{ key: 'content', name: '文章', color: '#1890ff' },
-	{ key: 'comment', name: '评论', color: '#cf1322' },
-	{ key: 'views', name: '访问', color: '#722ed1' },
+	{ key: 'user', label: '新增用户', tone: 'sage' },
+	{ key: 'content', label: '新增内容', tone: 'blue' },
+	{ key: 'comment', label: '新增评论', tone: 'accent' },
+	{ key: 'views', label: '访问量', tone: 'sage' },
 ] as const
 
-const formatAxisLabel = (value: string) => {
-	const parts = value.split('-')
-	if (parts.length < 3) return value
-	return `${Number(parts[1])}/${Number(parts[2])}`
-}
+const summary = computed(() =>
+	SERIES.map((series) => {
+		const values = props.data.map((point) => point[series.key])
+		return {
+			...series,
+			values: values.join(','),
+			total: values.reduce((sum, value) => sum + value, 0),
+		}
+	}),
+)
 
-const formatTooltip = (
-	params: Array<{ axisValueLabel: string; seriesName: string; value: number; color: string }>,
-) => {
-	if (!params.length) return ''
-	const rows = params
-		.map(
-			(item) =>
-				`<div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
-					<span style="width:8px;height:8px;border-radius:50%;background:${item.color}"></span>
-					<span style="flex:1;color:#64748b">${item.seriesName}</span>
-					<strong>${item.value ?? 0}</strong>
-				</div>`,
-		)
-		.join('')
-	return `<div style="font-size:12px;font-weight:600">${params[0]?.axisValueLabel ?? ''}</div>${rows}`
-}
-
-const option = computed(() => ({
-	color: SERIES.map((item) => item.color),
-	grid: {
-		top: props.mobile ? 56 : 48,
-		right: props.mobile ? 8 : 24,
-		bottom: 8,
-		left: props.mobile ? 0 : 8,
-		containLabel: true,
-	},
-	legend: {
-		top: props.mobile ? 4 : 8,
-		left: props.mobile ? 4 : undefined,
-		right: props.mobile ? undefined : 8,
-		icon: 'circle',
-		itemWidth: 8,
-		itemHeight: 8,
-		itemGap: props.mobile ? 8 : 16,
-		textStyle: {
-			color: token.value.colorTextSecondary,
-			fontSize: props.mobile ? 11 : 13,
-		},
-	},
-	tooltip: {
-		trigger: 'axis',
-		backgroundColor: 'rgba(255, 255, 255, 0.96)',
-		borderColor: token.value.colorBorderSecondary,
-		textStyle: { color: token.value.colorText, fontSize: 12 },
-		formatter: formatTooltip,
-	},
-	xAxis: {
-		type: 'category',
-		boundaryGap: false,
-		data: props.data.map((point) => point.date),
-		axisLine: { lineStyle: { color: token.value.colorBorderSecondary } },
-		axisTick: { show: false },
-		axisLabel: {
-			color: token.value.colorTextTertiary,
-			fontSize: props.mobile ? 9 : 11,
-			formatter: formatAxisLabel,
-		},
-	},
-	yAxis: {
-		type: 'value',
-		axisLine: { show: false },
-		axisTick: { show: false },
-		splitLine: { lineStyle: { color: token.value.colorSplit, type: 'dashed' } },
-		axisLabel: {
-			color: token.value.colorTextTertiary,
-			fontSize: props.mobile ? 9 : 11,
-		},
-	},
-	series: SERIES.map((item) => ({
-		name: item.name,
-		type: 'line',
-		smooth: true,
-		showSymbol: false,
-		symbolSize: 6,
-		lineStyle: { width: 2.5 },
-		itemStyle: { color: item.color },
-		areaStyle: {
-			color: {
-				type: 'linear',
-				x: 0,
-				y: 0,
-				x2: 0,
-				y2: 1,
-				colorStops: [
-					{ offset: 0.05, color: `${item.color}4d` },
-					{ offset: 0.95, color: `${item.color}00` },
-				],
-			},
-		},
-		emphasis: { focus: 'series' },
-		data: props.data.map((point) => point[item.key]),
-	})),
-}))
+const range = computed(() => {
+	const first = props.data[0]?.date
+	const last = props.data.at(-1)?.date
+	if (!first || !last) return ''
+	return first === last ? first : `${first} → ${last}`
+})
 </script>
 
 <template>
-	<VChart :option="option" autoresize :style="{ height: `${height ?? 320}px`, width: '100%' }" />
+	<div class="trend">
+		<div class="trend-grid" :class="{ 'is-mobile': props.mobile }">
+			<div v-for="series in summary" :key="series.key" class="trend-item">
+				<div class="trend-head">
+					<span class="trend-label">{{ series.label }}</span>
+					<span class="trend-total">{{ series.total }}</span>
+				</div>
+				<mao-mini-chart
+					:values="series.values"
+					:label="series.label"
+					:unit="`共 ${series.total}`"
+					:tone="series.tone"
+				/>
+			</div>
+		</div>
+		<p v-if="range" class="trend-range">{{ range }}</p>
+	</div>
 </template>
+
+<style scoped>
+.trend {
+	display: flex;
+	flex-direction: column;
+	gap: var(--mt-space-3);
+}
+
+.trend-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--mt-space-4);
+}
+
+.trend-grid.is-mobile {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.trend-item {
+	min-width: 0;
+}
+
+.trend-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--mt-space-2);
+	margin-bottom: 6px;
+}
+
+.trend-label {
+	font-size: var(--mt-fs-sm);
+	color: var(--mt-muted);
+}
+
+.trend-total {
+	font-family: var(--mt-font-display);
+	font-size: var(--mt-fs-lg);
+	font-weight: 600;
+	color: var(--mt-text);
+}
+
+.trend-range {
+	margin: 0;
+	font-size: var(--mt-fs-xs);
+	color: var(--mt-faint);
+}
+</style>

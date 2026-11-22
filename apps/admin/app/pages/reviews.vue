@@ -1,14 +1,4 @@
 <script setup lang="ts">
-import { h, onMounted, ref, watch } from 'vue'
-import {
-	CheckOutlined,
-	ClockCircleOutlined,
-	CloseOutlined,
-	CommentOutlined,
-	FileTextOutlined,
-	InboxOutlined,
-	UserOutlined,
-} from '@ant-design/icons-vue'
 import { errorMessage } from '~/api/client'
 import { commentsApi, contentsApi, listItems } from '~/api'
 import type { Content } from '~/types/domain'
@@ -34,11 +24,6 @@ const reviews = ref<ReviewItem[]>([])
 const detailOpen = ref(false)
 const selectedItem = ref<ReviewItem | null>(null)
 const processingId = ref<number | null>(null)
-
-const typeOptions = [
-	{ value: 'content', label: h('span', [h(FileTextOutlined), ' 文章']) },
-	{ value: 'comment', label: h('span', [h(CommentOutlined), ' 评论']) },
-]
 
 function contentAuthor(item: Content): string {
 	if (typeof item.author === 'string') return item.author || '未知'
@@ -117,7 +102,7 @@ async function handleRejectConfirm(item: ReviewItem) {
 }
 
 function confirmReject(item: ReviewItem) {
-	modal.confirm({
+	void modal.confirm({
 		title: '确认拒绝审核？',
 		content: `确定要拒绝这条${item.type === 'content' ? '文章' : '评论'}吗？`,
 		okText: '确认拒绝',
@@ -147,291 +132,258 @@ function rejectFromDetail(item: ReviewItem) {
 	confirmReject(item)
 }
 
+function handleSegmentedChange(event: Event) {
+	const value = (event as CustomEvent<{ value?: string }>).detail?.value
+	if (value === 'content' || value === 'comment') activeType.value = value
+}
+
 watch(activeType, () => void fetchReviews())
 onMounted(fetchReviews)
 </script>
 
 <template>
-	<div class="reviews-page">
-		<a-card class="type-card" :body-style="{ padding: '16px 24px' }">
-			<div class="type-bar">
-				<a-segmented
-					v-model:value="activeType"
-					:options="typeOptions"
-					size="large"
-					:style="{ background: '#f5f5f5' }"
-				/>
-				<a-button :icon="h(ClockCircleOutlined)" :loading="loading" @click="fetchReviews">
-					刷新
-				</a-button>
+	<div class="page">
+		<header class="page-head">
+			<div>
+				<h1 class="page-title">内容审核</h1>
+				<p class="page-desc">处理待审核的文章与评论</p>
 			</div>
-		</a-card>
-
-		<a-spin :spinning="loading">
-			<a-card v-if="!reviews.length" class="empty-card">
-				<a-empty>
-					<template #image>
-						<InboxOutlined :style="{ fontSize: '64px', color: '#d9d9d9' }" />
-					</template>
-					<template #description>
-						<div>
-							<div class="empty-title">暂无待审核内容</div>
-							<div class="empty-hint">
-								当前没有需要审核的{{ activeType === 'content' ? '文章' : '评论' }}
-							</div>
-						</div>
-					</template>
-				</a-empty>
-			</a-card>
-
-			<a-space v-else direction="vertical" :style="{ width: '100%' }" :size="16">
-				<a-card
-					v-for="item in reviews"
-					:key="item.id"
-					class="review-card"
-					hoverable
-					:body-style="{ padding: '20px' }"
-					@click="openDetail(item)"
+			<div class="toolbar">
+				<mao-segmented
+					:value="activeType"
+					label="审核类型"
+					@mt-change="handleSegmentedChange"
 				>
-					<div class="review-row">
-						<div
-							class="review-icon"
-							:style="{ background: item.type === 'content' ? '#e6f7ff' : '#f6ffed' }"
-						>
-							<FileTextOutlined
-								v-if="item.type === 'content'"
-								:style="{ fontSize: '24px', color: '#1890ff' }"
-							/>
-							<CommentOutlined v-else :style="{ fontSize: '24px', color: '#52c41a' }" />
+					<mao-segment value="content">
+						<mao-icon name="file-text" :size="15" />
+						文章
+					</mao-segment>
+					<mao-segment value="comment">
+						<mao-icon name="message-square" :size="15" />
+						评论
+					</mao-segment>
+				</mao-segmented>
+				<mao-button variant="bordered" :loading="loading || undefined" @click="fetchReviews">
+					<mao-icon name="refresh-cw" :size="15" />
+					刷新
+				</mao-button>
+			</div>
+		</header>
+
+		<div v-if="loading" class="loading-state">
+			<mao-spinner size="md" label="加载中" />
+		</div>
+
+		<mao-card v-else-if="!reviews.length" padding="lg">
+			<div class="mt-card-body">
+				<mao-empty icon="inbox" title="暂无待审核内容" :description="`当前没有需要审核的${activeType === 'content' ? '文章' : '评论'}`" />
+			</div>
+		</mao-card>
+
+		<div v-else class="review-list">
+			<mao-card
+				v-for="item in reviews"
+				:key="item.id"
+				padding="md"
+				bordered
+				hoverable
+				clickable
+				@click="openDetail(item)"
+			>
+				<div class="mt-card-body review-row">
+					<div class="review-icon" :class="`is-${item.type}`">
+						<mao-icon :name="item.type === 'content' ? 'file-text' : 'message-square'" :size="22" />
+					</div>
+
+					<div class="review-main">
+						<div class="row">
+							<mao-badge :tone="item.type === 'content' ? 'blue' : 'sage'">
+								{{ item.type === 'content' ? '文章' : '评论' }}
+							</mao-badge>
+							<mao-badge tone="accent">待审核</mao-badge>
 						</div>
 
-						<div class="review-main">
-							<div class="review-tags">
-								<a-tag :color="item.type === 'content' ? 'blue' : 'green'">
-									{{ item.type === 'content' ? '文章' : '评论' }}
-								</a-tag>
-								<a-tag color="warning">待审核</a-tag>
-							</div>
+						<div v-if="item.title" class="review-title">{{ item.title }}</div>
+						<p class="review-content clamp-2">{{ item.content }}</p>
 
-							<div v-if="item.title" class="review-title">{{ item.title }}</div>
-
-							<a-typography-paragraph class="review-content" :ellipsis="{ rows: 2 }">
-								{{ item.content }}
-							</a-typography-paragraph>
-
-							<div class="review-meta">
-								<a-space>
-									<a-avatar size="small">
-										<template #icon><UserOutlined /></template>
-									</a-avatar>
-									<a-typography-text type="secondary">{{ item.author }}</a-typography-text>
-								</a-space>
-								<a-typography-text type="secondary" class="review-time">
-									<ClockCircleOutlined :style="{ marginRight: '4px' }" />
-									{{ formatTimestamp(item.created) }}
-								</a-typography-text>
-							</div>
-						</div>
-
-						<div class="review-actions">
-							<a-button
-								type="primary"
-								:icon="h(CheckOutlined)"
-								:loading="processingId === item.id"
-								class="approve-button"
-								@click.stop="handleApprove(item)"
-							>
-								通过
-							</a-button>
-							<a-button
-								danger
-								:icon="h(CloseOutlined)"
-								:loading="processingId === item.id"
-								@click.stop="confirmReject(item)"
-							>
-								拒绝
-							</a-button>
+						<div class="review-meta">
+							<span class="row">
+								<mao-avatar :label="item.author" size="sm" />
+								<span class="tiny muted">{{ item.author }}</span>
+							</span>
+							<span class="tiny faint row">
+								<mao-icon name="clock" :size="13" />
+								{{ formatTimestamp(item.created) }}
+							</span>
 						</div>
 					</div>
-				</a-card>
-			</a-space>
-		</a-spin>
 
-		<a-modal :open="detailOpen" :width="700" :title="null" @cancel="closeDetail">
-			<div v-if="selectedItem" class="detail">
-				<a-space :style="{ marginBottom: '16px' }">
-					<a-tag :color="selectedItem.type === 'content' ? 'blue' : 'green'">
+					<div class="review-actions">
+						<mao-button
+							color="success"
+							size="sm"
+							:loading="processingId === item.id || undefined"
+							@click.stop="handleApprove(item)"
+						>
+							<mao-icon name="check" :size="15" />
+							通过
+						</mao-button>
+						<mao-button
+							color="danger"
+							variant="bordered"
+							size="sm"
+							:loading="processingId === item.id || undefined"
+							@click.stop="confirmReject(item)"
+						>
+							<mao-icon name="x" :size="15" />
+							拒绝
+						</mao-button>
+					</div>
+				</div>
+			</mao-card>
+		</div>
+
+		<mao-dialog
+			:open="detailOpen || undefined"
+			heading="审核详情"
+			size="md"
+			closable
+			@mt-close="closeDetail"
+		>
+			<div v-if="selectedItem" class="stack">
+				<div class="row">
+					<mao-badge :tone="selectedItem.type === 'content' ? 'blue' : 'sage'">
 						{{ selectedItem.type === 'content' ? '文章' : '评论' }}
-					</a-tag>
-					<a-tag color="warning">待审核</a-tag>
-				</a-space>
-
-				<a-typography-title v-if="selectedItem.title" :level="4" :style="{ marginBottom: '16px' }">
-					{{ selectedItem.title }}
-				</a-typography-title>
-
-				<div class="detail-content">
-					<a-typography-text :style="{ whiteSpace: 'pre-wrap' }">
-						{{ selectedItem.content }}
-					</a-typography-text>
+					</mao-badge>
+					<mao-badge tone="accent">待审核</mao-badge>
 				</div>
 
-				<a-space :size="24" :style="{ marginBottom: '16px' }" wrap>
-					<a-space>
-						<a-avatar size="small">
-							<template #icon><UserOutlined /></template>
-						</a-avatar>
-						<a-typography-text type="secondary">作者:</a-typography-text>
-						<a-typography-text strong>{{ selectedItem.author }}</a-typography-text>
-					</a-space>
-					<a-space>
-						<ClockCircleOutlined :style="{ color: '#999' }" />
-						<a-typography-text type="secondary">提交时间:</a-typography-text>
-						<a-typography-text strong>{{
-							formatTimestamp(selectedItem.created)
-						}}</a-typography-text>
-					</a-space>
-				</a-space>
+				<h3 v-if="selectedItem.title" class="section-title">{{ selectedItem.title }}</h3>
 
-				<div class="detail-actions">
-					<a-button
-						type="primary"
-						:icon="h(CheckOutlined)"
-						class="approve-button"
-						@click="approveFromDetail(selectedItem)"
-					>
-						通过
-					</a-button>
-					<a-button danger :icon="h(CloseOutlined)" @click="rejectFromDetail(selectedItem)">
-						拒绝
-					</a-button>
-				</div>
+				<div class="detail-content">{{ selectedItem.content }}</div>
+
+				<mao-descriptions>
+					<mao-descriptions-item label="作者">{{ selectedItem.author }}</mao-descriptions-item>
+					<mao-descriptions-item label="提交时间">
+						{{ formatTimestamp(selectedItem.created) }}
+					</mao-descriptions-item>
+				</mao-descriptions>
 			</div>
 
-			<template #footer>
-				<a-button @click="closeDetail">关闭</a-button>
-			</template>
-		</a-modal>
+			<mao-button slot="actions" variant="flat" @click="closeDetail">关闭</mao-button>
+			<mao-button
+				v-if="selectedItem"
+				slot="actions"
+				color="success"
+				@click="approveFromDetail(selectedItem)"
+			>
+				<mao-icon name="check" :size="15" />
+				通过
+			</mao-button>
+			<mao-button
+				v-if="selectedItem"
+				slot="actions"
+				color="danger"
+				variant="bordered"
+				@click="rejectFromDetail(selectedItem)"
+			>
+				<mao-icon name="x" :size="15" />
+				拒绝
+			</mao-button>
+		</mao-dialog>
 	</div>
 </template>
 
 <style scoped>
-.reviews-page {
-	padding-bottom: 24px;
-}
-
-.type-card {
-	margin-bottom: 24px;
-	border-radius: 12px;
-}
-
-.type-bar {
+.loading-state {
 	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	flex-wrap: wrap;
-	gap: 16px;
+	justify-content: center;
+	padding: 64px 0;
 }
 
-.empty-card {
-	border-radius: 12px;
-}
-
-.empty-title {
-	font-weight: 600;
-	font-size: 16px;
-	color: #1e293b;
-}
-
-.empty-hint {
-	color: #94a3b8;
-}
-
-.review-card {
-	border-radius: 12px;
-	transition: all 0.3s ease;
-	border: 1px solid #f0f0f0;
-	cursor: pointer;
+.review-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--mt-space-3);
 }
 
 .review-row {
 	display: flex;
-	gap: 16px;
+	gap: var(--mt-space-4);
+	align-items: flex-start;
 }
 
 .review-icon {
-	width: 48px;
-	height: 48px;
-	border-radius: 12px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	flex-shrink: 0;
+	flex: none;
+	width: 46px;
+	height: 46px;
+	border-radius: var(--mt-radius-lg);
+	background: var(--mt-surface-2);
+	color: var(--mt-muted);
+}
+
+.review-icon.is-content {
+	background: var(--mt-blue-soft);
+	color: var(--mt-blue);
+}
+
+.review-icon.is-comment {
+	background: var(--mt-sage-soft);
+	color: var(--mt-sage);
 }
 
 .review-main {
 	flex: 1;
 	min-width: 0;
-}
-
-.review-tags {
-	margin-bottom: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: var(--mt-space-2);
 }
 
 .review-title {
-	margin-bottom: 8px;
+	font-size: var(--mt-fs-md);
 	font-weight: 600;
-	font-size: 16px;
-	color: #1e293b;
+	line-height: var(--mt-lh-tight);
 }
 
 .review-content {
-	margin-bottom: 12px;
-	color: #666;
+	margin: 0;
+	color: var(--mt-muted);
+	font-size: var(--mt-fs-sm);
 }
 
 .review-meta {
 	display: flex;
 	align-items: center;
-	gap: 16px;
+	gap: var(--mt-space-4);
 	flex-wrap: wrap;
-}
-
-.review-time {
-	font-size: 12px;
 }
 
 .review-actions {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	justify-content: center;
-	flex-shrink: 0;
-}
-
-.approve-button {
-	background: #52c41a;
-	border-color: #52c41a;
-	border-radius: 8px;
-}
-
-.detail {
-	padding: 16px 0;
+	gap: var(--mt-space-2);
+	flex: none;
 }
 
 .detail-content {
-	background: #f5f5f5;
-	padding: 16px;
-	border-radius: 8px;
-	margin-bottom: 16px;
-	max-height: 300px;
+	max-height: 320px;
 	overflow: auto;
+	padding: var(--mt-space-3);
+	border-radius: var(--mt-radius);
+	background: var(--mt-surface-2);
+	white-space: pre-wrap;
+	font-size: var(--mt-fs-sm);
+	color: var(--mt-text);
 }
 
-.detail-actions {
-	margin-top: 24px;
-	display: flex;
-	gap: 12px;
+mao-segment {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
 }
 
 @media (max-width: 768px) {
@@ -440,7 +392,12 @@ onMounted(fetchReviews)
 	}
 
 	.review-actions {
+		width: 100%;
 		flex-direction: row;
+	}
+
+	.review-actions :deep(mao-button) {
+		flex: 1;
 	}
 }
 </style>

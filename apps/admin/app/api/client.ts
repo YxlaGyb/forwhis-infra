@@ -4,6 +4,7 @@ export interface ApiRequestOptions {
 	method?: 'GET' | 'POST'
 	body?: unknown
 	query?: Record<string, unknown>
+	headers?: Record<string, string | undefined>
 }
 
 export type ApiClient = <T>(url: string, options?: ApiRequestOptions) => Promise<T>

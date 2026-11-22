@@ -1,12 +1,14 @@
-const STATUS_COLORS: Record<string, string> = {
-	publish: 'green',
-	draft: 'orange',
+export type MaoBadgeTone = 'neutral' | 'accent' | 'danger' | 'sage' | 'blue' | 'solid'
+
+const STATUS_TONES: Record<string, MaoBadgeTone> = {
+	publish: 'sage',
+	draft: 'accent',
 	private: 'blue',
-	trash: 'red',
-	rejected: 'red',
-	approved: 'green',
-	pending: 'orange',
-	spam: 'red',
+	trash: 'danger',
+	rejected: 'danger',
+	approved: 'sage',
+	pending: 'accent',
+	spam: 'danger',
 }
 
 const STATUS_NAMES: Record<string, string> = {
@@ -26,12 +28,12 @@ const TYPE_NAMES: Record<string, string> = {
 	page: '页面',
 }
 
-const ROLE_COLORS: Record<string, string> = {
-	superadmin: 'red',
-	admin: 'orange',
+const ROLE_TONES: Record<string, MaoBadgeTone> = {
+	superadmin: 'danger',
+	admin: 'accent',
 	editor: 'blue',
-	user: 'green',
-	visitor: 'default',
+	user: 'sage',
+	visitor: 'neutral',
 }
 
 const ROLE_NAMES: Record<string, string> = {
@@ -42,12 +44,12 @@ const ROLE_NAMES: Record<string, string> = {
 	visitor: '访客',
 }
 
-export const getStatusColor = (status: string): string => STATUS_COLORS[status] || 'default'
+export const getStatusTone = (status: string): MaoBadgeTone => STATUS_TONES[status] ?? 'neutral'
 
-export const getStatusName = (status: string): string => STATUS_NAMES[status] || status
+export const getStatusName = (status: string): string => STATUS_NAMES[status] ?? status
 
-export const getTypeName = (type: string): string => TYPE_NAMES[type] || type
+export const getTypeName = (type: string): string => TYPE_NAMES[type] ?? type
 
-export const getRoleColor = (role: string): string => ROLE_COLORS[role] || 'default'
+export const getRoleTone = (role: string): MaoBadgeTone => ROLE_TONES[role] ?? 'neutral'
 
-export const getRoleName = (role: string): string => ROLE_NAMES[role] || role
+export const getRoleName = (role: string): string => ROLE_NAMES[role] ?? role

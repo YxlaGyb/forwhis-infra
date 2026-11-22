@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { computed, h, nextTick, reactive, ref } from 'vue'
-import type { FormInstance } from 'ant-design-vue'
-import { DeleteOutlined, EditOutlined, PlusOutlined, SafetyOutlined } from '@ant-design/icons-vue'
 import type { ActionItem, ResponsiveColumn } from '~/types/domain'
-import { getRoleColor, getRoleName } from '~/utils/mapping'
+import { getRoleName, getRoleTone } from '~/utils/mapping'
 
 definePageMeta({ layout: 'admin' })
 
@@ -15,7 +12,12 @@ interface Role {
 	userCount: number
 }
 
-const PERMISSION_CATEGORIES = [
+interface PermissionCategory {
+	category: string
+	permissions: { key: string; name: string }[]
+}
+
+const PERMISSION_CATEGORIES: PermissionCategory[] = [
 	{
 		category: '用户管理',
 		permissions: [
@@ -52,26 +54,7 @@ const PERMISSION_CATEGORIES = [
 ]
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-	superadmin: [
-		'user:read',
-		'user:create',
-		'user:edit',
-		'user:delete',
-		'post:read',
-		'post:create',
-		'post:edit',
-		'post:delete',
-		'post:publish',
-		'comment:read',
-		'comment:create',
-		'comment:delete',
-		'comment:moderate',
-		'system:config',
-		'system:logs',
-		'system:backup',
-		'system:plugin',
-		'settings:edit',
-	],
+	superadmin: PERMISSION_CATEGORIES.flatMap((group) => group.permissions.map((item) => item.key)),
 	admin: [
 		'user:read',
 		'user:create',
@@ -89,14 +72,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 		'system:logs',
 		'settings:edit',
 	],
-	editor: [
-		'post:read',
-		'post:create',
-		'post:edit',
-		'post:publish',
-		'comment:read',
-		'comment:create',
-	],
+	editor: ['post:read', 'post:create', 'post:edit', 'post:publish', 'comment:read', 'comment:create'],
 	user: ['post:read', 'comment:read', 'comment:create'],
 }
 
@@ -137,11 +113,16 @@ const loading = ref(false)
 const modalOpen = ref(false)
 const editingRole = ref<Role | null>(null)
 const selectedPermissions = ref<string[]>([])
-const formRef = ref<FormInstance>()
-
-const formState = reactive({ name: '', description: '' })
+const formEl = ref<{ submit: () => void; clearErrors: () => void } | null>(null)
+const formState = ref({ name: '', description: '' })
 
 const isSystemRole = computed(() => editingRole.value?.name === 'superadmin')
+const permissionValue = computed(() => selectedPermissions.value.join(','))
+
+const RULES = {
+	name: '[{"rule":"required","message":"请输入角色名称"},{"rule":"pattern","value":"^[a-z0-9_]+$","message":"只能使用小写字母、数字和下划线"}]',
+	description: '[{"rule":"required","message":"请输入角色描述"}]',
+}
 
 const columns: ResponsiveColumn[] = [
 	{ key: 'name', title: '角色名称', dataIndex: 'name' },
@@ -153,17 +134,17 @@ const columns: ResponsiveColumn[] = [
 function openCreate() {
 	editingRole.value = null
 	selectedPermissions.value = []
-	Object.assign(formState, { name: '', description: '' })
+	formState.value = { name: '', description: '' }
 	modalOpen.value = true
-	nextTick(() => formRef.value?.clearValidate())
+	nextTick(() => formEl.value?.clearErrors())
 }
 
 function openEdit(role: Role) {
 	editingRole.value = role
 	selectedPermissions.value = [...role.permissions]
-	Object.assign(formState, { name: role.name, description: role.description })
+	formState.value = { name: role.name, description: role.description }
 	modalOpen.value = true
-	nextTick(() => formRef.value?.clearValidate())
+	nextTick(() => formEl.value?.clearErrors())
 }
 
 function closeModal() {
@@ -177,17 +158,34 @@ function handleDelete(id: number) {
 	message.success('角色删除成功')
 }
 
-async function handleOk() {
-	try {
-		await formRef.value?.validate()
-	} catch {
-		return
-	}
+function handlePermissionChange(event: Event) {
+	const values = (event as CustomEvent<{ values?: string[] }>).detail?.values
+	selectedPermissions.value = values ?? []
+}
+
+function categorySelected(category: PermissionCategory): boolean {
+	return category.permissions.every((item) => selectedPermissions.value.includes(item.key))
+}
+
+function toggleCategory(category: PermissionCategory) {
+	const keys = category.permissions.map((item) => item.key)
+	selectedPermissions.value = categorySelected(category)
+		? selectedPermissions.value.filter((key) => !keys.includes(key))
+		: [...new Set([...selectedPermissions.value, ...keys])]
+}
+
+async function handleSubmit(event: Event) {
+	const values = (event as CustomEvent<{ values?: Record<string, string> }>).detail?.values ?? {}
 
 	if (editingRole.value) {
 		roles.value = roles.value.map((role) =>
 			role.id === editingRole.value?.id
-				? { ...role, ...formState, permissions: [...selectedPermissions.value] }
+				? {
+						...role,
+						name: values.name ?? role.name,
+						description: values.description ?? role.description,
+						permissions: [...selectedPermissions.value],
+					}
 				: role,
 		)
 		message.success('角色更新成功')
@@ -196,8 +194,8 @@ async function handleOk() {
 			...roles.value,
 			{
 				id: Date.now(),
-				name: formState.name,
-				description: formState.description,
+				name: values.name ?? '',
+				description: values.description ?? '',
 				permissions: [...selectedPermissions.value],
 				userCount: 0,
 			},
@@ -213,14 +211,14 @@ function getActions(record: Role): ActionItem[] {
 		{
 			key: 'edit',
 			text: '编辑',
-			icon: EditOutlined,
+			icon: 'pencil',
 			disabled: record.name === 'superadmin',
 			onClick: () => openEdit(record),
 		},
 		{
 			key: 'delete',
 			text: '删除',
-			icon: DeleteOutlined,
+			icon: 'trash-2',
 			danger: true,
 			disabled: record.name === 'superadmin' || record.userCount > 0,
 			onClick: () => {
@@ -232,104 +230,130 @@ function getActions(record: Role): ActionItem[] {
 </script>
 
 <template>
-	<div>
+	<div class="page">
 		<UserRoleTabs />
 
-		<a-card>
-			<div class="toolbar">
-				<a-button type="primary" :icon="h(PlusOutlined)" @click="openCreate"> 添加角色 </a-button>
+		<header class="page-head">
+			<div>
+				<h1 class="page-title">角色权限</h1>
+				<p class="page-desc">配置角色的描述与可用权限</p>
+			</div>
+			<mao-button color="primary" @click="openCreate">
+				<mao-icon name="plus" :size="15" />
+				添加角色
+			</mao-button>
+		</header>
+
+		<mao-card padding="md">
+			<div class="mt-card-body">
+				<ResponsiveTable
+					:columns="columns"
+					:data-source="roles"
+					row-key="id"
+					:loading="loading"
+					:actions="getActions"
+					:pagination="false"
+				>
+					<template #cell-name="{ record }">
+						<span class="row">
+							<mao-avatar :label="getRoleName((record as Role).name)" size="sm" />
+							<mao-badge :tone="getRoleTone((record as Role).name)">
+								{{ getRoleName((record as Role).name) }}
+							</mao-badge>
+						</span>
+					</template>
+					<template #cell-permissions="{ record }">
+						{{ (record as Role).permissions.length }} 个权限
+					</template>
+				</ResponsiveTable>
+			</div>
+		</mao-card>
+
+		<mao-dialog
+			:open="modalOpen || undefined"
+			:heading="editingRole ? '编辑角色' : '添加角色'"
+			size="lg"
+			closable
+			@mt-close="closeModal"
+		>
+			<mao-form ref="formEl" label="角色信息" @mt-submit="handleSubmit">
+				<mao-form-item name="name" label="角色名称" :rules="RULES.name">
+					<mao-text-field
+						name="name"
+						:value="formState.name"
+						:readonly="!!editingRole || undefined"
+						:disabled="isSystemRole || undefined"
+						placeholder="请输入角色名称, 如：editor"
+					/>
+				</mao-form-item>
+
+				<mao-form-item name="description" label="描述" :rules="RULES.description">
+					<mao-text-area
+						name="description"
+						:value="formState.description"
+						:rows="2"
+						:disabled="isSystemRole || undefined"
+						placeholder="请输入角色描述"
+					/>
+				</mao-form-item>
+			</mao-form>
+
+			<div class="stack permissions">
+				<div class="row-between">
+					<h4 class="section-title">权限配置</h4>
+					<mao-badge tone="neutral">{{ selectedPermissions.length }} 项已选</mao-badge>
+				</div>
+
+				<mao-notice v-if="isSystemRole" tone="info">
+					超级管理员拥有所有权限, 不可修改
+				</mao-notice>
+
+				<mao-card v-for="group in PERMISSION_CATEGORIES" :key="group.category" padding="sm" bordered>
+					<div class="mt-card-body">
+						<div class="row-between group-head">
+							<span class="strong">{{ group.category }}</span>
+							<mao-button
+								size="sm"
+								variant="flat"
+								:disabled="isSystemRole || undefined"
+								@click="toggleCategory(group)"
+							>
+								{{ categorySelected(group) ? '清空' : '全选' }}
+							</mao-button>
+						</div>
+
+						<mao-checkbox-group
+							:value="permissionValue"
+							:disabled="isSystemRole || undefined"
+							:label="group.category"
+							@mt-change="handlePermissionChange"
+						>
+							<mao-checkbox v-for="item in group.permissions" :key="item.key" :value="item.key">
+								{{ item.name }}
+							</mao-checkbox>
+						</mao-checkbox-group>
+					</div>
+				</mao-card>
 			</div>
 
-			<ResponsiveTable
-				:columns="columns"
-				:data-source="roles"
-				row-key="id"
-				:loading="loading"
-				:actions="getActions"
-				:pagination="false"
-			>
-				<template #card-title="{ record }">
-					<a-space>
-						<a-avatar size="small">
-							<template #icon><SafetyOutlined /></template>
-						</a-avatar>
-						<a-tag :color="getRoleColor(record.name)">{{ getRoleName(record.name) }}</a-tag>
-					</a-space>
-				</template>
-				<template #card-subtitle="{ record }">{{ record.description }}</template>
-				<template #cell-permissions="{ record }"> {{ record.permissions.length }} 个权限 </template>
-			</ResponsiveTable>
-		</a-card>
-
-		<a-modal
-			:title="editingRole ? '编辑角色' : '添加角色'"
-			:open="modalOpen"
-			:width="700"
-			ok-text="确定"
-			cancel-text="取消"
-			@ok="handleOk"
-			@cancel="closeModal"
-		>
-			<a-form ref="formRef" :model="formState" layout="vertical">
-				<a-form-item
-					label="角色名称"
-					name="name"
-					:rules="[
-						{ required: true, message: '请输入角色名称' },
-						{ pattern: /^[a-z0-9_]+$/, message: '只能使用小写字母、数字和下划线' },
-					]"
-				>
-					<a-input
-						v-model:value="formState.name"
-						placeholder="请输入角色名称, 如：editor"
-						:disabled="isSystemRole || !!editingRole"
-					/>
-				</a-form-item>
-
-				<a-form-item
-					label="描述"
-					name="description"
-					:rules="[{ required: true, message: '请输入角色描述' }]"
-				>
-					<a-textarea
-						v-model:value="formState.description"
-						:rows="2"
-						placeholder="请输入角色描述"
-						:disabled="isSystemRole"
-					/>
-				</a-form-item>
-
-				<a-form-item label="权限配置" required>
-					<a-tag v-if="isSystemRole" color="red">超级管理员拥有所有权限, 不可修改</a-tag>
-					<a-space v-else direction="vertical" style="width: 100%">
-						<a-card
-							v-for="category in PERMISSION_CATEGORIES"
-							:key="category.category"
-							size="small"
-							:title="category.category"
-							style="margin-bottom: 8px"
-						>
-							<a-checkbox-group v-model:value="selectedPermissions">
-								<a-space wrap>
-									<a-checkbox
-										v-for="permission in category.permissions"
-										:key="permission.key"
-										:value="permission.key"
-									>
-										{{ permission.name }}
-									</a-checkbox>
-								</a-space>
-							</a-checkbox-group>
-						</a-card>
-					</a-space>
-				</a-form-item>
-			</a-form>
-		</a-modal>
+			<mao-button slot="actions" variant="flat" @click="closeModal">取消</mao-button>
+			<mao-button slot="actions" color="primary" @click="formEl?.submit()">确定</mao-button>
+		</mao-dialog>
 	</div>
 </template>
 
 <style scoped>
-.toolbar {
-	margin-bottom: 16px;
+.permissions {
+	margin-top: var(--mt-space-4);
+}
+
+.group-head {
+	margin-bottom: var(--mt-space-2);
+}
+
+mao-checkbox-group {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: var(--mt-space-2) var(--mt-space-3);
 }
 </style>

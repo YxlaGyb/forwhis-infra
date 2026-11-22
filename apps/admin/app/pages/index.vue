@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
-import {
-	EditOutlined,
-	EyeOutlined,
-	FileTextOutlined,
-	MessageOutlined,
-	UserOutlined,
-} from '@ant-design/icons-vue'
 import { errorMessage } from '~/api/client'
 import { statsApi } from '~/api'
 import type { DashboardData, TrendPoint } from '~/types/domain'
@@ -22,7 +14,8 @@ const trendData = ref<TrendPoint[]>([])
 const loading = ref(true)
 const trendLoading = ref(false)
 const days = ref(7)
-const sliderValue = ref(7)
+
+const DAY_OPTIONS = [7, 14, 30] as const
 
 const increments = computed(() => {
 	const selected = trendData.value.slice(-days.value)
@@ -60,12 +53,10 @@ async function fetchTrend() {
 	}
 }
 
-function handleSliderChange(value: number) {
-	sliderValue.value = value
-}
-
-function handleSliderAfterChange(value: number | number[]) {
-	days.value = Array.isArray(value) ? (value[0] ?? days.value) : value
+function handleDaysChange(event: Event) {
+	const next = Number((event as CustomEvent<{ value?: string }>).detail?.value)
+	if (!Number.isFinite(next) || next === days.value) return
+	days.value = next
 	void fetchTrend()
 }
 
@@ -76,199 +67,171 @@ onMounted(async () => {
 
 <template>
 	<div v-if="loading" class="page-loading">
-		<a-spin size="large" />
+		<mao-spinner size="lg" label="正在加载数据" />
 	</div>
 
-	<div v-else>
-		<a-typography-title :level="2" :style="{ marginBottom: '8px' }">数据总览</a-typography-title>
-		<a-typography-paragraph type="secondary" :style="{ marginBottom: '24px' }">
-			实时展示系统各项核心数据指标及变化趋势
-		</a-typography-paragraph>
+	<div v-else class="page">
+		<header class="page-head">
+			<div>
+				<h1 class="page-title">数据总览</h1>
+				<p class="page-desc">实时展示系统各项核心数据指标及变化趋势</p>
+			</div>
+		</header>
 
-		<div class="section-title">数据总和</div>
-		<a-typography-paragraph type="secondary" :style="{ marginBottom: '16px' }">
-			网站在建立以来, 各项指标的总和数据
-		</a-typography-paragraph>
+		<section class="stack">
+			<h2 class="section-title">数据总和</h2>
+			<p class="page-desc">网站在建立以来, 各项指标的总和数据</p>
 
-		<a-row :gutter="[24, 24]">
-			<a-col :xs="24" :sm="12" :lg="8">
-				<a-card>
-					<a-statistic
-						title="总用户数"
-						:value="dashboardData.users?.total || 0"
-						:value-style="{ color: '#3f8600' }"
-					>
-						<template #prefix><UserOutlined /></template>
-					</a-statistic>
-					<div class="stat-hint">
-						今日新增 {{ dashboardData.users?.todayNew || 0 }} | 本周新增
-						{{ dashboardData.users?.weekNew || 0 }}
+			<div class="grid-auto">
+				<mao-card padding="md">
+					<div class="mt-card-body stat">
+						<span class="stat-icon is-sage"><mao-icon name="users" :size="18" /></span>
+						<mao-metric
+							label="总用户数"
+							:value="String(dashboardData.users?.total || 0)"
+							:trend="`今日新增 ${dashboardData.users?.todayNew || 0} | 本周新增 ${dashboardData.users?.weekNew || 0}`"
+						/>
 					</div>
-				</a-card>
-			</a-col>
+				</mao-card>
 
-			<a-col :xs="24" :sm="12" :lg="8">
-				<a-card hoverable @click="navigateTo('/articles')">
-					<a-statistic
-						title="内容总数"
-						:value="(dashboardData.contents?.posts || 0) + (dashboardData.contents?.articles || 0)"
-						:value-style="{ color: '#1890ff' }"
-					>
-						<template #prefix><FileTextOutlined /></template>
-						<template #suffix>
-							<EditOutlined :style="{ fontSize: '12px', opacity: 0.5 }" />
-						</template>
-					</a-statistic>
-					<div class="stat-hint">
-						文章 {{ dashboardData.contents?.articles || 0 }} | 帖子
-						{{ dashboardData.contents?.posts || 0 }}
+				<mao-card padding="md" hoverable clickable href="/articles">
+					<div class="mt-card-body stat">
+						<span class="stat-icon is-blue"><mao-icon name="file-text" :size="18" /></span>
+						<mao-metric
+							label="内容总数"
+							:value="String((dashboardData.contents?.posts || 0) + (dashboardData.contents?.articles || 0))"
+							:trend="`文章 ${dashboardData.contents?.articles || 0} | 帖子 ${dashboardData.contents?.posts || 0}`"
+						/>
 					</div>
-				</a-card>
-			</a-col>
+				</mao-card>
 
-			<a-col :xs="24" :sm="12" :lg="8">
-				<a-card>
-					<a-statistic
-						title="评论总数"
-						:value="dashboardData.comments?.total || 0"
-						:value-style="{ color: '#cf1322' }"
-					>
-						<template #prefix><MessageOutlined /></template>
-					</a-statistic>
-					<div class="stat-hint">
-						已审核 {{ dashboardData.comments?.approved || 0 }} | 待审核
-						{{ dashboardData.comments?.pending || 0 }}
+				<mao-card padding="md">
+					<div class="mt-card-body stat">
+						<span class="stat-icon is-accent"><mao-icon name="message-square" :size="18" /></span>
+						<mao-metric
+							label="评论总数"
+							:value="String(dashboardData.comments?.total || 0)"
+							:trend="`已审核 ${dashboardData.comments?.approved || 0} | 待审核 ${dashboardData.comments?.pending || 0}`"
+						/>
 					</div>
-				</a-card>
-			</a-col>
+				</mao-card>
 
-			<a-col :xs="24" :sm="12" :lg="8">
-				<a-card>
-					<a-statistic
-						title="内容访问量"
-						:value="dashboardData.contents?.views || 0"
-						:value-style="{ color: '#722ed1' }"
-					>
-						<template #prefix><EyeOutlined /></template>
-					</a-statistic>
-					<div class="stat-hint">总阅读量统计</div>
-				</a-card>
-			</a-col>
-		</a-row>
-
-		<div class="section-title" style="margin-top: 24px">
-			增量数据
-			<a-typography-text
-				type="secondary"
-				:style="{ fontWeight: 400, marginLeft: '8px', fontSize: '14px' }"
-			>
-				最近 {{ sliderValue }} 天
-			</a-typography-text>
-		</div>
-		<a-typography-paragraph type="secondary" :style="{ marginBottom: '16px' }">
-			网站在指定时间段内, 各项指标的增量数据
-		</a-typography-paragraph>
-
-		<a-slider
-			:min="1"
-			:max="30"
-			:value="sliderValue"
-			:tooltip="{ open: false }"
-			:style="{ marginBottom: '16px' }"
-			@change="handleSliderChange"
-			@after-change="handleSliderAfterChange"
-		/>
-
-		<a-row :gutter="[24, 24]" :style="{ marginTop: '8px' }">
-			<a-col :xs="24" :sm="12" :lg="6">
-				<a-card :style="{ textAlign: 'center' }">
-					<div class="increment-label">新增用户</div>
-					<div class="increment-value" :style="{ color: '#3f8600' }">+{{ increments.user }}</div>
-				</a-card>
-			</a-col>
-			<a-col :xs="24" :sm="12" :lg="6">
-				<a-card :style="{ textAlign: 'center' }">
-					<div class="increment-label">新增内容</div>
-					<div class="increment-value" :style="{ color: '#1890ff' }">+{{ increments.content }}</div>
-				</a-card>
-			</a-col>
-			<a-col :xs="24" :sm="12" :lg="6">
-				<a-card :style="{ textAlign: 'center' }">
-					<div class="increment-label">新增评论</div>
-					<div class="increment-value" :style="{ color: '#cf1322' }">+{{ increments.comment }}</div>
-				</a-card>
-			</a-col>
-			<a-col :xs="24" :sm="12" :lg="6">
-				<a-card :style="{ textAlign: 'center' }">
-					<div class="increment-label">新增访问</div>
-					<div class="increment-value" :style="{ color: '#722ed1' }">+{{ increments.views }}</div>
-				</a-card>
-			</a-col>
-		</a-row>
-
-		<a-row :gutter="[24, 24]" :style="{ marginTop: '24px' }">
-			<a-col :span="24">
-				<div class="section-title">趋势图</div>
-				<a-typography-paragraph type="secondary" :style="{ marginBottom: '16px' }">
-					如果要用一张可视化的图表来表示网站的增量数据状态, 那就是下面这张图
-				</a-typography-paragraph>
-				<a-card :style="{ minHeight: isMobile ? '320px' : '360px' }">
-					<div v-if="trendLoading" class="chart-loading">
-						<a-spin size="large" />
+				<mao-card padding="md">
+					<div class="mt-card-body stat">
+						<span class="stat-icon is-blue"><mao-icon name="eye" :size="18" /></span>
+						<mao-metric
+							label="内容访问量"
+							:value="String(dashboardData.contents?.views || 0)"
+							trend="总阅读量统计"
+						/>
 					</div>
-					<ClientOnly v-else-if="trendData.length">
-						<TrendChart :data="trendData" :mobile="isMobile" :height="isMobile ? 280 : 320" />
-					</ClientOnly>
-					<div v-else class="chart-empty">
-						<a-typography-text type="secondary">暂无趋势数据</a-typography-text>
+				</mao-card>
+			</div>
+		</section>
+
+		<section class="stack">
+			<div class="row-between">
+				<h2 class="section-title">增量数据</h2>
+				<mao-segmented label="统计范围" :value="String(days)" @mt-change="handleDaysChange">
+					<mao-segment v-for="option in DAY_OPTIONS" :key="option" :value="String(option)">
+						{{ option }} 天
+					</mao-segment>
+				</mao-segmented>
+			</div>
+			<p class="page-desc">网站在指定时间段内, 各项指标的增量数据</p>
+
+			<div class="grid-auto is-quarters">
+				<mao-card padding="md">
+					<div class="mt-card-body stat">
+						<span class="stat-icon is-sage"><mao-icon name="user-plus" :size="18" /></span>
+						<mao-metric label="新增用户" :value="`+${increments.user}`" />
 					</div>
-				</a-card>
-			</a-col>
-		</a-row>
+				</mao-card>
+				<mao-card padding="md">
+					<div class="mt-card-body stat">
+						<span class="stat-icon is-blue"><mao-icon name="file-plus" :size="18" /></span>
+						<mao-metric label="新增内容" :value="`+${increments.content}`" />
+					</div>
+				</mao-card>
+				<mao-card padding="md">
+					<div class="mt-card-body stat">
+						<span class="stat-icon is-accent"><mao-icon name="message-square" :size="18" /></span>
+						<mao-metric label="新增评论" :value="`+${increments.comment}`" />
+					</div>
+				</mao-card>
+				<mao-card padding="md">
+					<div class="mt-card-body stat">
+						<span class="stat-icon is-blue"><mao-icon name="eye" :size="18" /></span>
+						<mao-metric label="新增访问" :value="`+${increments.views}`" />
+					</div>
+				</mao-card>
+			</div>
+		</section>
+
+		<section class="stack">
+			<h2 class="section-title">趋势图</h2>
+			<p class="page-desc">如果要用一张可视化的图表来表示网站的增量数据状态, 那就是下面这张图</p>
+			<mao-card padding="md">
+				<div class="mt-card-body">
+					<div v-if="trendLoading" class="chart-center">
+						<mao-spinner label="正在加载趋势" />
+					</div>
+					<TrendChart v-else-if="trendData.length" :data="trendData" :mobile="isMobile" />
+					<mao-empty
+						v-else
+						icon="chart-no-axes-column"
+						title="暂无趋势数据"
+						description="换个时间范围试试"
+					/>
+				</div>
+			</mao-card>
+		</section>
 	</div>
 </template>
 
 <style scoped>
 .page-loading {
 	display: flex;
-	justify-content: center;
 	align-items: center;
-	height: 200px;
+	justify-content: center;
+	min-height: 240px;
 }
 
-.section-title {
-	margin-bottom: 8px;
-	font-size: 16px;
-	font-weight: 600;
-	color: #333;
-}
-
-.stat-hint {
-	margin-top: 8px;
-	font-size: 12px;
-	color: #888;
-}
-
-.increment-label {
-	color: #888;
-	font-size: 14px;
-	margin-bottom: 8px;
-}
-
-.increment-value {
-	font-size: 28px;
-	font-weight: bold;
-}
-
-.chart-loading {
+.stat {
 	display: flex;
-	justify-content: center;
-	align-items: center;
-	height: 300px;
+	align-items: flex-start;
+	gap: var(--mt-space-3);
 }
 
-.chart-empty {
-	text-align: center;
-	padding: 40px 0;
+.stat-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	flex: none;
+	border-radius: var(--mt-radius);
+}
+
+.stat-icon.is-sage {
+	background: var(--mt-sage-soft);
+	color: var(--mt-sage);
+}
+
+.stat-icon.is-blue {
+	background: var(--mt-blue-soft);
+	color: var(--mt-blue);
+}
+
+.stat-icon.is-accent {
+	background: var(--mt-accent-soft);
+	color: var(--mt-accent);
+}
+
+.chart-center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 220px;
 }
 </style>

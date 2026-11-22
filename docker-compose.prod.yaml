@@ -33,7 +33,7 @@ services:
       POSTGRES_DB: forwhis
       POSTGRES_USER: forwhis
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-    ports: ["25432:25432"]
+    ports: ["25432:5432"]
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

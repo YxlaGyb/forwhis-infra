@@ -1,37 +1,27 @@
 <script setup lang="ts">
-import { h, nextTick, onMounted, reactive, ref } from 'vue'
-import type { FormInstance } from 'ant-design-vue'
-import {
-	DeleteOutlined,
-	EditOutlined,
-	PlusOutlined,
-	SearchOutlined,
-	UserOutlined,
-} from '@ant-design/icons-vue'
 import { errorMessage } from '~/api/client'
 import { usersApi } from '~/api'
 import type { ActionItem, AdminUser, ResponsiveColumn } from '~/types/domain'
 import { ROLE_OPTIONS, USER_LIMITS } from '~/utils/constants'
 import { formatTimestamp } from '~/utils/format'
-import { getRoleColor, getRoleName } from '~/utils/mapping'
+import { getRoleName, getRoleTone } from '~/utils/mapping'
 
 definePageMeta({ layout: 'admin' })
+
+interface FormHost extends HTMLElement {
+	submit: () => void
+	clearErrors: () => void
+}
 
 const { message, modal } = useNotify()
 
 const users = ref<AdminUser[]>([])
 const loading = ref(false)
-const modalOpen = ref(false)
+const dialogOpen = ref(false)
 const saving = ref(false)
 const editingUser = ref<AdminUser | null>(null)
-const formRef = ref<FormInstance>()
-
-const formState = reactive({
-	name: '',
-	email: '',
-	password: '',
-	roles: ['user'] as string[],
-})
+const form = ref({ name: '', email: '', password: '', roles: 'user' })
+const formEl = ref<FormHost | null>(null)
 
 const { searchText, filtered } = useSearchFilter<AdminUser>(users, ['name', 'email'])
 
@@ -44,6 +34,15 @@ const columns: ResponsiveColumn[] = [
 	{ key: 'lastLogin', title: '最后登录', dataIndex: 'lastLogin', priority: 'medium' },
 	{ key: 'lastip', title: '登录IP', dataIndex: 'lastip', priority: 'medium' },
 ]
+
+const RULES = {
+	name: `[{"rule":"required","message":"请输入用户昵称"},{"rule":"maxLength","value":${USER_LIMITS.nameMaxLength},"message":"昵称最多 ${USER_LIMITS.nameMaxLength} 个字符"}]`,
+	email: '[{"rule":"required","message":"请输入邮箱地址"},{"rule":"email","message":"请输入有效的邮箱地址"}]',
+	password: `[{"rule":"required","message":"请输入密码"},{"rule":"minLength","value":${USER_LIMITS.passwordMinLength},"message":"密码至少 ${USER_LIMITS.passwordMinLength} 个字符"},{"rule":"maxLength","value":${USER_LIMITS.passwordMaxLength},"message":"密码最多 ${USER_LIMITS.passwordMaxLength} 个字符"},{"rule":"pattern","value":"${USER_LIMITS.passwordPattern.source}","message":"密码需包含字母和数字"}]`,
+	roles: '[{"rule":"required","message":"请选择用户角色"}]',
+}
+
+const dialogHeading = computed(() => (editingUser.value ? '编辑用户' : '添加用户'))
 
 async function fetchUsers() {
 	loading.value = true
@@ -58,54 +57,53 @@ async function fetchUsers() {
 
 function openCreate() {
 	editingUser.value = null
-	Object.assign(formState, { name: '', email: '', password: '', roles: ['user'] })
-	modalOpen.value = true
-	nextTick(() => formRef.value?.clearValidate())
+	form.value = { name: '', email: '', password: '', roles: 'user' }
+	dialogOpen.value = true
+	nextTick(() => formEl.value?.clearErrors())
 }
 
 function openEdit(user: AdminUser) {
 	editingUser.value = user
-	Object.assign(formState, {
+	form.value = {
 		name: user.name,
 		email: user.email,
 		password: '',
-		roles: user.roles?.length ? [...user.roles] : ['user'],
-	})
-	modalOpen.value = true
-	nextTick(() => formRef.value?.clearValidate())
+		roles: (user.roles?.length ? user.roles : ['user']).join(','),
+	}
+	dialogOpen.value = true
+	nextTick(() => formEl.value?.clearErrors())
 }
 
-function closeModal() {
-	modalOpen.value = false
+function closeDialog() {
+	dialogOpen.value = false
 	editingUser.value = null
 }
 
-async function handleOk() {
-	try {
-		await formRef.value?.validate()
-	} catch {
-		return
-	}
+function splitRoles(value: string): string[] {
+	return value
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean)
+}
 
+async function handleSubmit(event: Event) {
+	const values = (event as CustomEvent<{ values?: Record<string, string> }>).detail?.values ?? {}
+	const roles = splitRoles(values.roles ?? form.value.roles)
 	saving.value = true
 	try {
+		const payload = {
+			name: values.name ?? '',
+			email: values.email ?? '',
+			roles,
+		}
 		if (editingUser.value) {
-			await usersApi.update(editingUser.value.uid, {
-				name: formState.name,
-				email: formState.email,
-				roles: formState.roles,
-			})
+			await usersApi.update(editingUser.value.uid, payload)
 			message.success('用户更新成功')
 		} else {
-			await usersApi.create({
-				name: formState.name,
-				email: formState.email,
-				password: formState.password,
-				roles: formState.roles,
-			})
+			await usersApi.create({ ...payload, password: values.password ?? '' })
 			message.success('用户添加成功')
 		}
-		closeModal()
+		closeDialog()
 		await fetchUsers()
 	} catch (error) {
 		message.error(errorMessage(error, editingUser.value ? '用户更新失败' : '用户添加失败'))
@@ -126,19 +124,14 @@ async function handleDelete(uid: number) {
 
 function getActions(record: AdminUser): ActionItem[] {
 	return [
-		{
-			key: 'edit',
-			text: '编辑',
-			icon: EditOutlined,
-			onClick: () => openEdit(record),
-		},
+		{ key: 'edit', text: '编辑', icon: 'pencil', onClick: () => openEdit(record) },
 		{
 			key: 'delete',
 			text: '删除',
-			icon: DeleteOutlined,
+			icon: 'trash-2',
 			danger: true,
 			onClick: () => {
-				modal.confirm({
+				void modal.confirm({
 					title: '确定删除这个用户吗？',
 					content: '删除后无法恢复',
 					okText: '确定',
@@ -155,131 +148,101 @@ onMounted(fetchUsers)
 </script>
 
 <template>
-	<div>
+	<div class="page">
 		<UserRoleTabs />
 
-		<a-card>
-			<div class="toolbar">
-				<a-input
-					v-model:value="searchText"
-					placeholder="搜索用户昵称或邮箱"
-					allow-clear
-					class="toolbar-search"
+		<mao-card padding="md">
+			<div class="mt-card-body">
+				<div class="toolbar">
+					<mao-text-field
+						:value="searchText"
+						icon="search"
+						clearable
+						placeholder="搜索用户昵称或邮箱"
+						aria-label="搜索用户"
+						class="toolbar-search"
+						@mt-input="searchText = ($event as CustomEvent<{ value: string }>).detail.value"
+					/>
+					<mao-button color="primary" icon="plus" @click="openCreate">添加用户</mao-button>
+				</div>
+
+				<ResponsiveTable
+					:columns="columns"
+					:data-source="filtered"
+					row-key="uid"
+					:loading="loading"
+					:actions="getActions"
+					:pagination="{ showSizeChanger: true, showTotal: (total) => `共 ${total} 条记录` }"
 				>
-					<template #prefix><SearchOutlined /></template>
-				</a-input>
-				<a-button type="primary" :icon="h(PlusOutlined)" @click="openCreate"> 添加用户 </a-button>
+					<template #card-title="{ record }">
+						<span class="row">
+							<mao-avatar :label="record.name" size="sm" />
+							{{ record.name }}
+						</span>
+					</template>
+					<template #card-subtitle="{ record }">{{ record.email }}</template>
+					<template #cell-roles="{ record }">
+						<span class="tag-row">
+							<mao-badge v-for="role in record.roles" :key="role" :tone="getRoleTone(role)">
+								{{ getRoleName(role) }}
+							</mao-badge>
+						</span>
+					</template>
+					<template #cell-createdAt="{ record }">
+						{{ formatTimestamp(record.createdAt) }}
+					</template>
+					<template #cell-lastLogin="{ record }">
+						{{ record.lastLogin ? formatTimestamp(record.lastLogin) : '-' }}
+					</template>
+				</ResponsiveTable>
 			</div>
+		</mao-card>
 
-			<ResponsiveTable
-				:columns="columns"
-				:data-source="filtered"
-				row-key="uid"
-				:loading="loading"
-				:actions="getActions"
-				:pagination="{
-					showSizeChanger: true,
-					showQuickJumper: true,
-					showTotal: (total: number) => `共 ${total} 条记录`,
-				}"
-			>
-				<template #card-title="{ record }">
-					<a-space>
-						<a-avatar>
-							<template #icon><UserOutlined /></template>
-						</a-avatar>
-						{{ record.name }}
-					</a-space>
-				</template>
-				<template #card-subtitle="{ record }">{{ record.email }}</template>
-				<template #cell-roles="{ record }">
-					<a-space wrap>
-						<a-tag v-for="role in record.roles" :key="role" :color="getRoleColor(role)">
-							{{ getRoleName(role) }}
-						</a-tag>
-					</a-space>
-				</template>
-				<template #cell-createdAt="{ record }">
-					{{ formatTimestamp(record.createdAt) }}
-				</template>
-				<template #cell-lastLogin="{ record }">
-					{{ record.lastLogin ? formatTimestamp(record.lastLogin) : '-' }}
-				</template>
-			</ResponsiveTable>
-		</a-card>
-
-		<a-modal
-			:title="editingUser ? '编辑用户' : '添加用户'"
-			:open="modalOpen"
-			:width="600"
-			:confirm-loading="saving"
-			ok-text="确定"
-			cancel-text="取消"
-			@ok="handleOk"
-			@cancel="closeModal"
+		<mao-dialog
+			:open="dialogOpen || undefined"
+			:heading="dialogHeading"
+			size="lg"
+			closable
+			@mt-close="closeDialog"
 		>
-			<a-form ref="formRef" :model="formState" layout="vertical" name="userForm">
-				<a-form-item
-					label="昵称"
-					name="name"
-					:rules="[{ required: true, message: '请输入用户昵称' }]"
-				>
-					<a-input v-model:value="formState.name" placeholder="请输入用户昵称" />
-				</a-form-item>
+			<mao-form ref="formEl" label="用户信息" @mt-submit="handleSubmit">
+				<mao-form-item name="name" label="昵称" :rules="RULES.name">
+					<mao-text-field name="name" :value="form.name" placeholder="请输入用户昵称" />
+				</mao-form-item>
 
-				<a-form-item
-					label="邮箱"
-					name="email"
-					:rules="[
-						{ required: true, message: '请输入邮箱地址' },
-						{ type: 'email', message: '请输入有效的邮箱地址' },
-					]"
-				>
-					<a-input v-model:value="formState.email" placeholder="请输入邮箱地址" />
-				</a-form-item>
+				<mao-form-item name="email" label="邮箱" :rules="RULES.email">
+					<mao-text-field name="email" :value="form.email" placeholder="请输入邮箱地址" />
+				</mao-form-item>
 
-				<a-form-item
-					v-if="!editingUser"
-					label="密码"
-					name="password"
-					:rules="[
-						{ required: true, message: '请输入密码' },
-						{ min: USER_LIMITS.passwordMinLength, message: '密码至少8个字符' },
-						{ max: USER_LIMITS.passwordMaxLength, message: '密码最多16个字符' },
-						{ pattern: USER_LIMITS.passwordPattern, message: '密码需包含字母和数字' },
-					]"
-				>
-					<a-input-password
-						v-model:value="formState.password"
+				<mao-form-item v-if="!editingUser" name="password" label="密码" :rules="RULES.password">
+					<mao-text-field
+						name="password"
+						type="password"
+						:value="form.password"
 						placeholder="请输入密码（8-16位，包含字母和数字）"
 					/>
-				</a-form-item>
+				</mao-form-item>
 
-				<a-form-item
-					label="角色"
-					name="roles"
-					:rules="[{ required: true, type: 'array', message: '请选择用户角色' }]"
-				>
-					<a-select
-						v-model:value="formState.roles"
-						mode="multiple"
-						placeholder="请选择用户角色"
-						allow-clear
-						:options="ROLE_OPTIONS"
-					/>
-				</a-form-item>
-			</a-form>
-		</a-modal>
+				<mao-form-item name="roles" label="角色" hint="可多选，至少选择一个角色" :rules="RULES.roles">
+					<mao-checkbox-group name="roles" :value="form.roles" label="用户角色">
+						<mao-checkbox v-for="option in ROLE_OPTIONS" :key="option.value" :value="option.value">
+							{{ option.label }}
+						</mao-checkbox>
+					</mao-checkbox-group>
+				</mao-form-item>
+			</mao-form>
+
+			<mao-button slot="actions" variant="flat" @click="closeDialog">取消</mao-button>
+			<mao-button slot="actions" color="primary" :loading="saving || undefined" @click="formEl?.submit()">
+				确定
+			</mao-button>
+		</mao-dialog>
 	</div>
 </template>
 
 <style scoped>
 .toolbar {
-	margin-bottom: 16px;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 12px;
+	margin-bottom: var(--mt-space-4);
 }
 
 .toolbar-search {
@@ -287,7 +250,13 @@ onMounted(fetchUsers)
 	max-width: 100%;
 }
 
-@media (max-width: 480px) {
+.tag-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+@media (max-width: 768px) {
 	.toolbar {
 		flex-direction: column;
 		align-items: stretch;
